@@ -1,0 +1,151 @@
+name: Initialize issue tracking
+
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/initialize-tracking.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: initialize-issue-tracking
+  cancel-in-progress: false
+
+jobs:
+  initialize:
+    if: github.repository == 'jiuwen567/ai-paper-assistant'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Create milestones and classify issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+
+          repository = os.environ['REPOSITORY']
+          if repository != 'jiuwen567/ai-paper-assistant':
+              raise SystemExit('Unexpected repository; no changes made.')
+          base = f'https://api.github.com/repos/{repository}'
+          headers = {
+              'Authorization': 'Bearer ' + os.environ['GH_TOKEN'],
+              'Accept': 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2022-11-28',
+              'User-Agent': 'ai-paper-assistant-setup',
+          }
+
+          def api(method, path, data=None):
+              payload = None if data is None else json.dumps(data).encode('utf-8')
+              request = urllib.request.Request(base + path, data=payload, headers=headers, method=method)
+              if payload is not None:
+                  request.add_header('Content-Type', 'application/json')
+              try:
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      body = response.read()
+                      return json.loads(body) if body else None
+              except urllib.error.HTTPError as error:
+                  raise RuntimeError(f'{method} {path}: HTTP {error.code}') from None
+
+          def collect(path):
+              results = []
+              page = 1
+              while True:
+                  separator = '&' if '?' in path else '?'
+                  batch = api('GET', f'{path}{separator}per_page=100&page={page}')
+                  results.extend(batch)
+                  if len(batch) < 100:
+                      return results
+                  page += 1
+
+          stages = [
+              ('M1 基础工程与双端接入', '工程、账号、后台任务和微信接入。'),
+              ('M2 材料管理与 AI 阅读', '上传、解析、检索、Pi 执行和文献阅读。'),
+              ('M3 原稿审阅与修订', '作者编辑、诊断、建议处理、使用记录和反馈。'),
+              ('M4 依据关系与规范交付', '图关系、材料更正、Word 导出和数据清理。'),
+              ('M5 测试部署与验收', '完整流程、效果评测、部署文档和课程演示。'),
+          ]
+          plan = [
+              (1, 0, '初始化工程与本地开发环境', ['web', 'miniapp', 'backend', 'database']),
+              (2, 0, '实现用户登录、项目管理与访问权限', ['web', 'backend', 'database']),
+              (3, 0, '实现后台任务状态、失败重试与取消', ['backend', 'database']),
+              (4, 0, '实现小程序账号绑定与公众号入口', ['miniapp', 'backend']),
+              (5, 1, '实现双端材料上传与版本管理', ['web', 'miniapp', 'backend', 'database']),
+              (6, 1, '实现材料解析与原文定位', ['web', 'backend', 'database']),
+              (7, 1, '实现文献卡、证据卡与项目内检索', ['web', 'miniapp', 'backend', 'database']),
+              (8, 1, '接入 Pi 并实现受限 AI 任务执行', ['ai', 'backend']),
+              (9, 1, '实现有来源的 AI 阅读摘记与文献比较', ['ai', 'web', 'backend']),
+              (10, 2, '实现作者原稿编辑与版本对照', ['web', 'backend', 'database']),
+              (11, 2, '实现原稿证据核验与论证诊断', ['ai', 'web', 'backend']),
+              (12, 2, '实现表达建议审阅与双端采纳', ['web', 'miniapp', 'backend', 'database']),
+              (13, 2, '实现 AI 使用记录与披露清单', ['web', 'backend', 'database']),
+              (14, 2, '实现导师反馈与作者修改任务', ['web', 'miniapp', 'ai', 'backend']),
+              (15, 3, '实现 Neo4j 依据关系与路径查询', ['database', 'backend', 'web']),
+              (16, 3, '实现材料更正后的影响分析', ['ai', 'database', 'backend', 'web']),
+              (17, 3, '实现固定快照的 Word 导出', ['backend', 'web', 'database']),
+              (18, 3, '实现资料删除与派生数据清理', ['backend', 'database']),
+              (19, 4, '完成核心流程测试与 AI 效果评测', ['ai', 'backend', 'web', 'miniapp', 'database']),
+              (20, 4, '完成部署、使用文档与课程演示', ['backend', 'web', 'miniapp']),
+          ]
+          # Validate exact targets before writing anything. Never create or close issues here.
+          targets = {}
+          for number, _, title, _ in plan:
+              issue = api('GET', f'/issues/{number}')
+              if issue.get('pull_request') or issue['title'] != title:
+                  raise RuntimeError(f'Issue #{number} changed; review the setup plan before rerunning.')
+              targets[number] = issue
+
+          definitions = {
+              'web': ('D9E2EC', 'Web 界面与交互'),
+              'miniapp': ('D9E2EC', '微信小程序与公众号接入'),
+              'backend': ('D9E2EC', '服务端与后台任务'),
+              'ai': ('D9E2EC', '模型、工具执行与效果'),
+              'database': ('D9E2EC', '数据模型、存储与一致性'),
+              'bug': ('D73A4A', '可复现的功能问题'),
+              'blocked': ('F9D0C4', '需要先解决阻塞事项'),
+              'P0': ('B60205', '优先形成核心流程'),
+              'P1': ('FBCA04', '本期交付，在核心流程后完善'),
+          }
+          existing_labels = {label['name'] for label in collect('/labels')}
+          for name, (color, description) in definitions.items():
+              if name not in existing_labels:
+                  api('POST', '/labels', {'name': name, 'color': color, 'description': description})
+
+          milestones = {item['title']: item for item in collect('/milestones?state=all')}
+          for title, description in stages:
+              if title not in milestones:
+                  milestones[title] = api('POST', '/milestones', {'title': title, 'description': description})
+
+          classified = 0
+          for number, stage_index, _, areas in plan:
+              # Re-read to preserve labels and milestones edited during this run.
+              issue = api('GET', f'/issues/{number}')
+              labels = {label['name'] for label in issue['labels']}
+              additions = set(areas) - labels
+              if not labels.intersection({'P0', 'P1', 'P2'}):
+                  additions.add('P0' if number <= 12 else 'P1')
+              if additions:
+                  api('POST', f'/issues/{number}/labels', {'labels': sorted(additions)})
+              title = stages[stage_index][0]
+              milestone = milestones[title]['number']
+              if issue['milestone'] is None:
+                  api('PATCH', f'/issues/{number}', {'milestone': milestone})
+              elif issue['milestone']['number'] != milestone:
+                  print(f'Preserved manually assigned milestone for #{number}.')
+              classified += 1
+
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as output:
+              output.write(f'Configured {len(stages)} milestones and classified {classified} issues.\n\n')
+              output.write('Existing issue states, assignees, labels and manual milestone choices were preserved.\n')
+              output.write('GitHub Projects is not created by this workflow; it requires separate user-level authorization.\n')
+          print(f'Completed: {len(stages)} milestones, {classified} issues.')
+          PY

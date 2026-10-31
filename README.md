@@ -35,9 +35,11 @@ Web 用于阅读、写作和审阅；微信小程序用于收集资料、查看�
 - [数据库设计](docs/database.md)
 - [测试与验收](docs/testing.md)
 - [开发计划](docs/roadmap.md)
+- [开发说明](docs/development.md)
+- [看板设置](docs/project-setup.md)
 - [参与开发](CONTRIBUTING.md)
 
-开发任务通过 [Issues](https://github.com/jiuwen567/ai-paper-assistant/issues) 跟踪。每项任务写明范围、依赖和验收条件，完成验证后再关闭。
+开发任务通过 [Issues](https://github.com/jiuwen567/ai-paper-assistant/issues) 跟踪，阶段成果见 [Milestones](https://github.com/jiuwen567/ai-paper-assistant/milestones)。每项任务写明范围、依赖和验收条件，完成验证后再关闭。
 
 ## 资料与权限
 

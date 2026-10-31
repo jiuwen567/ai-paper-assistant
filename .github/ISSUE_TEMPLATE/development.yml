@@ -1,0 +1,30 @@
+name: 开发任务
+description: 说明要做什么，以及怎样验收。
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: 目标
+      description: 完成后用户能做什么。
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 工作内容
+      value: "- [ ] "
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收
+      description: 写清正常结果和关键异常场景。
+      value: "- [ ] "
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: 依赖与范围
+      description: 关联前置 Issue，必要时说明本次不做什么。

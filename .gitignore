@@ -1,0 +1,43 @@
+# Local credentials and editor state
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.key
+.DS_Store
+.idea/
+.vscode/
+
+# JavaScript
+node_modules/
+dist/
+build/
+.next/
+.nuxt/
+coverage/
+*.tsbuildinfo
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Runtime and private material
+/data/
+/uploads/
+/exports/
+/backups/
+/local/
+/scratch/
+/logs/
+*.log
+*.sqlite
+*.sqlite3
+
+# Mini Program local settings
+project.private.config.json

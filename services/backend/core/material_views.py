@@ -69,7 +69,16 @@ class MaterialSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Material
-        fields = ["id", "title", "category", "revision", "created_at", "latest_version"]
+        fields = [
+            "id",
+            "title",
+            "category",
+            "revision",
+            "created_at",
+            "latest_version",
+            "access_state",
+            "state_version",
+        ]
 
 
 class MaterialListView(APIView):

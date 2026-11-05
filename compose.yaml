@@ -12,6 +12,9 @@ x-backend: &backend
     NEO4J_URI: bolt://neo4j:7687
     REDIS_URL: redis://redis:6379/0
     S3_ENDPOINT_URL: http://seaweedfs:8333
+    EMBEDDING_CACHE_DIR: /app/models
+  volumes:
+    - ./.local/embeddings:/app/models:ro
 
 services:
   postgres:

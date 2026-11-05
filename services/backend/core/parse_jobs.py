@@ -15,6 +15,8 @@ def valid_source(run, job):
     return (
         source.material.project_id == job.project_id
         and source.status == "available"
+        and source.material.access_state == "active"
+        and source.material.state_version == job.input_snapshot.get("source_state_version")
         and str(source.pk) == job.input_snapshot.get("source_version_id")
         and source.sha256 == job.input_snapshot.get("source_sha256")
         and str(run.pk) == job.input_snapshot.get("parse_run_id")

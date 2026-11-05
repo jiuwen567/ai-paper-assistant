@@ -21,7 +21,7 @@ function errorMessage(data: unknown): string {
   if (data && typeof data === "object") return Object.values(data).map(errorMessage).join("；");
   return "请求失败，请重试。";
 }
-export function request<T extends object = Record<string, unknown>>(path: string, method: "GET" | "POST" | "DELETE" = "GET", data?: object): Promise<T> {
+export function request<T extends object = Record<string, unknown>>(path: string, method: "GET" | "POST" | "PUT" | "DELETE" = "GET", data?: object): Promise<T> {
   const token = savedSession()?.token;
   return new Promise((resolve, reject) => wx.request<T>({
     url: `${API_BASE_URL}/api/v1/${path}`, method, data, timeout: 10000,

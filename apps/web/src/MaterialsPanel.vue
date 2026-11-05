@@ -6,7 +6,7 @@ type Version = {
   id: string; material_id: string; created_by: number; number: number; file_name: string;
   size: number; sha256: string; status: string; error_message: string;
 };
-type Material = { id: string; title: string; category: string; revision: number; latest_version: Version };
+type Material = { id: string; title: string; category: string; revision: number; access_state: string; state_version: number; latest_version: Version };
 const props = defineProps<{ project: Project; userId: number }>();
 const emit = defineEmits<{ accessLost: [error: ApiError] }>();
 const materials = ref<Page<Material> | null>(null);
@@ -53,6 +53,12 @@ function resetFile() { file.value = null; inputKey.value++; uploadTarget.value =
 function newMaterial() { reading.value = null; selected.value = null; versions.value = null; title.value = ""; resetFile(); }
 function chooseFile(event: Event) { file.value = (event.target as HTMLInputElement).files?.[0] ?? null; }
 async function openMaterial(material: Material) { reading.value = null; resetFile(); await history(material); }
+async function changeState() {
+  const material = selected.value!;
+  const state = await request<{ access_state: string; version: number }>(`${base()}materials/${material.id}/state/`, "PATCH", { version: material.state_version, access_state: material.access_state === "active" ? "withdrawn" : "active" });
+  material.access_state = state.access_state; material.state_version = state.version;
+  reading.value = null; await refresh();
+}
 function retry(version: Version) { resetFile(); uploadTarget.value = version; message.value = `请重新选择 ${version.file_name}。`; }
 async function upload() {
   if (!file.value) throw new Error("请选择文件。");
@@ -87,7 +93,7 @@ onMounted(() => perform(() => load()));
     <p v-if="materials?.count === 0">暂无材料。</p>
     <ul class="project-list"><li v-for="material in materials?.results" :key="material.id">
       <button :disabled="busy" @click="perform(() => openMaterial(material))">
-        {{ material.title }} · {{ categories[material.category] }} · {{ states[material.latest_version.status] }}
+        {{ material.title }} · {{ categories[material.category] }} · {{ material.access_state === "withdrawn" ? "已撤回" : states[material.latest_version.status] }}
       </button>
     </li></ul>
     <div v-if="materials && (materials.next || materials.previous)" class="actions">
@@ -96,6 +102,7 @@ onMounted(() => perform(() => load()));
     </div>
     <template v-if="selected">
       <h3>{{ selected.title }} · 版本记录</h3>
+      <button v-if="project.role === 'author'" :disabled="busy" @click="perform(changeState)">{{ selected.access_state === "active" ? "从检索和新任务撤回材料" : "恢复材料使用" }}</button>
       <ul><li v-for="version in versions?.results" :key="version.id">
         <span>v{{ version.number }} · {{ version.file_name }} · {{ states[version.status] }}</span>
         <a v-if="version.status === 'available'" :href="`/api/v1/${base()}files/${version.id}/`">下载 v{{ version.number }}</a>

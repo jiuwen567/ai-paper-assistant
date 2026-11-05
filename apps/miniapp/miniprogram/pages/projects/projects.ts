@@ -62,6 +62,7 @@ Component({
         }
       });
     },
+    openLibrary() { wx.navigateTo({ url: `/pages/library/library?project=${this.data.project!.id}` }); },
     copyCode() { wx.setClipboardData({ data: this.data.bindingCode }); },
     async loadProjects(page: number) {
       const result = await request<PageResult<Project>>(`projects/?page=${page}`);

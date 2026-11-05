@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { ApiError, request, type Page, type Project } from "./projects-api";
+import { usageLabels } from "./impact";
 import SourceReader from "./SourceReader.vue";
 type Version = {
   id: string; material_id: string; created_by: number; number: number; file_name: string;
-  size: number; sha256: string; status: string; error_message: string;
+  size: number; sha256: string; status: string; usage_state: string; error_message: string;
 };
 type Material = { id: string; title: string; category: string; revision: number; access_state: string; state_version: number; latest_version: Version };
 const props = defineProps<{ project: Project; userId: number }>();
@@ -104,7 +105,7 @@ onMounted(() => perform(() => load()));
       <h3>{{ selected.title }} · 版本记录</h3>
       <button v-if="project.role === 'author'" :disabled="busy" @click="perform(changeState)">{{ selected.access_state === "active" ? "从检索和新任务撤回材料" : "恢复材料使用" }}</button>
       <ul><li v-for="version in versions?.results" :key="version.id">
-        <span>v{{ version.number }} · {{ version.file_name }} · {{ states[version.status] }}</span>
+        <span>v{{ version.number }} · {{ version.file_name }} · {{ states[version.status] }} · {{ usageLabels[version.usage_state] }}</span>
         <a v-if="version.status === 'available'" :href="`/api/v1/${base()}files/${version.id}/`">下载 v{{ version.number }}</a>
         <button v-else-if="project.role === 'author' && version.created_by === userId" :disabled="busy" @click="retry(version)">重试上传 v{{ version.number }}</button>
         <button v-if="version.status === 'available'" :disabled="busy" @click="reading = version">查看原文 v{{ version.number }}</button>

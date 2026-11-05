@@ -103,7 +103,8 @@ class LinkSerializer(serializers.ModelSerializer):
         return link.evidence_quote if self.get_source_available(link) else ""
 
     def get_source_available(self, link):
-        return link.chunk.run.source_version.material.access_state == "active"
+        source = link.chunk.run.source_version
+        return source.material.access_state == "active" and source.usage_state != "withdrawn"
 
     class Meta:
         model = EvidenceLink

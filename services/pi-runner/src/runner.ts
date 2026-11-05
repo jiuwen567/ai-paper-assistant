@@ -6,6 +6,7 @@ import { Type } from "typebox";
 import { readingSchema } from "./reading-schema.ts";
 import { reviewSchema } from "./review-schema.ts";
 import { expressionSchema } from "./expression-schema.ts";
+import { impactSchema } from "./impact-schema.ts";
 import { feedbackSchema } from "./feedback-schema.ts";
 
 // 仅由 Worker 启动。业务数据和凭据走管道，stdout 只写结构化协议。
@@ -60,17 +61,20 @@ try {
   if (config.purpose === "feedback") definitions.splice(0, definitions.length,
     ["read_feedback", "读取作者转录的原始意见、所选来源与固定稿件位置，不能扩展范围。", Type.Object({}, { additionalProperties: false })],
     ["submit_feedback", "提交有原始意见引文的候选任务，须作者确认才能加入待办；不能标记完成或导师认可。", feedbackSchema]);
+  if (config.purpose === "impact") definitions.splice(0, definitions.length,
+    ["read_impact", "读取固定变更说明、新旧材料节选和所选原稿；不能扩展范围。", Type.Object({}, { additionalProperties: false })],
+    ["submit_impact", "提交可能相关位置；不修改正文，不确认作者处理。", impactSchema(config.block_version_ids)]);
   let failed = false;
   let usageKnown = false;
   const tools: AgentTool[] = definitions.map(([name, description, parameters]) => ({
     name, label: name, description, parameters, executionMode: "sequential", replay: "never",
     async execute(_id, args) {
       const result = await rpc("tool", { name, args });
-      if (["submit_review", "submit_expression", "submit_feedback"].includes(name) && result?.status === "rejected") {
+      if (["submit_review", "submit_expression", "submit_feedback", "submit_impact"].includes(name) && result?.status === "rejected") {
         return { content: [{ type: "text", text: JSON.stringify(result) }], details: {}, isError: true };
       }
       return { content: [{ type: "text", text: JSON.stringify(result) }], details: {},
-        terminate: ["save_note", "submit_suggestion", "submit_reading", "submit_review", "submit_expression", "submit_feedback"].includes(name) };
+        terminate: ["save_note", "submit_suggestion", "submit_reading", "submit_review", "submit_expression", "submit_feedback", "submit_impact"].includes(name) };
     },
   }));
   const agent = new Agent({
@@ -107,7 +111,7 @@ try {
       } : null });
     }
     if (event.type === "tool_execution_end" && event.isError) {
-      if (config.purpose && ["submit_reading", "submit_review", "submit_expression", "submit_feedback"].includes(event.toolName)) {
+      if (config.purpose && ["submit_reading", "submit_review", "submit_expression", "submit_feedback", "submit_impact"].includes(event.toolName)) {
         // Pi 的 schema 错误反馈可在剩余调用预算内修正；越权工具仍立即结束。
         await rpc("validation_error");
       } else {

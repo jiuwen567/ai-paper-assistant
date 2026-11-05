@@ -30,6 +30,16 @@ from core.feedback_views import (
     MentorReportsView,
 )
 from core.graph_views import GraphPathsView, GraphRebuildView
+from core.impact_views import (
+    ChangesView,
+    ChangeView,
+    ImpactModelView,
+    ItemHistoryView,
+    ItemsView,
+    ItemView,
+    RunsView,
+    RunView,
+)
 from core.job_views import JobControlView, JobDetailView, JobListView
 from core.library_views import (
     BibliographyView,
@@ -86,6 +96,25 @@ from core.wechat_views import (
 )
 
 urlpatterns = [
+    path("api/v1/projects/<uuid:project_id>/material-changes/", ChangesView.as_view()),
+    path(
+        "api/v1/projects/<uuid:project_id>/material-changes/<uuid:change_id>/", ChangeView.as_view()
+    ),
+    path(
+        "api/v1/projects/<uuid:project_id>/material-changes/<uuid:change_id>/runs/",
+        RunsView.as_view(),
+    ),
+    path("api/v1/projects/<uuid:project_id>/impact-runs/<uuid:run_id>/", RunView.as_view()),
+    path("api/v1/projects/<uuid:project_id>/impact-runs/<uuid:run_id>/items/", ItemsView.as_view()),
+    path(
+        "api/v1/projects/<uuid:project_id>/impact-runs/<uuid:run_id>/model/",
+        ImpactModelView.as_view(),
+    ),
+    path("api/v1/projects/<uuid:project_id>/impact-items/<uuid:item_id>/", ItemView.as_view()),
+    path(
+        "api/v1/projects/<uuid:project_id>/impact-items/<uuid:item_id>/history/",
+        ItemHistoryView.as_view(),
+    ),
     path("api/v1/projects/<uuid:project_id>/evidence-links/", EvidenceLinksView.as_view()),
     path(
         "api/v1/projects/<uuid:project_id>/evidence-links/<uuid:link_id>/",

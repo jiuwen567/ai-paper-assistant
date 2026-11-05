@@ -54,6 +54,8 @@ class MaterialVersionSerializer(serializers.ModelSerializer):
             "media_type",
             "sha256",
             "status",
+            "usage_state",
+            "usage_version",
             "error_code",
             "error_message",
             "created_at",

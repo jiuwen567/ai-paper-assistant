@@ -9,6 +9,7 @@ from core.ai_jobs import digest
 from core.models import (
     ExpressionSuggestion,
     FeedbackCandidate,
+    ImpactItem,
     Job,
     Manuscript,
     ModelCall,
@@ -22,6 +23,20 @@ def pick(value, fields):
 
 def input_sources(job):
     sources = job.input_snapshot.get("sources", [])
+    impact = job.input_snapshot.get("impact")
+    if impact:
+        sources = [
+            {
+                "chunk_id": chunk["chunk_id"],
+                "text_digest": chunk["digest"],
+                "source_version_id": impact["sources"][chunk["side"]]["id"],
+                "parse_id": impact["sources"][chunk["side"]]["parse_id"],
+                "source_scope": "historical_comparison"
+                if chunk["side"] == "old"
+                else "change_excerpt",
+            }
+            for chunk in impact["chunks"]
+        ]
     feedback_source = job.input_snapshot.get("feedback", {}).get("source")
     return [*sources, feedback_source] if feedback_source else sources
 
@@ -37,6 +52,10 @@ def usage_jobs(project_id):
                 queryset=ExpressionSuggestion.objects.select_related(
                     "manuscript_revision", "block_version", "decision__manuscript_revision"
                 ).order_by("id"),
+            ),
+            Prefetch(
+                "impactitem_set",
+                queryset=ImpactItem.objects.prefetch_related("decisions").order_by("id"),
             ),
             Prefetch("review_record__findings", queryset=ReviewFinding.objects.order_by("id")),
             Prefetch(
@@ -159,6 +178,7 @@ def job_data(job):
             ],
         ),
         "input": {
+            "impact_run_id": snapshot.get("impact", {}).get("run_id"),
             "feedback_id": snapshot.get("feedback", {}).get("feedback_id"),
             "feedback_source_chunk_id": (snapshot.get("feedback", {}).get("source") or {}).get(
                 "chunk_id"
@@ -180,6 +200,22 @@ def job_data(job):
         "review": {"id": str(review.pk), "findings": findings} if review else None,
         "suggestions": suggestions,
         "feedback_candidates": feedback_candidates,
+        "impact_candidates": [
+            {
+                "id": str(item.pk),
+                "run_id": str(item.run_id),
+                "block_version_id": str(item.block_version_id),
+                "decisions": [
+                    {
+                        "number": decision.number,
+                        "state": decision.state,
+                        "created_by": decision.created_by_id,
+                    }
+                    for decision in sorted(item.decisions.all(), key=lambda d: d.number)
+                ],
+            }
+            for item in job.impactitem_set.all()
+        ],
         "notes": notes,
         "index": {"id": str(index.pk), "published": index.published_at is not None}
         if index
@@ -201,6 +237,7 @@ def facts_for(project):
         counts["review_findings"] += len(job["review"]["findings"]) if job["review"] else 0
         counts["expression_suggestions"] += len(job["suggestions"])
         counts["notes"] += job["notes"]
+        counts["impact_candidates"] += len(job["impact_candidates"])
         counts["feedback_candidates"] += len(job["feedback_candidates"])
         counts["confirmed_tasks"] += sum(
             item["decision"] == "accepted" for item in job["feedback_candidates"]
@@ -229,6 +266,7 @@ def facts_for(project):
         "notes",
         "accepted",
         "rejected",
+        "impact_candidates",
         "feedback_candidates",
         "confirmed_tasks",
         "completed_tasks",
@@ -257,6 +295,12 @@ def draft_for(facts):
             lines.append(
                 f"本地资料向量索引：创建 {counts['tasks']} 个任务，"
                 f"完成 {counts['published_tasks']} 个；未计入生成模型调用。"
+            )
+        elif purpose == "impact":
+            lines.append(
+                f"材料变更补查：发起 {counts['calls']} 次模型调用，"
+                f"产出 {counts['impact_candidates']} 条待复核候选；"
+                "作者处理记录不计入 AI 正文修改采纳。"
             )
         elif purpose == "feedback":
             lines.append(

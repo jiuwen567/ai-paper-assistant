@@ -59,7 +59,7 @@ def model_configuration(purpose="note"):
             "reading": "reading-v2",
             "comparison": "reading-v2",
             "review": "review-v2",
-            "expression": "expression-v1",
+            "expression": "expression-v2",
             "feedback": "feedback-v1",
             "impact": "impact-v1",
         }.get(purpose, PROMPT_VERSION),
@@ -390,6 +390,7 @@ class AIRun:
                         "expression_citation_invalid",
                         "expression_duplicate",
                         "expression_unchanged",
+                        "expression_content_changed",
                     }:
                         raise
                     job.ai_events.create(
@@ -397,7 +398,12 @@ class AIRun:
                         kind="validation_error",
                         details={"code": exc.code, "number": self.tools},
                     )
-                    return {"status": "rejected", "code": exc.code, "message": exc.message}
+                    return {
+                        "status": "rejected",
+                        "code": exc.code,
+                        "message": exc.message
+                        + " 请利用已读结果直接修正 submit_expression，不必重读。",
+                    }
                 if self.expression is not None and self.expression != candidate:
                     raise ParseFailure("expression_resubmitted", "重复提交了不同的表达建议。")
                 self.expression = candidate
@@ -653,7 +659,7 @@ def execute_ai(job):
                 if catalog
                 else "本次没有外部材料，只能检查原稿和作者研究说明，不要编造证据编号。"
             )
-            if purpose == "review" and catalog:
+            if catalog:
                 read_prompt = (
                     "第一轮在同一响应中提出 read_manuscript 与 read_evidence 两个只读调用；"
                     "后者一次读取下面目录的 chunk_ids，执行器依次执行，不要先检索。"

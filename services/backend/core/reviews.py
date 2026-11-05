@@ -116,6 +116,18 @@ def read_manuscript(job):
             pk__in=[item["version_id"] for item in snapshot["blocks"]]
         )
     }
+    if job.input_snapshot.get("purpose") == "expression":
+        # 表达任务只改所选正文；研究登记与出版状态不属于待编辑文字。
+        return {
+            "version": snapshot["version"],
+            "blocks": [
+                {
+                    "block_version_id": item["version_id"],
+                    "text": versions[item["version_id"]].text,
+                }
+                for item in snapshot["blocks"]
+            ],
+        }
     return {
         "version": snapshot["version"],
         "blocks": [

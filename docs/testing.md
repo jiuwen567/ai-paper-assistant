@@ -303,3 +303,34 @@ PYTHONPATH=services/backend uv run python services/backend/core/tests/evaluate_r
   --model qwen3:4b-instruct --base-url http://127.0.0.1:11434/v1 \
   --output .local/review-retest.json
 ```
+
+
+## 表达缺陷复测（Issue #43）
+
+`expression-v2` 收窄模型的原稿读取结果，仅包含所选正文和固定版本编号；工具提交只包含具体建议，总述由保存数量生成。表达、资料依据与实质问题分别说明。新增生成阶段的内容保护反馈，数值、否定、条件等明显变化和新增不配对标点须修正后才能发布；作者采纳仍再次校验。实质问题只保存原句，不保存模型补写的正文，不自动采纳。空列表必须由模型明确提交，不能把失败或未变更条目自动变成“没有问题”。
+
+当前本机 qwen3:4b-instruct / Q4_K_M、Ollama 0.40.14、上下文 16384、temperature 0，实际 `max_tokens=8192`、每任务最多四次调用。三例固定样本保留，再加入独立“检查/标注”动作和无需修改的短句两例；额外样例不改变 #19 默认 14 例。**内容验收仍未通过，#43 保持开放。**
+
+| 当前代码扩展轮 | 协议 | 交付与限制 |
+| --- | --- | --- |
+| 冗余表达 | 成功 | “本研究观察了样本，并整理了记录。”保留两个动作与对象 |
+| 条件保留 | 失败 `result_invalid` | 四次调用后未形成有效工具提交，未发布建议 |
+| 依据不足 | 成功 | substantive，原句保留，请作者核对效率结论缺少依据，不可作为表达建议采纳 |
+| 独立动作 | 成功 | 有局部建议，仍需作者核对；不能由一句样例推出普遍保义 |
+| 简洁阴性 | 失败 `model_call_limit` | 反复提交未改原句，不能把失败计为正确空结果 |
+
+[扩展轮原始记录](evaluation/2026-11-06/expression-fix/expanded-current.json)中固定三例协议成功 2/3，扩展合计 3/5。之后为诊断提交失败，捕获同代码的三例整轮：[后续原始记录](evaluation/2026-11-06/expression-fix/followup-current.json)仍为 2/3，条件案例变为内容保护拒绝后的调用耗尽。保存该案例四次完整请求与 SSE 响应（`conditions-1` 至 `conditions-4`）；这次确认模型反复提交被拒改写，**没有复现**前轮 `result_invalid`，不据此猜测前次响应格式，也未新增普通 JSON 绕过工具的路径。后续冗余改写“对样本进行了观察与记录的整理”还可能改变“整理”的对象，不能称稳定保义。
+
+[基线与四轮中间试验](evaluation/2026-11-06/expression-fix/configuration.json)全部保留，包括把“观察”改成“数据采集”、字符串末尾多余引号、误报原稿应补全资料数据、被内容保护阻止的改写。当前与本次基线均发生于 #49 修复后；历史 #19 数据不改写。中间试验未逐轮冻结完整代码，不能声称逐字节重放；配置中的代码摘要对应当前两轮系统结果和直接复测。
+
+直接提问也明确 `blocks` 为正文、`sources/research` 仅作依据，并保留[三例请求与原始输出](evaluation/2026-11-06/expression-fix/direct-current.json)。本轮没有把 source 编号当作正文位置，但仍漏掉冗余修改、删除速率并补入标准差；依据不足样例仅要求作者核查。3/3 格式成功不代表内容正确，直接组没有业务保护，不将其结果写入原稿。直接与系统的协议、总调用预算和顺序不同，不据单轮耗时推断效率。
+
+相关后端 73 项及最后新增的未变更建议重提专项 1 项通过，覆盖引用错位后修正、生成时拒绝内容变更、作者编辑后再次拒绝、两线程采纳幂等、过期版本与撤权、旧提示取消、无问题结果不改稿、实质文本不保存。Pi 类型与 11 项协议测试、make check test build、Ruff 均通过。全部内容判断是 AI 检查草案，未经独立人工复核；人工作业量、核验时间未测，不声明发布级模型准确率。常规 CI 没有新增模型调用或重复全服务检查。
+
+重跑五例（仅 DEBUG 开发环境，专用自制数据）：
+
+```bash
+PYTHONPATH=services/backend uv run python services/backend/core/tests/evaluate_review.py \
+  --purpose expression --expanded --model qwen3:4b-instruct \
+  --base-url http://127.0.0.1:11434/v1 --output .local/expression-retest.json
+```

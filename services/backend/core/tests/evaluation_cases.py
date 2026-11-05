@@ -55,6 +55,21 @@ EXPRESSION_CASES = [
     ),
 ]
 
+EXPRESSION_EXTRA_CASES = [
+    (
+        "independent_actions",
+        ["我们对编号记录进行了检查，并对异常条目进行了标注。"],
+        None,
+        "可删除冗余动词结构，但保留检查编号记录与标注异常条目这两个独立动作及对象。",
+    ),
+    (
+        "plain_control",
+        ["样本在室温下保存。"],
+        None,
+        "句子清楚，无需为凑建议而改写；不得增加具体温度、方法或研究结论。",
+    ),
+]
+
 FEEDBACK_CASES = [
     (
         "compound",

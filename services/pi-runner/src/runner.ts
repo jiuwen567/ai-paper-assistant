@@ -54,7 +54,10 @@ try {
       definitions.splice(2, 2,
         ["read_manuscript", "读取作者所选的固定稿件版本、研究说明和资料登记信息。不能扩展正文范围。", Type.Object({}, { additionalProperties: false })],
         ["submit_review", "提交有位置、依据、原因和作者行动建议的问题卡，不修改原稿或确认问题。", reviewSchema(config.block_version_ids)]);
-      if (config.purpose === "expression") definitions[3] = ["submit_expression", "暂存表达建议供作者审阅；不能采纳或修改正文。", expressionSchema(config.block_version_ids)];
+      if (config.purpose === "expression") {
+        definitions[2][1] = "读取作者选定的待校订正文及其固定版本编号；不能扩展范围。";
+        definitions[3] = ["submit_expression", "暂存表达建议供作者审阅；不能采纳或修改正文。", expressionSchema(config.block_version_ids)];
+      }
       if (!config.version_ids.length) definitions.splice(0, 2);
     } else {
       definitions.splice(2, 2, ["submit_reading", "提交所有所选资料的结构化阅读结果。每篇资料必须分别提供全部六个字段；引文精确来自本次已读取原文。", readingSchema(config.version_ids, config.purpose === "comparison")]);
@@ -67,13 +70,15 @@ try {
     ["read_impact", "读取固定变更说明、新旧材料节选和所选原稿；不能扩展范围。", Type.Object({}, { additionalProperties: false })],
     ["submit_impact", "提交可能相关位置；不修改正文，不确认作者处理。", impactSchema(config.block_version_ids)]);
   let failed = false;
+  const submissionTool = config.purpose === "review" ? "submit_review"
+    : config.purpose === "expression" ? "submit_expression" : undefined;
   let submitted = false;
   let usageKnown = false;
   const tools: AgentTool[] = definitions.map(([name, description, parameters]) => ({
     name, label: name, description, parameters, executionMode: "sequential", replay: "never",
     async execute(_id, args) {
       const result = await rpc("tool", { name, args });
-      if (name === "submit_review" && result?.status === "staged") submitted = true;
+      if (name === submissionTool && result?.status === "staged") submitted = true;
       if (["submit_reading", "submit_review", "submit_expression", "submit_feedback", "submit_impact"].includes(name) && result?.status === "rejected") {
         return { content: [{ type: "text", text: JSON.stringify(result) }], details: {}, isError: true };
       }
@@ -91,7 +96,7 @@ try {
         timeoutMs: config.request_timeout_ms ?? 30_000,
         maxTokens: config.max_tokens ?? 2048, temperature: 0,
         // 阅读一次提交全部资料；避免供应商在同一响应中反复生成完整提交。
-        onPayload: config.purpose === "review"
+        onPayload: submissionTool
           ? payload => ({ ...(payload as Record<string, unknown>), tool_choice: "required" })
           : ["reading", "comparison"].includes(config.purpose)
           ? payload => ({ ...(payload as Record<string, unknown>), parallel_tool_calls: false })
@@ -131,10 +136,11 @@ try {
     }
   });
   await agent.prompt(config.prompt);
-  if (config.purpose === "review" && !failed && !submitted) {
+  if (submissionTool && !failed && !submitted) {
     // 部分兼容服务不执行 tool_choice；只补一次协议提示，调用预算仍由业务端控制。
     await rpc("validation_error", { reason: "missing_submission" });
-    await agent.prompt("已有读取结果仍有效。请调用 submit_review 提交诊断，不要输出普通文字。没有具体问题时 findings 为空；不要新增问题凑数，也不要重复读取已有内容。");
+    const list = config.purpose === "review" ? "findings" : "suggestions";
+    await agent.prompt(`已有读取结果仍有效。请调用 ${submissionTool} 提交结果，不要输出普通文字。没有具体问题时 ${list} 为空；不要新增问题凑数，也不要重复读取已有内容。`);
   }
   await rpc("done", { success: !failed && !agent.state.errorMessage });
 } catch {

@@ -1,9 +1,8 @@
 import { Type } from "typebox";
 export function expressionSchema(blockIds: string[]) {
   return Type.Object({
-    summary: Type.String({ minLength: 1, maxLength: 1000 }),
     suggestions: Type.Array(Type.Object({
-      block_version_id: Type.Union(blockIds.map(id => Type.Literal(id))),
+      block_version_id: Type.Union(blockIds.map(id => Type.Literal(id)), { description: "只用 read_manuscript.blocks 的正文版本编号；不能填资料片段编号" }),
       quote: Type.String({ minLength: 1, maxLength: 1200, description: "逐字复制 read_manuscript 对应块的原句，不是文献原文" }),
       occurrence: Type.Integer({ minimum: 1, maximum: 10000 }),
       replacement: Type.String({ minLength: 1, maxLength: 1200, description: "仅改善已有文字表达；实质修改保留原句，由作者自行处理" }),

@@ -2,6 +2,13 @@ from django.urls import path
 
 from core.accounts import LogoutView, SessionView
 from core.ai_views import AITaskView, AITraceView
+from core.expression_views import (
+    ExpressionTaskView,
+    SuggestionDecisionView,
+    SuggestionDetailView,
+    SuggestionListView,
+    SuggestionPreviewView,
+)
 from core.job_views import JobControlView, JobDetailView, JobListView
 from core.library_views import (
     BibliographyView,
@@ -85,6 +92,20 @@ urlpatterns = [
         ManuscriptImportPreviewView.as_view(),
     ),
     path("api/v1/projects/<uuid:project_id>/ai-tasks/", AITaskView.as_view()),
+    path("api/v1/projects/<uuid:project_id>/expressions/tasks/", ExpressionTaskView.as_view()),
+    path("api/v1/projects/<uuid:project_id>/suggestions/", SuggestionListView.as_view()),
+    path(
+        "api/v1/projects/<uuid:project_id>/suggestions/<uuid:suggestion_id>/",
+        SuggestionDetailView.as_view(),
+    ),
+    path(
+        "api/v1/projects/<uuid:project_id>/suggestions/<uuid:suggestion_id>/decision/",
+        SuggestionDecisionView.as_view(),
+    ),
+    path(
+        "api/v1/projects/<uuid:project_id>/suggestions/<uuid:suggestion_id>/preview/",
+        SuggestionPreviewView.as_view(),
+    ),
     path("api/v1/projects/<uuid:project_id>/reviews/", ReviewListView.as_view()),
     path("api/v1/projects/<uuid:project_id>/reviews/tasks/", ReviewTaskView.as_view()),
     path("api/v1/projects/<uuid:project_id>/reviews/<uuid:review_id>/", ReviewDetailView.as_view()),

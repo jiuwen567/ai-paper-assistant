@@ -6,7 +6,7 @@ import { expect, test as base, type APIRequestContext, type Page } from "@playwr
 
 type Accounts = { prefix: string; owner: string; reviewer: string; reviewerId: number; password: string; otherId: string };
 const root = fileURLToPath(new URL("../../..", import.meta.url));
-function fixtureData(action: "create" | "cleanup" | "binding" | "ai" | "reading" | "review", prefix: string, options: Record<string, unknown> = {}) {
+function fixtureData(action: "create" | "cleanup" | "binding" | "ai" | "reading" | "review" | "expression", prefix: string, options: Record<string, unknown> = {}) {
   return execFileSync("uv", ["run", "python", "services/backend/core/tests/browser_data.py"], {
     cwd: root, input: JSON.stringify({ action, prefix, ...options }), encoding: "utf-8",
     env: { ...process.env, PYTHONPATH: "services/backend" },
@@ -30,6 +30,84 @@ async function mutate(api: APIRequestContext, path: string, method: string, data
   const session = await (await api.get("/api/v1/auth/session/")).json();
   return api.fetch(`/api/v1/${path}`, { method, data, headers: { "X-CSRFToken": session.csrf_token } });
 }
+
+test("表达建议差异、编辑采纳、引用和旧稿冲突", async ({ page, accounts }, testInfo) => {
+  test.setTimeout(90000);
+  await page.goto("/"); await login(page, accounts.owner, accounts.password);
+  await page.getByRole("button", { name: "创建项目" }).click();
+  await page.getByLabel("项目名称", { exact: true }).fill("表达验收");
+  await page.getByRole("button", { name: "创建", exact: true }).click();
+  await page.getByLabel("规则来源", { exact: true }).fill("自制规则");
+  await page.getByLabel("来源版本", { exact: true }).fill("v1");
+  await page.getByLabel("已核对学校或课程规则").check();
+  await page.getByRole("checkbox", { name: "表达建议", exact: true }).check();
+  await page.getByRole("button", { name: "保存规则新版本" }).click();
+  await expect(page.getByRole("heading", { name: "AI 辅助规则 · v2" })).toBeVisible();
+  const manuscript = page.getByRole("region", { name: "作者原稿", exact: true });
+  await manuscript.getByRole("button", { name: "添加章节", exact: true }).click();
+  await manuscript.getByLabel("标题 1", { exact: true }).fill("方法");
+  await manuscript.getByRole("button", { name: "添加正文块", exact: true }).click();
+  await manuscript.getByLabel("正文块 2", { exact: true }).fill("本研究对样本进行了观察。");
+  await manuscript.getByRole("button", { name: "保存原稿新版本", exact: true }).click();
+  await expect(manuscript.getByRole("heading", { name: "作者原稿 · v1", exact: true })).toBeVisible();
+  const materials = page.getByRole("region", { name: "材料", exact: true });
+  await materials.getByLabel("材料名称", { exact: true }).fill("表达自制依据");
+  await materials.locator('input[type="file"]').setInputFiles({ name: "expression.txt", mimeType: "text/plain", buffer: Buffer.from("软件验收用记录：观察样本，未外推结论。") });
+  await materials.getByRole("button", { name: "上传材料", exact: true }).click();
+  await materials.getByRole("button", { name: "查看原文 v1", exact: true }).click();
+  const reader = materials.getByRole("region", { name: "原文定位", exact: true });
+  await reader.getByRole("button", { name: "解析材料", exact: true }).click();
+  await expect(reader.getByRole("button", { name: "解析 #1 · 解析成功", exact: true })).toBeVisible();
+  const panel = page.getByRole("region", { name: "表达建议", exact: true });
+  await panel.getByRole("button", { name: "刷新表达区" }).click();
+  await panel.getByLabel("建议原稿块", { exact: true }).selectOption({ label: "块 2：本研究对样本进行了观察。" });
+  await panel.locator("summary").filter({ hasText: "选择表达依据" }).click();
+  await panel.getByRole("checkbox", { name: /表达自制依据/ }).check();
+  await panel.getByRole("button", { name: "生成表达建议", exact: true }).click();
+  await expect(panel.getByRole("alert")).toContainText("配置生成模型");
+  await page.route("**/expressions/tasks/", async route => {
+    const created = JSON.parse(fixtureData("expression", accounts.prefix, { payload: route.request().postDataJSON() }));
+    await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify(created.task) });
+  });
+  await panel.getByRole("button", { name: "生成表达建议", exact: true }).click();
+  const card = panel.getByRole("article", { name: "表达建议：本研究对样本进行了观察。", exact: true });
+  await expect(card).toBeVisible();
+  await expect(card.getByLabel("文字差异").locator("del").first()).toBeVisible();
+  await expect(card.getByRole("button", { name: "接受建议", exact: true })).toBeDisabled();
+  await card.locator("summary").filter({ hasText: "相关依据" }).click();
+  await card.getByRole("button", { name: "回查表达依据 1" }).click();
+  await expect(card.getByRole("region", { name: "原文上下文" })).toContainText("未外推结论");
+  await card.getByRole("button", { name: "编辑建议", exact: true }).click();
+  await card.getByLabel("作者编辑", { exact: true }).fill("本研究已观察样本。");
+  await card.getByRole("button", { name: "查看编辑差异" }).click();
+  await card.getByRole("checkbox", { name: "已核对原意、数据、条件和依据，确认只是表达修改" }).check();
+  await card.getByRole("button", { name: "编辑后接受", exact: true }).click();
+  await expect(card.getByRole("heading", { name: "原稿 v1 · 编辑后接受", exact: true })).toBeVisible();
+  await expect(card).toContainText("已生成原稿 v2");
+  await manuscript.getByRole("button", { name: "加载最新原稿" }).click();
+  await expect(manuscript.getByLabel("正文块 2", { exact: true })).toHaveValue("本研究已观察样本。");
+  await panel.getByRole("button", { name: "生成表达建议", exact: true }).click();
+  const stale = panel.getByRole("article", { name: "表达建议：本研究已观察样本。", exact: true });
+  await expect(stale).toBeVisible();
+  const project = (await (await page.request.get("/api/v1/projects/")).json()).results[0];
+  const current = await (await page.request.get(`/api/v1/projects/${project.id}/manuscript/`)).json();
+  expect((await mutate(page.request, `projects/${project.id}/manuscript/`, "PUT", { version: current.version, request_key: randomUUID(), research: current.research,
+    blocks: current.blocks.map((block: { id: string; text: string; heading_level: number }) => ({ id: block.id, heading_level: block.heading_level, text: block.heading_level ? block.text : "作者在另一端保存的新稿。" })),
+  })).status()).toBe(200);
+  await stale.getByLabel("决定原因", { exact: true }).fill("当前窗口的处理草稿");
+  await stale.getByRole("checkbox", { name: "已核对原意、数据、条件和依据，确认只是表达修改" }).check();
+  await stale.getByRole("button", { name: "接受建议", exact: true }).click();
+  await expect(stale.getByRole("alert")).toContainText("旧建议不能覆盖新稿");
+  await expect(stale.getByLabel("决定原因", { exact: true })).toHaveValue("当前窗口的处理草稿");
+  await stale.getByRole("button", { name: "重新加载建议", exact: true }).click();
+  await expect(stale.getByRole("button", { name: "接受建议", exact: true })).toBeDisabled();
+  await stale.getByRole("button", { name: "拒绝建议", exact: true }).click();
+  await expect(stale.getByRole("heading", { name: "原稿 v2 · 已拒绝", exact: true })).toBeVisible();
+  const final = await (await page.request.get(`/api/v1/projects/${project.id}/manuscript/`)).json();
+  expect(final.version).toBe(3); expect(final.blocks[1].text).toBe("作者在另一端保存的新稿。");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+  await card.screenshot({ path: testInfo.outputPath("expression-decision.png") });
+});
 
 test("原稿诊断固定位置、来源范围、作者判断与修改后复查", async ({ page, accounts }, testInfo) => {
   test.setTimeout(90000);

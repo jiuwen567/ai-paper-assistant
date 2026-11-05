@@ -20,9 +20,17 @@ from django.test import override_settings  # noqa: E402
 from rest_framework.test import APIClient  # noqa: E402
 
 from core.ai_jobs import AIRun  # noqa: E402
+from core.expressions import EXPRESSION_PROMPT  # noqa: E402
 from core.health import s3_client  # noqa: E402
 from core.library import default_bibliography  # noqa: E402
-from core.models import Job, MaterialVersion, Project, ProjectPolicy, ReviewRecord  # noqa: E402
+from core.models import (  # noqa: E402
+    ExpressionSuggestion,
+    Job,
+    MaterialVersion,
+    Project,
+    ProjectPolicy,
+    ReviewRecord,
+)
 from core.reviews import REVIEW_PROMPT  # noqa: E402
 from core.tests.reading_samples import SAMPLES  # noqa: E402
 from core.tests.test_manuscripts import payload, save  # noqa: E402
@@ -62,15 +70,41 @@ CASES = [
 ]
 
 
+EXPRESSION_CASES = [
+    (
+        "concise",
+        ["本研究对样本进行了观察，并对记录进行了整理。"],
+        None,
+        "可简化重复的动词结构，不增加研究事实。",
+    ),
+    (
+        "conditions",
+        [
+            "在 25 摄氏度、pH 7 的模拟条件下，催化剂甲的平均速率为 0.8 mmol/(L·min)。"
+            "本研究未测试长期稳定性，不外推到实际装置。"
+        ],
+        0,
+        "如提出表达建议，必须保留数值、术语、模拟条件、否定和适用范围。",
+    ),
+    (
+        "missing_evidence",
+        ["材料 Q 的相关研究证明，该材料已在实际生产中显著提高了加工效率。"],
+        2,
+        "不得为了修补依据不足而编造实验或结论；涉及实质修改应交由作者处理。",
+    ),
+]
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", required=True)
     parser.add_argument("--base-url", required=True)
     parser.add_argument("--output", required=True)
+    parser.add_argument("--purpose", choices=["review", "expression"], default="review")
     args = parser.parse_args()
     if not settings.DEBUG:
         raise SystemExit("仅允许在 DEBUG 开发环境运行自制评测。")
-    prefix = "review-eval-" + uuid4().hex
+    prefix = args.purpose + "-eval-" + uuid4().hex
     user = get_user_model().objects.create_user(username=prefix)
     project = Project.objects.create(owner=user, name=prefix)
     ProjectPolicy.objects.create(
@@ -80,7 +114,7 @@ def main():
         verified=True,
         source="自制公开评测",
         source_version="v1",
-        allowed_actions=["review"],
+        allowed_actions=[args.purpose],
     )
     client = APIClient(HTTP_HOST="localhost")
     client.force_authenticate(user)
@@ -112,7 +146,9 @@ def main():
                 execute_job(str(run.job_id))
                 assert Job.objects.get(pk=run.job_id).status == "succeeded"
                 versions.append(str(version.pk))
-            for number, (name, texts, source_index, expected) in enumerate(CASES):
+            for number, (name, texts, source_index, expected) in enumerate(
+                CASES if args.purpose == "review" else EXPRESSION_CASES
+            ):
                 manuscript = save(
                     context,
                     payload(
@@ -127,7 +163,10 @@ def main():
                 start = time.monotonic()
                 with transaction.atomic():
                     response = client.post(
-                        path(project, "reviews/tasks/"),
+                        path(
+                            project,
+                            "reviews/tasks/" if args.purpose == "review" else "expressions/tasks/",
+                        ),
                         {
                             "idempotency_key": str(uuid4()),
                             "policy_version": 1,
@@ -158,7 +197,9 @@ def main():
                     "expected": expected,
                     "model": args.model,
                     "prompt_version": job.input_snapshot["model"]["prompt_version"],
-                    "prompt_characters": len(REVIEW_PROMPT),
+                    "prompt_characters": len(
+                        REVIEW_PROMPT if args.purpose == "review" else EXPRESSION_PROMPT
+                    ),
                     "status": job.status,
                     "error_code": job.error_code,
                     "elapsed_seconds": round(time.monotonic() - start, 2),
@@ -167,12 +208,16 @@ def main():
                             "number", "status", "usage", "elapsed_ms", "error_code"
                         )
                     ),
-                    "summary": result.summary if result else None,
+                    "summary": result.summary if result else (job.output or {}).get("summary"),
                     "source_checks": result.source_checks if result else None,
                     "findings": [finding.model_output for finding in result.findings.all()]
                     if result
                     else None,
                 }
+                if args.purpose == "expression":
+                    report["suggestions"] = [
+                        item.model_output for item in ExpressionSuggestion.objects.filter(job=job)
+                    ]
                 reports.append(report)
                 Path(args.output).write_text(json.dumps(reports, ensure_ascii=False, indent=2))
                 print(

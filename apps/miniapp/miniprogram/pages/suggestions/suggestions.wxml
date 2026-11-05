@@ -1,0 +1,30 @@
+<scroll-view scroll-y type="list" class="page-scroll"><view class="page">
+  <button bindtap="back">返回项目</button><view class="title">表达建议</view>
+  <view wx:if="{{error}}" class="error" role="alert">{{error}}</view><view wx:if="{{message}}">{{message}}</view><view wx:if="{{loading}}">处理中…</view>
+  <picker range="{{stateLabels}}" value="{{stateIndex}}" bindchange="changeState" disabled="{{loading}}"><view>建议状态：{{stateLabels[stateIndex]}}</view></picker>
+  <button disabled="{{loading}}" bindtap="refresh">刷新建议</button><view wx:if="{{project && !loading && !suggestions.length}}">暂无符合条件的建议。</view>
+  <view wx:for="{{suggestions}}" wx:key="id" class="card"><button disabled="{{loading}}" data-id="{{item.id}}" bindtap="select">原稿 v{{item.manuscript_version}} · {{item.label}}</button><text class="source-text">{{item.model_output.quote}}</text></view>
+  <view class="actions"><button wx:if="{{previous}}" disabled="{{loading}}" bindtap="previousPage">上一页建议</button><button wx:if="{{next}}" disabled="{{loading}}" bindtap="nextPage">下一页建议</button></view>
+  <view wx:if="{{selected}}" class="card">
+    <view class="title">原稿 v{{selected.manuscript_version}} · {{selected.label}}</view>
+    <view>原句</view><text class="source-text" user-select>{{selected.model_output.quote}}</text>
+    <view>固定版本原稿</view><view class="source-text"><text>{{originalBefore}}</text><text class="mark">{{selected.model_output.quote}}</text><text>{{originalAfter}}</text></view>
+    <block wx:if="{{selected.model_output.kind === 'expression'}}"><view>建议</view><text class="source-text" user-select>{{selected.model_output.replacement}}</text><view class="diff" aria-label="文字差异"><block wx:for="{{selected.diff}}" wx:key="index"><text wx:if="{{item.kind === 'equal'}}">{{item.before}}</text><block wx:else><text wx:if="{{item.before}}" class="removed">{{item.before}}</text><text wx:if="{{item.after}}" class="added">{{item.after}}</text></block></block></view></block>
+    <view>{{selected.model_output.reason}}</view><view wx:for="{{selected.model_output.guard_reasons}}" wx:key="*this">{{item}}</view>
+    <view wx:for="{{selected.model_output.citations}}" wx:key="chunk_id"><view>相关依据</view><text class="source-text" user-select>{{item.quote}}</text><button disabled="{{loading}}" data-id="{{item.chunk_id}}" bindtap="locate">回查表达依据</button></view>
+    <view wx:if="{{selected.input_changed && !selected.decision}}">原稿或依据已变化，旧建议不能覆盖新稿。</view>
+    <view wx:if="{{selected.decision}}"><view wx:if="{{selected.decision.manuscript_version}}">已生成原稿 v{{selected.decision.manuscript_version}}</view><text wx:if="{{selected.decision.action === 'edited'}}" class="source-text">作者采用：{{selected.decision.text}}</text><view wx:if="{{selected.decision.reason}}">作者原因：{{selected.decision.reason}}</view></view>
+    <block wx:elif="{{project.role === 'author'}}">
+      <block wx:if="{{canAccept}}"><button bindtap="toggleEdit" disabled="{{loading}}">{{editing ? '取消编辑建议' : '编辑建议'}}</button>
+        <block wx:if="{{editing}}"><view>作者编辑</view><textarea aria-label="作者编辑" value="{{text}}" maxlength="1200" bindinput="changeText" disabled="{{loading}}" /><button disabled="{{loading}}" bindtap="previewEdit">查看编辑差异</button><view wx:if="{{preview}}" class="diff"><block wx:for="{{preview.diff}}" wx:key="index"><text wx:if="{{item.kind === 'equal'}}">{{item.before}}</text><block wx:else><text wx:if="{{item.before}}" class="removed">{{item.before}}</text><text wx:if="{{item.after}}" class="added">{{item.after}}</text></block></block></view><view wx:for="{{preview.guard_reasons}}" wx:key="*this">{{item}}</view></block>
+        <checkbox-group bindchange="changeConfirmed"><label><checkbox value="confirmed" checked="{{confirmed}}" disabled="{{loading}}" />已核对原意、数据、条件和依据，确认只是表达修改</label></checkbox-group>
+      </block>
+      <view>决定原因</view><textarea aria-label="决定原因" value="{{reason}}" maxlength="2000" bindinput="changeReason" disabled="{{loading}}" />
+      <button wx:if="{{!editing}}" disabled="{{loading || !canAccept || !confirmed || selected.model_output.guard_reasons.length}}" data-action="accepted" bindtap="decide">接受建议</button>
+      <button wx:else disabled="{{loading || !canAccept || !confirmed || !preview || preview.text !== text || preview.guard_reasons.length}}" data-action="edited" bindtap="decide">编辑后接受</button>
+      <button disabled="{{loading}}" data-action="rejected" bindtap="decide">拒绝建议</button>
+    </block>
+    <button disabled="{{loading}}" bindtap="reload">重新加载建议</button>
+    <view wx:if="{{context}}"><view>{{contextPosition}}</view><text wx:for="{{context.context}}" wx:key="id" class="source-text" user-select>{{item.text}}</text></view>
+  </view>
+</view></scroll-view>

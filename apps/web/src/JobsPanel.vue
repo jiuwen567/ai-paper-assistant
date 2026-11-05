@@ -77,7 +77,7 @@ onUnmounted(() => { mounted = false; clearTimeout(timer); });
     <ul class="project-list">
       <li v-for="job in jobs?.results" :key="job.id">
         <details>
-          <summary>{{ job.kind === "parse" ? "材料解析" : job.kind === "index" ? "检索索引" : job.kind === "ai" ? job.input_snapshot.purpose === 'review' ? '原稿诊断' : job.input_snapshot.purpose === 'comparison' ? '文献比较' : job.input_snapshot.purpose === 'reading' ? '文献阅读' : 'AI 摘记' : "字数统计" }} · {{ labels[job.status] }} · {{ job.progress }}%</summary>
+          <summary>{{ job.kind === "parse" ? "材料解析" : job.kind === "index" ? "检索索引" : job.kind === "ai" ? job.input_snapshot.purpose === 'expression' ? '表达建议' : job.input_snapshot.purpose === 'review' ? '原稿诊断' : job.input_snapshot.purpose === 'comparison' ? '文献比较' : job.input_snapshot.purpose === 'reading' ? '文献阅读' : 'AI 摘记' : "字数统计" }} · {{ labels[job.status] }} · {{ job.progress }}%</summary>
           <p>{{ new Date(job.created_at).toLocaleString("zh-CN") }}</p>
           <p v-if="job.error_message" role="status">{{ job.error_message }}（{{ job.error_code }}）</p>
           <p v-if="job.output && job.kind === 'sample'">{{ job.output.characters }} 字 · 输入版本 {{ job.output.source_version }}</p>

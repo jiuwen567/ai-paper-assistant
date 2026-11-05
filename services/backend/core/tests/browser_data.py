@@ -50,7 +50,7 @@ def main():
             from core.wechat import login_wechat
 
             print(json.dumps(login_wechat(prefix), default=str))
-        elif data["action"] in ["ai", "reading", "review"]:
+        elif data["action"] in ["ai", "reading", "review", "expression"]:
             # 浏览器展示验收走真实 Pi SDK，供应商仅使用本机受控协议样例。
             from unittest.mock import patch
             from uuid import uuid4
@@ -77,7 +77,17 @@ def main():
                 "policy_version": policy.version,
                 "version_ids": [str(source.pk) for source in available],
             }
-            if data["action"] == "review":
+            if data["action"] == "expression":
+                from core.manuscripts import revision_data
+                from core.models import Manuscript
+                from core.tests.test_expressions import output_for, respond_with
+
+                manuscript = revision_data(Manuscript.objects.get(project=project).current_revision)
+                source = (available[0], available[0].parses.get(job__status="succeeded"))
+                respond = respond_with(output_for(manuscript, source), source)
+                endpoint = "expressions/tasks/"
+                body = data["payload"]
+            elif data["action"] == "review":
                 from core.manuscripts import revision_data
                 from core.tests.test_reviews import finding_output, respond_with
 
@@ -135,6 +145,7 @@ def main():
                     patch("core.ai_views.dispatch"),
                     patch("core.reading_views.dispatch"),
                     patch("core.review_views.dispatch"),
+                    patch("core.expression_views.dispatch"),
                 ):
                     response = client.post(
                         f"/api/v1/projects/{project.pk}/{endpoint}", body, format="json"

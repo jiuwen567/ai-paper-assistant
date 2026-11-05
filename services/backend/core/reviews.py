@@ -187,6 +187,25 @@ class ReviewInput(StrictSerializer):
     findings = FindingInput(many=True, max_length=10)
 
 
+def locate_quote(versions, value):
+    pk = str(value["block_version_id"])
+    if pk not in versions:
+        raise ParseFailure("review_block_scope", "问题引用了审阅范围外的原稿。")
+    text = versions[pk].text
+    quote, start = value["quote"], -1
+    for _ in range(value["occurrence"]):
+        start = text.find(quote, start + 1)
+        if start < 0:
+            raise ParseFailure("review_quote_invalid", "问题引文与固定原稿不符。")
+    return {
+        "block_version_id": pk,
+        "block_id": str(versions[pk].block_id),
+        "quote": quote,
+        "start": start,
+        "end": start + len(quote),
+    }
+
+
 def validate_review(job, raw, read_ids, manuscript_read):
     serializer = ReviewInput(data=raw)
     if not serializer.is_valid():
@@ -206,34 +225,18 @@ def validate_review(job, raw, read_ids, manuscript_read):
     }
     sources = {item["chunk_id"]: item for item in job.input_snapshot["sources"]}
 
-    def locate(value):
-        pk = str(value["block_version_id"])
-        if pk not in versions:
-            raise ParseFailure("review_block_scope", "问题引用了审阅范围外的原稿。")
-        text = versions[pk].text
-        quote, start = value["quote"], -1
-        for _ in range(value["occurrence"]):
-            start = text.find(quote, start + 1)
-            if start < 0:
-                raise ParseFailure("review_quote_invalid", "问题引文与固定原稿不符。")
-        return {
-            "block_version_id": pk,
-            "block_id": str(versions[pk].block_id),
-            "quote": quote,
-            "start": start,
-            "end": start + len(quote),
-        }
-
     seen = set()
     for finding in result["findings"]:
-        claim = locate(finding)
+        claim = locate_quote(versions, finding)
         signature = (claim["block_version_id"], claim["start"], claim["end"], finding["category"])
         if signature in seen:
             raise ParseFailure("review_duplicate_finding", "诊断结果重复包含同一问题。")
         seen.add(signature)
         finding.update(claim)
         finding.pop("occurrence")
-        finding["related_blocks"] = [locate(item) for item in finding["related_blocks"]]
+        finding["related_blocks"] = [
+            locate_quote(versions, item) for item in finding["related_blocks"]
+        ]
         for evidence in finding["research_evidence"]:
             if evidence["quote"] not in snapshot["research"][evidence["field"]]:
                 raise ParseFailure("review_research_invalid", "作者研究说明引文不符。")

@@ -5,7 +5,7 @@
   "scripts": {
     "check": "tsc --noEmit",
     "test:e2e": "node tests/acceptance.cjs",
-    "test": "node --test tests/session.cjs tests/library.cjs tests/suggestions.cjs"
+    "test": "node --test tests/session.cjs tests/library.cjs tests/suggestions.cjs tests/feedback.cjs"
   },
   "devDependencies": {
     "miniprogram-api-typings": "5.2.3",

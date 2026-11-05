@@ -5,6 +5,7 @@ import ReadingPanel from "./ReadingPanel.vue";
 import ReviewPanel from "./ReviewPanel.vue";
 import ExpressionPanel from "./ExpressionPanel.vue";
 import DisclosurePanel from "./DisclosurePanel.vue";
+import FeedbackPanel from "./FeedbackPanel.vue";
 import ManuscriptPanel from "./ManuscriptPanel.vue";
 import JobsPanel from "./JobsPanel.vue";
 import MaterialsPanel from "./MaterialsPanel.vue";
@@ -26,6 +27,7 @@ const projectPage = ref(1);
 const selected = ref<Project | null>(null);
 const manuscriptDirty = ref(false);
 const disclosureDirty = ref(false);
+const feedbackDirty = ref(false);
 const creating = ref(false);
 const members = ref<Page<Member> | null>(null);
 const memberPage = ref(1);
@@ -147,7 +149,7 @@ async function signIn() {
   await loadProjects();
 }
 async function signOut() {
-  if ((manuscriptDirty.value || disclosureDirty.value) && !window.confirm("仍有未保存修改，确认退出？")) return;
+  if ((manuscriptDirty.value || disclosureDirty.value || feedbackDirty.value) && !window.confirm("仍有未保存修改，确认退出？")) return;
   await logout();
   user.value = null;
   selected.value = null;
@@ -157,7 +159,7 @@ async function signOut() {
   creating.value = false;
 }
 async function returnToList() {
-  if ((manuscriptDirty.value || disclosureDirty.value) && !window.confirm("放弃当前未保存修改并返回列表？")) return;
+  if ((manuscriptDirty.value || disclosureDirty.value || feedbackDirty.value) && !window.confirm("放弃当前未保存修改并返回列表？")) return;
   selected.value = null; creating.value = false;
   await loadProjects();
 }
@@ -236,6 +238,7 @@ onMounted(() => perform(initialize));
           <ReviewPanel :key="selected.id" :project="selected" @access-lost="cause => perform(async () => { throw cause; })" />
           <ExpressionPanel :key="selected.id" :project="selected" @access-lost="cause => perform(async () => { throw cause; })" />
           <DisclosurePanel :key="selected.id" :project="selected" @dirty-change="disclosureDirty = $event" @access-lost="cause => perform(async () => { throw cause; })" />
+          <FeedbackPanel :key="selected.id" :project="selected" @dirty-change="feedbackDirty = $event" @access-lost="cause => perform(async () => { throw cause; })" />
           <JobsPanel :key="selected.id" :project="selected" @access-lost="cause => perform(async () => { throw cause; })" />
           <form class="editor" @submit.prevent="perform(savePolicy)">
             <h2>AI 辅助规则 · v{{ selected.policy.version }}</h2>

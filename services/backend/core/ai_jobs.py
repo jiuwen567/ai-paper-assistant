@@ -58,6 +58,7 @@ def model_configuration(purpose="note"):
             "comparison": "reading-v1",
             "review": "review-v1",
             "expression": "expression-v1",
+            "feedback": "feedback-v1",
         }.get(purpose, PROMPT_VERSION),
         "runtime": "pi-1.5.0",
     }
@@ -111,10 +112,15 @@ def valid_locked(job, generation):
             and sources_snapshot(
                 job.project_id,
                 job.input_snapshot["version_ids"],
-                allow_empty=job.input_snapshot.get("purpose") in ["review", "expression"],
+                allow_empty=job.input_snapshot.get("purpose")
+                in ["review", "expression", "feedback"],
             )
             == job.input_snapshot["sources"]
         )
+        if unchanged and job.input_snapshot.get("purpose") == "feedback":
+            from core.feedback import unchanged as feedback_unchanged
+
+            unchanged = feedback_unchanged(job)
         if unchanged and job.input_snapshot.get("purpose") in ["review", "expression"]:
             from core.reviews import unchanged as manuscript_unchanged
 
@@ -185,6 +191,8 @@ class AIRun:
         self.reading = None
         self.review = None
         self.expression = None
+        self.feedback = None
+        self.feedback_read = False
         self.manuscript_read = False
 
     @transaction.atomic
@@ -240,8 +248,9 @@ class AIRun:
             is_reading = job.input_snapshot.get("purpose") in ["reading", "comparison"]
             is_review = job.input_snapshot.get("purpose") == "review"
             is_expression = job.input_snapshot.get("purpose") == "expression"
+            is_feedback = job.input_snapshot.get("purpose") == "feedback"
             is_manuscript = is_review or is_expression
-            structured = is_reading or is_manuscript
+            structured = is_reading or is_manuscript or is_feedback
             if (
                 self.call is not None
                 or self.calls == 0
@@ -250,6 +259,8 @@ class AIRun:
                 raise ParseFailure("tool_call_limit", "工具调用达到上限或顺序异常。")
             self.tools += 1
             name = message.get("name")
+            if is_feedback and name not in ["read_feedback", "submit_feedback"]:
+                raise ParseFailure("tool_denied", "反馈拆分只能读取已选意见和提交候选任务。")
             if (
                 is_manuscript
                 and not job.input_snapshot["version_ids"]
@@ -257,7 +268,35 @@ class AIRun:
             ):
                 raise ParseFailure("tool_denied", "未选择材料，不能调用资料工具。")
             details = {"name": name, "number": self.tools}
-            if is_manuscript and name == "read_manuscript":
+            if is_feedback and name == "read_feedback":
+                from core.feedback import read_feedback
+
+                if message.get("args") != {}:
+                    raise ParseFailure("tool_schema_invalid", "读取意见不接受范围扩展参数。")
+                result = read_feedback(job)
+                self.feedback_read = True
+            elif is_feedback and name == "submit_feedback":
+                from core.feedback import validate_split
+
+                try:
+                    candidate = validate_split(job, message.get("args"), self.feedback_read)
+                except ParseFailure as exc:
+                    if self.feedback is not None or exc.code not in {
+                        "feedback_quote_invalid",
+                        "feedback_duplicate",
+                    }:
+                        raise
+                    job.ai_events.create(
+                        generation=self.generation,
+                        kind="validation_error",
+                        details={"code": exc.code, "number": self.tools},
+                    )
+                    return {"status": "rejected", "code": exc.code, "message": exc.message}
+                if self.feedback is not None and self.feedback != candidate:
+                    raise ParseFailure("feedback_resubmitted", "重复提交了不同的候选任务。")
+                self.feedback = candidate
+                result = {"status": "staged"}
+            elif is_manuscript and name == "read_manuscript":
                 from core.reviews import read_manuscript
 
                 if message.get("args") != {}:
@@ -347,10 +386,20 @@ class AIRun:
             if (
                 message.get("success") is not True
                 or self.call
-                or not (self.proposals or self.reading or self.review or self.expression)
+                or not (
+                    self.proposals
+                    or self.reading
+                    or self.review
+                    or self.expression
+                    or self.feedback
+                )
             ):
                 raise ParseFailure("result_invalid", "模型未提交有效的待核对结果。")
-            if self.expression is not None:
+            if self.feedback is not None:
+                from core.feedback import publish_split
+
+                job.output = publish_split(job, self.feedback)
+            elif self.expression is not None:
                 from core.expressions import publish_expression
 
                 job.output = publish_expression(job, self.expression)
@@ -370,10 +419,11 @@ class AIRun:
         elif kind == "validation_error":
             if (
                 job.input_snapshot.get("purpose")
-                not in ["reading", "comparison", "review", "expression"]
+                not in ["reading", "comparison", "review", "expression", "feedback"]
                 or self.reading is not None
                 or self.review is not None
                 or self.expression is not None
+                or self.feedback is not None
                 or self.call is not None
                 or not self.calls
             ):
@@ -460,6 +510,15 @@ def execute_ai(job):
         + ", ".join(item["chunk_id"] for item in job.input_snapshot["sources"][:5]),
     }
     purpose = job.input_snapshot.get("purpose")
+    if purpose == "feedback":
+        from core.feedback import FEEDBACK_PROMPT
+
+        config.update(
+            purpose=purpose,
+            system_prompt=FEEDBACK_PROMPT,
+            max_tokens=4096,
+            prompt="先调用 read_feedback，再用 submit_feedback 提交候选任务。",
+        )
     if purpose in ["reading", "comparison", "review", "expression"]:
         from core.reading import READING_PROMPT
 

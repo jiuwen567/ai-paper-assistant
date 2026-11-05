@@ -3,7 +3,8 @@
     "pages/index/index",
     "pages/projects/projects",
     "pages/library/library",
-    "pages/suggestions/suggestions"
+    "pages/suggestions/suggestions",
+    "pages/feedback/feedback"
   ],
   "window": {
     "navigationBarTitleText": "Paper Assistant",

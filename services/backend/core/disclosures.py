@@ -6,11 +6,24 @@ from django.db.models import Prefetch
 
 from core.access import AI_ACTIONS
 from core.ai_jobs import digest
-from core.models import ExpressionSuggestion, Job, Manuscript, ModelCall, ReviewFinding
+from core.models import (
+    ExpressionSuggestion,
+    FeedbackCandidate,
+    Job,
+    Manuscript,
+    ModelCall,
+    ReviewFinding,
+)
 
 
 def pick(value, fields):
     return {field: value[field] for field in fields if field in value}
+
+
+def input_sources(job):
+    sources = job.input_snapshot.get("sources", [])
+    feedback_source = job.input_snapshot.get("feedback", {}).get("source")
+    return [*sources, feedback_source] if feedback_source else sources
 
 
 def usage_jobs(project_id):
@@ -26,6 +39,12 @@ def usage_jobs(project_id):
                 ).order_by("id"),
             ),
             Prefetch("review_record__findings", queryset=ReviewFinding.objects.order_by("id")),
+            Prefetch(
+                "feedback_candidates",
+                queryset=FeedbackCandidate.objects.select_related("decision__task")
+                .prefetch_related("decision__task__revisions__mentor_reports")
+                .order_by("id"),
+            ),
         )
         .order_by("created_at", "id")
     )
@@ -51,6 +70,11 @@ def call_data(call):
 
 def job_data(job):
     snapshot = job.input_snapshot
+    sources = input_sources(job)
+    version_ids = sorted(
+        set(snapshot.get("version_ids", []))
+        | {source["source_version_id"] for source in sources if source.get("source_version_id")}
+    )
     manuscript = snapshot.get("manuscript", {})
     reading = getattr(job, "reading_record", None)
     review = getattr(job, "review_record", None)
@@ -96,6 +120,23 @@ def job_data(job):
         if (job.kind == "ai" and job.status == "succeeded" and not snapshot.get("purpose"))
         else 0
     )
+    feedback_candidates = []
+    for candidate in job.feedback_candidates.all():
+        decision = getattr(candidate, "decision", None)
+        task = decision.task if decision else None
+        current = max(task.revisions.all(), key=lambda item: item.number) if task else None
+        feedback_candidates.append(
+            {
+                "id": str(candidate.pk),
+                "decision": decision.action if decision else None,
+                "task_id": str(task.pk) if task else None,
+                "task_version": current.number if current else None,
+                "status": current.status if current else None,
+                "mentor_report_ids": sorted(report.pk for report in current.mentor_reports.all())
+                if current
+                else [],
+            }
+        )
     return {
         "id": str(job.pk),
         "kind": job.kind,
@@ -118,9 +159,13 @@ def job_data(job):
             ],
         ),
         "input": {
-            "version_ids": snapshot.get("version_ids", []),
-            "source_count": len(snapshot.get("sources", [])),
-            "sources_digest": digest(snapshot.get("sources", [])),
+            "feedback_id": snapshot.get("feedback", {}).get("feedback_id"),
+            "feedback_source_chunk_id": (snapshot.get("feedback", {}).get("source") or {}).get(
+                "chunk_id"
+            ),
+            "version_ids": version_ids,
+            "source_count": len(sources),
+            "sources_digest": digest(sources),
             "manuscript_revision_id": manuscript.get("revision_id"),
             "manuscript_version": manuscript.get("version"),
             "blocks": [
@@ -134,6 +179,7 @@ def job_data(job):
         else None,
         "review": {"id": str(review.pk), "findings": findings} if review else None,
         "suggestions": suggestions,
+        "feedback_candidates": feedback_candidates,
         "notes": notes,
         "index": {"id": str(index.pk), "published": index.published_at is not None}
         if index
@@ -155,6 +201,13 @@ def facts_for(project):
         counts["review_findings"] += len(job["review"]["findings"]) if job["review"] else 0
         counts["expression_suggestions"] += len(job["suggestions"])
         counts["notes"] += job["notes"]
+        counts["feedback_candidates"] += len(job["feedback_candidates"])
+        counts["confirmed_tasks"] += sum(
+            item["decision"] == "accepted" for item in job["feedback_candidates"]
+        )
+        counts["completed_tasks"] += sum(
+            item["status"] == "completed" for item in job["feedback_candidates"]
+        )
         counts["accepted"] += sum(
             bool(item["decision"] and item["decision"]["action"] in ["accepted", "edited"])
             for item in job["suggestions"]
@@ -176,6 +229,9 @@ def facts_for(project):
         "notes",
         "accepted",
         "rejected",
+        "feedback_candidates",
+        "confirmed_tasks",
+        "completed_tasks",
     ]:
         summary.setdefault(field, 0)
     manuscript_version = (
@@ -201,6 +257,14 @@ def draft_for(facts):
             lines.append(
                 f"本地资料向量索引：创建 {counts['tasks']} 个任务，"
                 f"完成 {counts['published_tasks']} 个；未计入生成模型调用。"
+            )
+        elif purpose == "feedback":
+            lines.append(
+                f"反馈拆分：发起 {counts['calls']} 次模型调用，"
+                f"产出 {counts['feedback_candidates']} 条候选；"
+                f"作者确认 {counts['confirmed_tasks']} 项待办，"
+                f"标记完成 {counts['completed_tasks']} 项。"
+                "候选确认与作者完成不计入 AI 正文修改采纳。"
             )
         else:
             lines.append(

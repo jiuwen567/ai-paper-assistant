@@ -85,6 +85,7 @@ onUnmounted(() => { mounted = false; window.removeEventListener("beforeunload", 
     <template v-if="state">
       <p>发起模型调用 {{ state.summary.calls }} 次 · 表达建议 {{ state.summary.expression_suggestions }} 条 · 实际采纳 {{ state.summary.accepted }} 条</p>
       <p>阅读记录 {{ state.summary.reading_records }} 份 · 摘记 {{ state.summary.notes }} 条 · 诊断 {{ state.summary.review_findings }} 条</p>
+      <p v-if="state.summary.feedback_candidates">反馈候选 {{ state.summary.feedback_candidates }} 条 · 作者确认待办 {{ state.summary.confirmed_tasks }} 项 · 作者标记完成 {{ state.summary.completed_tasks }} 项（不计入正文采纳）</p>
       <p>仅记录系统内任务和明确保存的采纳。调用与产出不代表采纳；系统外使用由作者补充，不推算原创比例，不出具原创或学术合规证明。</p>
       <details><summary>按使用环节查看</summary><ul><li v-for="(counts, purpose) in state.purposes" :key="purpose">{{ purposeLabels[purpose] || purpose }}：任务 {{ counts.tasks }}，发起调用 {{ counts.calls }}，成功调用 {{ counts.successful_calls }}，发布结果的任务 {{ counts.published_tasks }}，实际采纳 {{ counts.accepted }}</li></ul></details>
       <p v-if="state.current">已保存清单 v{{ state.current.number }} · {{ state.stale ? '记录或稿件已变化，需重新核对' : state.current.verified ? '作者已核对' : '待作者核对' }}</p>

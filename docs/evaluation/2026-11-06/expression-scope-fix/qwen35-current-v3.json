@@ -1,0 +1,664 @@
+[
+  {
+    "case": "concise",
+    "input_manuscript": [
+      "本研究对样本进行了观察，并对记录进行了整理。"
+    ],
+    "selected_sources": {},
+    "tools": [
+      {
+        "name": "read_manuscript",
+        "args": {},
+        "response": {
+          "version": 1,
+          "blocks": [
+            {
+              "block_version_id": "8c617b38-0490-4e49-b639-22f996ea4e1c",
+              "text": "本研究对样本进行了观察，并对记录进行了整理。"
+            }
+          ]
+        }
+      },
+      {
+        "name": "submit_expression",
+        "args": {
+          "suggestions": [
+            {
+              "block_version_id": "8c617b38-0490-4e49-b639-22f996ea4e1c",
+              "citations": [],
+              "kind": "expression",
+              "occurrence": 1,
+              "quote": "本研究对样本进行了观察，并对记录进行了整理。",
+              "reason": "删除冗余动词'进行'，使表达更简洁",
+              "replacement": "本研究观察了样本，并整理了记录。"
+            }
+          ]
+        },
+        "response": {
+          "status": "staged"
+        }
+      }
+    ],
+    "expected": "可简化重复的动词结构，不增加研究事实。",
+    "model": "qwen3.5:4b",
+    "prompt_version": "expression-v3",
+    "prompt_characters": 974,
+    "status": "succeeded",
+    "error_code": "",
+    "elapsed_seconds": 7.97,
+    "calls": [
+      {
+        "number": 1,
+        "status": "succeeded",
+        "usage": {
+          "input": 1306,
+          "output": 76,
+          "cache_read": 0,
+          "cache_write": 0
+        },
+        "elapsed_ms": 1768,
+        "error_code": ""
+      },
+      {
+        "number": 2,
+        "status": "succeeded",
+        "usage": {
+          "input": 77,
+          "output": 333,
+          "cache_read": 1381,
+          "cache_write": 0
+        },
+        "elapsed_ms": 5727,
+        "error_code": ""
+      }
+    ],
+    "summary": "本次返回 1 条待作者核对的建议。仅针对所选正文，不代表研究内容已核实。",
+    "source_checks": null,
+    "findings": null,
+    "suggestions": [
+      {
+        "end": 22,
+        "kind": "expression",
+        "quote": "本研究对样本进行了观察，并对记录进行了整理。",
+        "start": 0,
+        "reason": "删除冗余动词'进行'，使表达更简洁",
+        "block_id": "0a850a0e-1ded-4fd4-b64f-73bc4e800141",
+        "citations": [],
+        "replacement": "本研究观察了样本，并整理了记录。",
+        "guard_reasons": [],
+        "block_version_id": "8c617b38-0490-4e49-b639-22f996ea4e1c"
+      }
+    ]
+  },
+  {
+    "case": "conditions",
+    "input_manuscript": [
+      "在 25 摄氏度、pH 7 的模拟条件下，催化剂甲的平均速率为 0.8 mmol/(L·min)。本研究未测试长期稳定性，不外推到实际装置。"
+    ],
+    "selected_sources": {
+      "9900d83b-a13c-4779-a56b-a98ffebb21bf": "source-1"
+    },
+    "tools": [
+      {
+        "name": "read_manuscript",
+        "args": {},
+        "response": {
+          "version": 2,
+          "blocks": [
+            {
+              "block_version_id": "a20de098-4954-44e2-b8be-a0b747aa1fca",
+              "text": "在 25 摄氏度、pH 7 的模拟条件下，催化剂甲的平均速率为 0.8 mmol/(L·min)。本研究未测试长期稳定性，不外推到实际装置。"
+            }
+          ]
+        }
+      },
+      {
+        "name": "read_evidence",
+        "args": {
+          "chunk_ids": [
+            "48dc7773-d368-4f04-ba3d-1192bf469573",
+            "759d60ff-0dfa-4ddd-aeb1-53c0a25ff6c8",
+            "9cccb9d9-76f5-4ed3-8295-8e2295f1cfcf",
+            "c4557175-b2fa-438c-bc12-6583c95c3b5c",
+            "e830a8a1-32aa-4d01-96e4-ee007b2883b8"
+          ]
+        },
+        "response": [
+          {
+            "chunk_id": "48dc7773-d368-4f04-ba3d-1192bf469573",
+            "source_version_id": "9900d83b-a13c-4779-a56b-a98ffebb21bf",
+            "source_scope": "research",
+            "text": "结果：平均速率 0.8 mmol/(L·min)，标准差 0.1 mmol/(L·min)；无催化剂对照为 0.2 mmol/(L·min)。",
+            "anchor": {
+              "end": 71,
+              "kind": "txt",
+              "line": 4,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "759d60ff-0dfa-4ddd-aeb1-53c0a25ff6c8",
+            "source_version_id": "9900d83b-a13c-4779-a56b-a98ffebb21bf",
+            "source_scope": "research",
+            "text": "实验条件：25 摄氏度，初始底物浓度 1 mmol/L，pH 7，三次重复。",
+            "anchor": {
+              "end": 38,
+              "kind": "txt",
+              "line": 3,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "9cccb9d9-76f5-4ed3-8295-8e2295f1cfcf",
+            "source_version_id": "9900d83b-a13c-4779-a56b-a98ffebb21bf",
+            "source_scope": "research",
+            "text": "研究对象：催化剂甲对底物 Z 的模拟转化。方法：批次反应，测量前 10 分钟的产物浓度。",
+            "anchor": {
+              "end": 44,
+              "kind": "txt",
+              "line": 2,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "c4557175-b2fa-438c-bc12-6583c95c3b5c",
+            "source_version_id": "9900d83b-a13c-4779-a56b-a98ffebb21bf",
+            "source_scope": "research",
+            "text": "软件验收用虚构实验甲，以下不是实际研究结果。",
+            "anchor": {
+              "end": 22,
+              "kind": "txt",
+              "line": 1,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "e830a8a1-32aa-4d01-96e4-ee007b2883b8",
+            "source_version_id": "9900d83b-a13c-4779-a56b-a98ffebb21bf",
+            "source_scope": "research",
+            "text": "局限：未测试长期稳定性。适用范围：仅限此模拟体系和条件，不外推到实际装置。",
+            "anchor": {
+              "end": 37,
+              "kind": "txt",
+              "line": 5,
+              "start": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "submit_expression",
+        "args": {
+          "suggestions": [
+            {
+              "block_version_id": "a20de098-4954-44e2-b8be-a0b747aa1fca",
+              "citations": [
+                {
+                  "chunk_id": "759d60ff-0dfa-4ddd-aeb1-53c0a25ff6c8",
+                  "quote": "实验条件：25 摄氏度，初始底物浓度 1 mmol/L，pH 7，三次重复。"
+                }
+              ],
+              "kind": "expression",
+              "occurrence": 1,
+              "quote": "在 25 摄氏度、pH 7 的模拟条件下",
+              "reason": "资料明确包含'初始底物浓度 1 mmol/L'和'三次重复'，正文遗漏关键实验条件。",
+              "replacement": "在 25 摄氏度、初始底物浓度 1 mmol/L、pH 7 的模拟条件下"
+            },
+            {
+              "block_version_id": "a20de098-4954-44e2-b8be-a0b747aa1fca",
+              "citations": [
+                {
+                  "chunk_id": "48dc7773-d368-4f04-ba3d-1192bf469573",
+                  "quote": "结果：平均速率 0.8 mmol/(L·min)，标准差 0.1 mmol/(L·min)；无催化剂对照为 0.2 mmol/(L·min)。"
+                }
+              ],
+              "kind": "expression",
+              "occurrence": 1,
+              "quote": "催化剂甲的平均速率为 0.8 mmol/(L·min)",
+              "reason": "资料包含标准差和无催化剂对照数据，正文遗漏这些重要信息。",
+              "replacement": "催化剂甲的平均速率为 0.8 mmol/(L·min)，标准差 0.1 mmol/(L·min)；无催化剂对照为 0.2 mmol/(L·min)"
+            },
+            {
+              "block_version_id": "a20de098-4954-44e2-b8be-a0b747aa1fca",
+              "citations": [
+                {
+                  "chunk_id": "e830a8a1-32aa-4d01-96e4-ee007b2883b8",
+                  "quote": "局限：未测试长期稳定性。适用范围：仅限此模拟体系和条件，不外推到实际装置。"
+                }
+              ],
+              "kind": "expression",
+              "occurrence": 1,
+              "quote": "本研究未测试长期稳定性，不外推到实际装置",
+              "reason": "资料表述更完整，包含'适用范围：仅限此模拟体系和条件'的限定说明。",
+              "replacement": "本研究未测试长期稳定性，适用范围仅限此模拟体系和条件，不外推到实际装置"
+            }
+          ]
+        },
+        "response": {
+          "status": "rejected",
+          "code": "expression_content_changed",
+          "message": "数值或数量发生变化，请在原稿中自行修改并核对。 单位、比较或运算符号发生变化，需要作者核对。 字母术语或标识发生变化，需要作者核对。 请修正 replacement，保留原句事实；若是实质问题，用 substantive 并保留原句。 请利用已读结果直接修正 submit_expression，不必重读。"
+        }
+      },
+      {
+        "name": "submit_expression",
+        "args": {
+          "suggestions": [
+            {
+              "block_version_id": "a20de098-4954-44e2-b8be-a0b747aa1fca",
+              "citations": [
+                {
+                  "chunk_id": "e830a8a1-32aa-4d01-96e4-ee007b2883b8",
+                  "quote": "局限：未测试长期稳定性。适用范围：仅限此模拟体系和条件，不外推到实际装置。"
+                }
+              ],
+              "kind": "expression",
+              "occurrence": 1,
+              "quote": "本研究未测试长期稳定性，不外推到实际装置",
+              "reason": "资料表述更完整，包含'适用范围：仅限此模拟体系和条件'的限定说明。",
+              "replacement": "本研究未测试长期稳定性，适用范围仅限此模拟体系和条件，不外推到实际装置"
+            }
+          ]
+        },
+        "response": {
+          "status": "rejected",
+          "code": "expression_content_changed",
+          "message": "否定、条件、方向或结论强度发生变化，需要作者处理。 适用范围或外推限制发生变化；不外推不等于不适用，请保留原有范围用语。 请修正 replacement，保留原句事实；若是实质问题，用 substantive 并保留原句。 请利用已读结果直接修正 submit_expression，不必重读。"
+        }
+      },
+      {
+        "name": "submit_expression",
+        "args": {
+          "suggestions": []
+        },
+        "response": {
+          "status": "staged"
+        }
+      }
+    ],
+    "expected": "如提出表达建议，必须保留数值、术语、模拟条件、否定和适用范围。",
+    "model": "qwen3.5:4b",
+    "prompt_version": "expression-v3",
+    "prompt_characters": 974,
+    "status": "succeeded",
+    "error_code": "",
+    "elapsed_seconds": 35.42,
+    "calls": [
+      {
+        "number": 1,
+        "status": "succeeded",
+        "usage": {
+          "input": 1690,
+          "output": 283,
+          "cache_read": 0,
+          "cache_write": 0
+        },
+        "elapsed_ms": 4616,
+        "error_code": ""
+      },
+      {
+        "number": 2,
+        "status": "succeeded",
+        "usage": {
+          "input": 1014,
+          "output": 1282,
+          "cache_read": 1686,
+          "cache_write": 0
+        },
+        "elapsed_ms": 15398,
+        "error_code": ""
+      },
+      {
+        "number": 3,
+        "status": "succeeded",
+        "usage": {
+          "input": 1340,
+          "output": 538,
+          "cache_read": 2696,
+          "cache_write": 0
+        },
+        "elapsed_ms": 7476,
+        "error_code": ""
+      },
+      {
+        "number": 4,
+        "status": "succeeded",
+        "usage": {
+          "input": 100,
+          "output": 425,
+          "cache_read": 4573,
+          "cache_write": 0
+        },
+        "elapsed_ms": 5895,
+        "error_code": ""
+      }
+    ],
+    "summary": "本次返回 0 条待作者核对的建议。仅针对所选正文，不代表研究内容已核实。",
+    "source_checks": null,
+    "findings": null,
+    "suggestions": []
+  },
+  {
+    "case": "missing_evidence",
+    "input_manuscript": [
+      "材料 Q 的相关研究证明，该材料已在实际生产中显著提高了加工效率。"
+    ],
+    "selected_sources": {
+      "b85f4038-5e98-4c5d-b6a7-10b5c8963b87": "source-3"
+    },
+    "tools": [
+      {
+        "name": "read_manuscript",
+        "args": {},
+        "response": {
+          "version": 3,
+          "blocks": [
+            {
+              "block_version_id": "f954d777-30de-42d8-aa9d-0ffbef3adf06",
+              "text": "材料 Q 的相关研究证明，该材料已在实际生产中显著提高了加工效率。"
+            }
+          ]
+        }
+      },
+      {
+        "name": "read_evidence",
+        "args": {
+          "chunk_ids": [
+            "3e2c672e-c77a-4e9f-8b3d-01e19dbf4875",
+            "c6caeffa-8f46-4f3d-b094-8d271f7863c3"
+          ]
+        },
+        "response": [
+          {
+            "chunk_id": "3e2c672e-c77a-4e9f-8b3d-01e19dbf4875",
+            "source_version_id": "b85f4038-5e98-4c5d-b6a7-10b5c8963b87",
+            "source_scope": "abstract",
+            "text": "自制软件验收摘要：本模拟研究讨论光照对虚构材料 Q 的影响，观察到颜色变化。",
+            "anchor": {
+              "end": 38,
+              "kind": "txt",
+              "line": 1,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "c6caeffa-8f46-4f3d-b094-8d271f7863c3",
+            "source_version_id": "b85f4038-5e98-4c5d-b6a7-10b5c8963b87",
+            "source_scope": "abstract",
+            "text": "这里只提供摘要，全文尚未取得；摘要未披露样本量、温度、效应大小和统计方法。",
+            "anchor": {
+              "end": 37,
+              "kind": "txt",
+              "line": 2,
+              "start": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "submit_expression",
+        "args": {
+          "suggestions": [
+            {
+              "block_version_id": "f954d777-30de-42d8-aa9d-0ffbef3adf06",
+              "citations": [
+                {
+                  "chunk_id": "3e2c672e-c77a-4e9f-8b3d-01e19dbf4875",
+                  "quote": "本模拟研究讨论光照对虚构材料 Q 的影响，观察到颜色变化"
+                },
+                {
+                  "chunk_id": "c6caeffa-8f46-4f3d-b094-8d271f7863c3",
+                  "quote": "摘要未披露样本量、温度、效应大小和统计方法"
+                }
+              ],
+              "kind": "expression",
+              "occurrence": 1,
+              "quote": "材料 Q 的相关研究证明，该材料已在实际生产中显著提高了加工效率。",
+              "reason": "资料仅说明是模拟研究观察到颜色变化，未提及加工效率或实际应用；'相关研究证明'过于肯定，建议改为更谨慎的表述",
+              "replacement": "材料 Q 的相关研究观察到颜色变化，但摘要未披露样本量、温度、效应大小和统计方法。"
+            },
+            {
+              "block_version_id": "f954d777-30de-42d8-aa9d-0ffbef3adf06",
+              "citations": [
+                {
+                  "chunk_id": "3e2c672e-c77a-4e9f-8b3d-01e19dbf4875",
+                  "quote": "本模拟研究讨论光照对虚构材料 Q 的影响，观察到颜色变化"
+                }
+              ],
+              "kind": "expression",
+              "occurrence": 1,
+              "quote": "材料 Q 的相关研究证明，该材料已在实际生产中显著提高了加工效率。",
+              "reason": "'相关研究'与资料中的'模拟研究'不一致，建议明确研究类型",
+              "replacement": "材料 Q 的模拟研究观察到颜色变化"
+            }
+          ]
+        },
+        "response": {
+          "status": "rejected",
+          "code": "expression_content_changed",
+          "message": "否定、条件、方向或结论强度发生变化，需要作者处理。 改动超出局部表达范围，请由作者在原稿中修改。 请修正 replacement，保留原句事实；若是实质问题，用 substantive 并保留原句。 请利用已读结果直接修正 submit_expression，不必重读。"
+        }
+      }
+    ],
+    "expected": "不得为了修补依据不足而编造实验或结论；涉及实质修改应交由作者处理。",
+    "model": "qwen3.5:4b",
+    "prompt_version": "expression-v3",
+    "prompt_characters": 974,
+    "status": "failed",
+    "error_code": "model_call_limit",
+    "elapsed_seconds": 35.08,
+    "calls": [
+      {
+        "number": 1,
+        "status": "succeeded",
+        "usage": {
+          "input": 1596,
+          "output": 323,
+          "cache_read": 0,
+          "cache_write": 0
+        },
+        "elapsed_ms": 9139,
+        "error_code": ""
+      },
+      {
+        "number": 2,
+        "status": "succeeded",
+        "usage": {
+          "input": 663,
+          "output": 881,
+          "cache_read": 1592,
+          "cache_write": 0
+        },
+        "elapsed_ms": 10338,
+        "error_code": ""
+      },
+      {
+        "number": 3,
+        "status": "succeeded",
+        "usage": {
+          "input": 488,
+          "output": 490,
+          "cache_read": 3135,
+          "cache_write": 0
+        },
+        "elapsed_ms": 6716,
+        "error_code": ""
+      },
+      {
+        "number": 4,
+        "status": "succeeded",
+        "usage": {
+          "input": 552,
+          "output": 488,
+          "cache_read": 3619,
+          "cache_write": 0
+        },
+        "elapsed_ms": 6786,
+        "error_code": ""
+      }
+    ],
+    "summary": null,
+    "source_checks": null,
+    "findings": null,
+    "suggestions": []
+  },
+  {
+    "case": "independent_actions",
+    "input_manuscript": [
+      "我们对编号记录进行了检查，并对异常条目进行了标注。"
+    ],
+    "selected_sources": {},
+    "tools": [
+      {
+        "name": "read_manuscript",
+        "args": {},
+        "response": {
+          "version": 4,
+          "blocks": [
+            {
+              "block_version_id": "e75c050c-959a-444e-b948-8c32ab92f8f7",
+              "text": "我们对编号记录进行了检查，并对异常条目进行了标注。"
+            }
+          ]
+        }
+      },
+      {
+        "name": "submit_expression",
+        "args": {
+          "suggestions": [
+            {
+              "block_version_id": "e75c050c-959a-444e-b948-8c32ab92f8f7",
+              "citations": [],
+              "kind": "expression",
+              "occurrence": 1,
+              "quote": "我们对编号记录进行了检查，并对异常条目进行了标注。",
+              "reason": "简化冗余动词'进行了'，使表达更简洁；'并'字可省略或保留均可，此处保留以连接两个动作",
+              "replacement": "我们检查了编号记录，并标注了异常条目。"
+            }
+          ]
+        },
+        "response": {
+          "status": "staged"
+        }
+      }
+    ],
+    "expected": "可删除冗余动词结构，但保留检查编号记录与标注异常条目这两个独立动作及对象。",
+    "model": "qwen3.5:4b",
+    "prompt_version": "expression-v3",
+    "prompt_characters": 974,
+    "status": "succeeded",
+    "error_code": "",
+    "elapsed_seconds": 10.99,
+    "calls": [
+      {
+        "number": 1,
+        "status": "succeeded",
+        "usage": {
+          "input": 1306,
+          "output": 76,
+          "cache_read": 0,
+          "cache_write": 0
+        },
+        "elapsed_ms": 5182,
+        "error_code": ""
+      },
+      {
+        "number": 2,
+        "status": "succeeded",
+        "usage": {
+          "input": 78,
+          "output": 406,
+          "cache_read": 1381,
+          "cache_write": 0
+        },
+        "elapsed_ms": 3993,
+        "error_code": ""
+      }
+    ],
+    "summary": "本次返回 1 条待作者核对的建议。仅针对所选正文，不代表研究内容已核实。",
+    "source_checks": null,
+    "findings": null,
+    "suggestions": [
+      {
+        "end": 25,
+        "kind": "expression",
+        "quote": "我们对编号记录进行了检查，并对异常条目进行了标注。",
+        "start": 0,
+        "reason": "简化冗余动词'进行了'，使表达更简洁；'并'字可省略或保留均可，此处保留以连接两个动作",
+        "block_id": "676631b0-cb4c-4327-b527-cac396e6d068",
+        "citations": [],
+        "replacement": "我们检查了编号记录，并标注了异常条目。",
+        "guard_reasons": [],
+        "block_version_id": "e75c050c-959a-444e-b948-8c32ab92f8f7"
+      }
+    ]
+  },
+  {
+    "case": "plain_control",
+    "input_manuscript": [
+      "样本在室温下保存。"
+    ],
+    "selected_sources": {},
+    "tools": [
+      {
+        "name": "read_manuscript",
+        "args": {},
+        "response": {
+          "version": 5,
+          "blocks": [
+            {
+              "block_version_id": "89d2cd15-09c3-4458-841d-4fe8a2fcbd73",
+              "text": "样本在室温下保存。"
+            }
+          ]
+        }
+      },
+      {
+        "name": "submit_expression",
+        "args": {
+          "suggestions": []
+        },
+        "response": {
+          "status": "staged"
+        }
+      }
+    ],
+    "expected": "句子清楚，无需为凑建议而改写；不得增加具体温度、方法或研究结论。",
+    "model": "qwen3.5:4b",
+    "prompt_version": "expression-v3",
+    "prompt_characters": 974,
+    "status": "succeeded",
+    "error_code": "",
+    "elapsed_seconds": 5.5,
+    "calls": [
+      {
+        "number": 1,
+        "status": "succeeded",
+        "usage": {
+          "input": 1304,
+          "output": 81,
+          "cache_read": 0,
+          "cache_write": 0
+        },
+        "elapsed_ms": 3072,
+        "error_code": ""
+      },
+      {
+        "number": 2,
+        "status": "succeeded",
+        "usage": {
+          "input": 70,
+          "output": 106,
+          "cache_read": 1384,
+          "cache_write": 0
+        },
+        "elapsed_ms": 1974,
+        "error_code": ""
+      }
+    ],
+    "summary": "本次返回 0 条待作者核对的建议。仅针对所选正文，不代表研究内容已核实。",
+    "source_checks": null,
+    "findings": null,
+    "suggestions": []
+  }
+]

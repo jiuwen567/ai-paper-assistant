@@ -299,6 +299,41 @@ def test_content_change_can_be_repaired_without_publishing_unsafe_draft(context,
         assert Manuscript.objects.get(project=context[1]).current_revision.number == 1
 
 
+def test_extrapolation_limit_cannot_be_rewritten_as_inapplicability(context):
+    body = payload()
+    body["blocks"][1]["text"] = "本研究未测试长期稳定性，不外推到实际装置。"
+    manuscript = save(context, body).data
+    valid = output_for(manuscript)
+    valid["suggestions"][0]["replacement"] = "未进行长期稳定性测试，不外推到实际装置。"
+    invalid = output_for(manuscript)
+    unsafe = "未进行长期稳定性测试，不适用于实际装置。"
+    invalid["suggestions"][0]["replacement"] = unsafe
+
+    def respond(number, request):
+        if number == 1:
+            return [("read_manuscript", {})]
+        if number == 3:
+            assert "不外推不等于不适用" in str(request)
+            assert not ExpressionSuggestion.objects.exists()
+        return [("submit_expression", invalid if number == 2 else valid)]
+
+    with provider(respond) as requests:
+        job = create(context, manuscript)
+        execute_job(str(job.pk))
+        job.refresh_from_db()
+        assert job.status == "succeeded", job.error_code
+        assert len(requests) == 3
+        suggestion = ExpressionSuggestion.objects.get(job=job)
+        assert suggestion.model_output["replacement"] == valid["suggestions"][0]["replacement"]
+        assert not ExpressionDecision.objects.exists()
+        assert Manuscript.objects.get(project=context[1]).current_revision.number == 1
+        edited = decision_body(suggestion, action="edited", text=unsafe)
+        assert decide(context, suggestion, edited).status_code == 400
+        assert not ExpressionDecision.objects.exists()
+        assert decide(context, suggestion).status_code == 200
+        assert ExpressionDecision.objects.count() == 1
+
+
 def test_substantive_output_not_saved_as_replacement_and_no_automatic_confirmation(
     context, manuscript
 ):
@@ -508,10 +543,11 @@ def test_unsubmitted_expression_repairs_once_and_honors_revocation(context, manu
         assert not ExpressionDecision.objects.exists()
 
 
-def test_old_expression_prompt_is_cancelled_without_model_request(context, manuscript):
+@pytest.mark.parametrize("old_prompt", ["expression-v1", "expression-v2"])
+def test_old_expression_prompt_is_cancelled_without_model_request(context, manuscript, old_prompt):
     with provider(lambda *_: []) as requests:
         job = create(context, manuscript)
-        job.input_snapshot["model"]["prompt_version"] = "expression-v1"
+        job.input_snapshot["model"]["prompt_version"] = old_prompt
         job.save(update_fields=["input_snapshot"])
         execute_job(str(job.pk))
         job.refresh_from_db()

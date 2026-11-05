@@ -59,7 +59,7 @@ def model_configuration(purpose="note"):
             "reading": "reading-v2",
             "comparison": "reading-v2",
             "review": "review-v2",
-            "expression": "expression-v2",
+            "expression": "expression-v3",
             "feedback": "feedback-v2",
             "impact": "impact-v2",
         }.get(purpose, PROMPT_VERSION),

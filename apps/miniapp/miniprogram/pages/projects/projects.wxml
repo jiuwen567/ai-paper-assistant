@@ -1,0 +1,47 @@
+<scroll-view scroll-y type="list" class="page-scroll">
+  <view class="page">
+    <view class="title">我的论文</view>
+    <view wx:if="{{error}}" class="error" role="alert">{{error}}</view>
+    <view wx:if="{{loading}}">处理中…</view>
+    <block wx:if="{{!user}}">
+      <view wx:if="{{bindingCode}}" class="card">
+        <view>在已登录的 Web 账号中，展开“微信账号”并确认绑定码。</view>
+        <view user-select>{{bindingCode}}</view>
+        <view>绑定码 5 分钟内有效。</view>
+        <button bindtap="copyCode">复制绑定码</button>
+      </view>
+      <button bindtap="signIn" disabled="{{loading}}">{{bindingCode ? '绑定后重新登录' : '微信登录'}}</button>
+    </block>
+    <block wx:else>
+      <view>{{user.username}}</view>
+      <block wx:if="{{!project}}">
+        <button bindtap="refresh" disabled="{{loading}}">刷新项目</button>
+        <view wx:if="{{!loading && !projects.length}}">暂无论文项目。</view>
+        <button wx:for="{{projects}}" wx:key="id" data-id="{{item.id}}" bindtap="selectProject" disabled="{{loading}}">{{item.name}} · {{item.role === 'author' ? '作者' : '审阅者'}}</button>
+        <view class="actions">
+          <button wx:if="{{hasPrevious}}" bindtap="previousPage" disabled="{{loading}}">上一页</button>
+          <button wx:if="{{hasNext}}" bindtap="nextPage" disabled="{{loading}}">下一页</button>
+        </view>
+        <button bindtap="signOut" disabled="{{loading}}">退出登录</button>
+        <button bindtap="unbind" disabled="{{loading}}">解除微信绑定</button>
+      </block>
+      <block wx:else>
+        <button bindtap="back" disabled="{{loading}}">返回项目</button>
+        <view class="title">{{project.name}}</view>
+        <view>{{project.paper_type}}</view>
+        <view class="requirements">{{project.requirements}}</view>
+        <view class="title">后台任务</view>
+        <button bindtap="refreshJobs" disabled="{{loading}}">刷新任务</button>
+        <view wx:if="{{!loading && !jobs.length}}">暂无任务。</view>
+        <view wx:for="{{jobs}}" wx:key="id" class="card">
+          <view>{{item.status}} · {{item.progress}}%</view>
+          <view wx:if="{{item.error_message}}">{{item.error_message}}</view>
+        </view>
+        <view class="actions">
+          <button wx:if="{{jobPrevious}}" bindtap="previousJobs" disabled="{{loading}}">上一页任务</button>
+          <button wx:if="{{jobNext}}" bindtap="nextJobs" disabled="{{loading}}">下一页任务</button>
+        </view>
+      </block>
+    </block>
+  </view>
+</scroll-view>

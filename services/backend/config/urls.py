@@ -11,8 +11,18 @@ from core.projects import (
     ProjectListView,
 )
 from core.views import LiveView, ReadyView
+from core.wechat_views import (
+    WechatBindingView,
+    WechatLoginView,
+    WechatLogoutView,
+    WechatUnbindView,
+)
 
 urlpatterns = [
+    path("api/v1/auth/wechat/login/", WechatLoginView.as_view()),
+    path("api/v1/auth/wechat/binding/", WechatBindingView.as_view()),
+    path("api/v1/auth/wechat/logout/", WechatLogoutView.as_view()),
+    path("api/v1/auth/wechat/unbind/", WechatUnbindView.as_view()),
     path("api/v1/auth/session/", SessionView.as_view()),
     path("api/v1/auth/logout/", LogoutView.as_view()),
     path("api/v1/projects/", ProjectListView.as_view()),

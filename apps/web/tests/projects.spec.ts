@@ -3,9 +3,9 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { expect, test as base, type APIRequestContext, type Page } from "@playwright/test";
 
-type Accounts = { owner: string; reviewer: string; reviewerId: number; password: string; otherId: string };
+type Accounts = { prefix: string; owner: string; reviewer: string; reviewerId: number; password: string; otherId: string };
 const root = fileURLToPath(new URL("../../..", import.meta.url));
-function fixtureData(action: "create" | "cleanup", prefix: string) {
+function fixtureData(action: "create" | "cleanup" | "binding", prefix: string) {
   return execFileSync("uv", ["run", "python", "services/backend/core/tests/browser_data.py"], {
     cwd: root, input: JSON.stringify({ action, prefix }), encoding: "utf-8",
     env: { ...process.env, PYTHONPATH: "services/backend" },
@@ -15,6 +15,7 @@ const test = base.extend<{ accounts: Accounts }>({
   accounts: async ({}, use) => {
     const prefix = `e2e-${randomUUID().replaceAll("-", "")}`;
     const accounts = JSON.parse(fixtureData("create", prefix)) as Accounts;
+    accounts.prefix = prefix;
     try { await use(accounts); } finally { fixtureData("cleanup", prefix); }
   },
 });
@@ -70,7 +71,7 @@ test("真实登录、项目编辑、规则版本、审阅者限制与撤权", as
   await expect(page.getByRole("heading", { name: "AI 辅助规则 · v2" })).toBeVisible();
   expect((await mutate(page.request, `${projectPath}ai-permissions/`, "POST", { action: "reading", policy_version: 2 })).ok()).toBeTruthy();
   expect((await mutate(page.request, `${projectPath}ai-permissions/`, "POST", { action: "expression", policy_version: 2 })).status()).toBe(403);
-  await expect(page.locator("details")).toHaveCount(2);
+  await expect(page.locator("details.history-item")).toHaveCount(2);
   await page.getByLabel("成员用户名").fill(accounts.reviewer);
   await page.getByRole("button", { name: "添加或更新成员" }).click();
   await expect(page.getByText("成员权限已保存。")).toBeVisible();
@@ -143,4 +144,23 @@ test("后台任务离开页面后可查回真实 Worker 结果", async ({ page, 
   await panel.locator("summary").click();
   await expect(panel.getByText("4 字 · 输入版本 1")).toBeVisible();
   await expect(panel.getByText("第 1 次 · 成功")).toBeVisible();
+});
+
+
+test("Web 确认绑定并解除（自制微信身份）", async ({ page, accounts }) => {
+  const binding = JSON.parse(fixtureData("binding", accounts.prefix));
+  await page.goto("/");
+  await login(page, accounts.owner, accounts.password);
+  await page.locator("summary").filter({ hasText: "微信账号" }).click();
+  await page.getByLabel("绑定码", { exact: true }).fill("A".repeat(24));
+  await page.getByRole("button", { name: "确认绑定当前账号" }).click();
+  await expect(page.getByRole("alert")).toContainText("绑定码无效");
+  await page.getByLabel("绑定码", { exact: true }).fill(binding.binding_code);
+  await page.getByRole("button", { name: "确认绑定当前账号" }).click();
+  await expect(page.locator("summary").filter({ hasText: "微信账号" })).toContainText("已绑定");
+  await page.getByRole("button", { name: "解除微信绑定" }).click();
+  await expect(page.getByRole("button", { name: "确认绑定当前账号" })).toBeVisible();
+  await page.getByLabel("绑定码", { exact: true }).fill(binding.binding_code);
+  await page.getByRole("button", { name: "确认绑定当前账号" }).click();
+  await expect(page.getByRole("alert")).toContainText("绑定码无效、过期或已使用");
 });

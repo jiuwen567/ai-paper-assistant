@@ -7,6 +7,6 @@
       <button bindtap="checkConnection" loading="{{loading}}" disabled="{{loading}}">{{loading ? '检查中' : '检查 API 连接'}}</button>
       <view class="endpoint">{{apiBaseUrl}}</view>
     </view>
-    <view class="note">账号绑定、资料收集、证据查看与待办尚未接入。</view>
+    <navigator url="/pages/projects/projects" class="note">我的论文</navigator>
   </view>
 </scroll-view>

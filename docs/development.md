@@ -136,7 +136,7 @@ SeaweedFS 按需每次分配 1 个 Volume，单节点最多 32 个，每个上�
 
 ## 账号与项目
 
-Web 首页为“我的论文”，环境检查位于 `/environment`。账号使用 Django 内部用户和数据库 Session；当前不开放自助注册或密码找回，微信身份绑定由 #4 接入。
+Web 首页为“我的论文”，环境检查位于 `/environment`。账号使用 Django 内部用户和数据库 Session；当前不开放自助注册或密码找回，微信身份通过小程序显示的一次性绑定码，在已登录 Web 账号下确认。
 
 本机开发创建普通账号：
 
@@ -195,7 +195,13 @@ get_user_model().objects.create_user(username="local-author", password=getpass("
 5. 在模拟器点击“检查 API 连接”，确认界面显示“API 已连接”。若请求报合法域名校验错误，可在该项目的本地调试设置中处理，公共工程配置保留 `urlCheck: true`。
 6. 真机的 `127.0.0.1` 指向手机本身。真机调试改用可达 HTTPS API，配置 request 合法域名，恢复域名校验；不要向客户端添加服务端密钥。
 
-小程序只展示 API 存活结果，依赖就绪状态在 Web 工作台查看。微信账号绑定、上传、证据卡和待办没有接入。
+小程序首页保留 API 检查，点击“我的论文”进入微信登录、项目列表、详情和后台任务。Web 与小程序共用内部用户和项目权限。上传、证据卡和修改待办由后续任务接入。
+
+服务端 `.env` 配置 `WECHAT_APP_ID`、`WECHAT_APP_SECRET`，重建 API 镜像或重启本机 API。AppID 必须与小程序工程一致，AppSecret 只放服务端，不复制进小程序或公开仓库。未配置时登录明确返回 503，不提供模拟身份登录后门。`wx.login` 的 code 只发送至业务 API，由服务器调用 [微信 code2Session](https://developers.weixin.qq.com/miniprogram/dev/server/API/user-login/api_code2session.html)。不存储或返回 session_key，不依据 UnionID、昵称、手机号自动合并。
+
+绑定流程：小程序点击“微信登录” → 复制 5 分钟有效的绑定码 → 在 Web 登录目标内部账号，展开“微信账号”并确认绑定码 → 小程序重新登录。重新获取绑定码会废弃上一个码；每个码只能兑换一次，账号冲突先解绑。绑定接口只接受带 CSRF 的 Web Session，不能用小程序 token 代替 Web 确认。
+
+小程序会话有效期 7 天，过期后重新调用微信登录。Web 和小程序均可解绑；解绑立即撤销所有该身份会话，重新绑定不会恢复旧 token。退出小程序只撤销当前会话，不删除项目。公众号 H5 使用普通 Web 登录，不依赖微信网页 OAuth。
 
 ### 开发者工具自动验收
 
@@ -235,7 +241,15 @@ node "$miniTarget\tests\acceptance.cjs"
 
 测试检查首页初始状态、真实 API 成功反馈、模拟网络失败与加载反馈、模拟 HTTP 503、恢复真实请求后的重试结果；正常路径不替换 `wx.request`。成功截图和结果保存到 `apps/miniapp/test-results/`，不会进入 Git。模拟结果只用于界面失败场景，不替代真实连接验收。脚本结束会解除请求模拟并断开自动化连接，保留工具窗口。
 
-公众号本地入口为 `/wechat`，提供响应式说明页；公众号认证、网页 OAuth、JS-SDK、菜单配置、消息签名校验和回调均未接入，属于 Issue #4。部署并验证公众号配置前，不宣称已提供公众号服务。
+公众号入口为 `/wechat`，提供绑定步骤和菜单使用说明。生成菜单 JSON：
+
+```bash
+uv run python services/backend/manage.py wechat_menu --web-url https://your-public-site.example
+```
+
+该命令只输出配置，不调用发布接口。管理员在公众号后台配置“我的论文”小程序菜单，使用实际 AppID 和 `pages/projects/projects`；“使用帮助”及不支持小程序的回退地址指向网站 `/wechat`。公众号需具备自定义菜单及跳转小程序权限，关联目标小程序；网站需已部署且 HTTPS 可达。权限与关联要求以实际账号后台和[微信自定义菜单文档](https://developers.weixin.qq.com/doc/offiaccount/Custom_Menus/Creating_Custom-Defined_Menu.html)为准。首版不使用网页 OAuth、JS-SDK 或消息回调，不能据此宣称已获得相关账号能力或公开发布审核通过。
+
+真实验收需开发者用有权限的微信账号完成：登录并绑定、双端读取同一项目、解绑后旧会话拒绝访问，以及从公众号菜单打开目标小程序和帮助页。没有对应账号配置时保留待验收状态，不用单元模拟替代。
 
 ## 检查与测试
 
@@ -280,6 +294,14 @@ GitHub Actions 的 `Engineering checks` 在 PR 上运行系统与类型检查、
 - 本地容器模式包含 `scheduler` 服务；本机模式需运行上述 Beat。调度器故障或停机恢复后可手动执行 `uv run python services/backend/manage.py recover_jobs`。恢复扫描每批最多 100 项，按更新时间轮转；任务量增加后再优化批量调度。
 
 任务测试：`uv run pytest services/backend/core/tests/test_jobs.py`。需要 PostgreSQL 和 Redis；真实 Worker 重启测试启动专用队列与独立测试库进程，结束时清理。只提供确定性的样例任务，上层解析、模型、导出实现随各自 Issue 接入，不把样例输出当作真实 AI 结果。
+
+## 微信绑定实现验证（2026-11-05）
+
+- 18 项微信 API/数据库测试通过，微信身份响应为自制模拟；真实 PostgreSQL 验证一次性码、过期、重复、应用隔离、账号冲突、并发兑换、Session/CSRF、token 撤销与跨项目拒绝。
+- 与 14 项任务、28 项项目权限用例合并运行，共 60 项通过。小程序会话层 2 项模拟 wx 测试和 Web 原有 6 项协议测试通过。
+- 桌面/手机尺寸共 14 项 Playwright 测试通过，包含自制微信身份的 Web 确认绑定、解绑和旧码拒绝；不会把该测试称作真实微信 code2Session 联调。
+- 双端 TypeScript、Web 构建、Ruff、迁移遗漏检查通过，容器 API 执行新迁移。首次回归中的旧文案断言及规则历史定位已按新界面修正，完整浏览器用例重新通过。
+- 未执行：真实 AppSecret 登录、微信开发者工具新页面编译、真机与公众号菜单。仓库开发配置未提供微信服务端配置，桌面自动化工具因 WSL 工作目录识别错误无法初始化。Issue #4 保留待验收，不将模拟测试计为真实双端验收；没有发布外部服务。
 
 ## 后台任务验收（2026-11-05）
 

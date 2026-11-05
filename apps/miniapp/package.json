@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "check": "tsc --noEmit",
-    "test:e2e": "node tests/acceptance.cjs"
+    "test:e2e": "node tests/acceptance.cjs",
+    "test": "node --test tests/session.cjs"
   },
   "devDependencies": {
     "miniprogram-api-typings": "5.2.3",

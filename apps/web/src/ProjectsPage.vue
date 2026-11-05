@@ -5,6 +5,7 @@ import ReadingPanel from "./ReadingPanel.vue";
 import ReviewPanel from "./ReviewPanel.vue";
 import ExpressionPanel from "./ExpressionPanel.vue";
 import DisclosurePanel from "./DisclosurePanel.vue";
+import ExportPanel from "./ExportPanel.vue";
 import FeedbackPanel from "./FeedbackPanel.vue";
 import ImpactPanel from "./ImpactPanel.vue";
 import GraphPanel from "./GraphPanel.vue";
@@ -32,6 +33,7 @@ const disclosureDirty = ref(false);
 const feedbackDirty = ref(false);
 const graphDirty = ref(false);
 const impactDirty = ref(false);
+const exportDirty = ref(false);
 const creating = ref(false);
 const members = ref<Page<Member> | null>(null);
 const memberPage = ref(1);
@@ -153,7 +155,7 @@ async function signIn() {
   await loadProjects();
 }
 async function signOut() {
-  if ((manuscriptDirty.value || disclosureDirty.value || feedbackDirty.value || graphDirty.value || impactDirty.value) && !window.confirm("仍有未保存修改，确认退出？")) return;
+  if ((manuscriptDirty.value || disclosureDirty.value || feedbackDirty.value || graphDirty.value || impactDirty.value || exportDirty.value) && !window.confirm("仍有未保存修改，确认退出？")) return;
   await logout();
   user.value = null;
   selected.value = null;
@@ -163,7 +165,7 @@ async function signOut() {
   creating.value = false;
 }
 async function returnToList() {
-  if ((manuscriptDirty.value || disclosureDirty.value || feedbackDirty.value || graphDirty.value || impactDirty.value) && !window.confirm("放弃当前未保存修改并返回列表？")) return;
+  if ((manuscriptDirty.value || disclosureDirty.value || feedbackDirty.value || graphDirty.value || impactDirty.value || exportDirty.value) && !window.confirm("放弃当前未保存修改并返回列表？")) return;
   selected.value = null; creating.value = false;
   await loadProjects();
 }
@@ -230,7 +232,7 @@ onMounted(() => perform(initialize));
             <label>项目名称<input v-model="fields.name" required maxlength="120" /></label>
             <label>论文类型<input v-model="fields.paper_type" maxlength="80" /></label>
             <label>写作要求<textarea v-model="fields.requirements" rows="4" maxlength="20000" /></label>
-            <label>模板<select v-model="fields.template"><option value="">暂不选择</option><option value="department-default">院系模板</option></select></label>
+            <label>模板<select v-model="fields.template"><option value="">暂不选择</option><option value="department-default">中文论文示例模板（自制）</option></select></label>
             <button v-if="canEdit" type="submit">{{ creating ? "创建" : "保存项目" }}</button>
           </fieldset>
         </form>
@@ -242,6 +244,7 @@ onMounted(() => perform(initialize));
           <ReviewPanel :key="selected.id" :project="selected" @access-lost="cause => perform(async () => { throw cause; })" />
           <ExpressionPanel :key="selected.id" :project="selected" @access-lost="cause => perform(async () => { throw cause; })" />
           <DisclosurePanel :key="selected.id" :project="selected" @dirty-change="disclosureDirty = $event" @access-lost="cause => perform(async () => { throw cause; })" />
+          <ExportPanel :key="selected.id" :project="selected" :manuscript-dirty="manuscriptDirty" :disclosure-dirty="disclosureDirty" @dirty-change="exportDirty = $event" @access-lost="cause => perform(async () => { throw cause; })" />
           <FeedbackPanel :key="selected.id" :project="selected" @dirty-change="feedbackDirty = $event" @access-lost="cause => perform(async () => { throw cause; })" />
           <ImpactPanel :key="selected.id" :project="selected" @dirty-change="impactDirty = $event" @access-lost="cause => perform(async () => { throw cause; })" />
           <GraphPanel :key="selected.id" :project="selected" @dirty-change="graphDirty = $event" @access-lost="cause => perform(async () => { throw cause; })" />

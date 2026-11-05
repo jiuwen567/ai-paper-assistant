@@ -16,7 +16,7 @@ from django.conf import settings  # noqa: E402
 from django.contrib.auth import get_user_model  # noqa: E402
 from django.db import transaction  # noqa: E402
 
-from core.models import MaterialVersion, Project, ProjectPolicy, WechatIdentity  # noqa: E402
+from core.models import ExportFile, MaterialVersion, Project, ProjectPolicy, WechatIdentity  # noqa: E402
 
 
 def main():
@@ -196,6 +196,10 @@ def main():
                     material__project__owner__username__in=usernames
                 ):
                     storage.delete_object(Bucket=version.bucket, Key=version.object_key)
+                for artifact in ExportFile.objects.filter(
+                    snapshot__project__owner__username__in=usernames
+                ):
+                    storage.delete_object(Bucket=artifact.bucket, Key=artifact.object_key)
             from core.graph import purge_projection
             from core.models import GraphTombstone
 

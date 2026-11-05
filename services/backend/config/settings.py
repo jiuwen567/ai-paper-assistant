@@ -85,3 +85,9 @@ CELERY_BEAT_SCHEDULE = {"recover-jobs": {"task": "jobs.recover", "schedule": 15.
 
 WECHAT_APP_ID = env("WECHAT_APP_ID", default="")
 WECHAT_APP_SECRET = env("WECHAT_APP_SECRET", default="")
+
+MATERIAL_BUCKET = env("MATERIAL_BUCKET", default="paper-materials")
+FILE_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024
+DATA_UPLOAD_MAX_MEMORY_SIZE = 21 * 1024 * 1024
+
+DATA_UPLOAD_MAX_NUMBER_FILES = 1

@@ -30,6 +30,33 @@
         <view class="title">{{project.name}}</view>
         <view>{{project.paper_type}}</view>
         <view class="requirements">{{project.requirements}}</view>
+        <view class="title">材料</view>
+        <button bindtap="refreshMaterials" disabled="{{loading}}">刷新材料</button>
+        <view wx:if="{{!loading && !materials.length}}">暂无材料。</view>
+        <button wx:for="{{materials}}" wx:key="id" data-id="{{item.id}}" bindtap="selectMaterial" disabled="{{loading}}">{{item.title}}</button>
+        <view class="actions">
+          <button wx:if="{{materialPrevious}}" bindtap="previousMaterials" disabled="{{loading}}">上一页材料</button>
+          <button wx:if="{{materialNext}}" bindtap="nextMaterials" disabled="{{loading}}">下一页材料</button>
+        </view>
+        <view wx:if="{{material}}" class="card">
+          <view>{{material.title}} · 版本记录</view>
+          <view wx:for="{{versions}}" wx:key="id">
+            <view>v{{item.number}} · {{item.file_name}} · {{item.label}}</view>
+            <view wx:if="{{item.error_message}}">{{item.error_message}}</view>
+            <button wx:if="{{item.status === 'available' && item.canOpen}}" data-id="{{item.id}}" bindtap="download" disabled="{{loading}}">下载文档</button>
+            <button wx:if="{{item.status !== 'available' && item.created_by === user.id && project.role === 'author'}}" data-version="{{item.id}}" bindtap="uploadMaterial" disabled="{{loading}}">重新选择文件上传</button>
+          </view>
+          <view class="actions">
+            <button wx:if="{{versionPrevious}}" bindtap="previousVersions" disabled="{{loading}}">较新版本</button>
+            <button wx:if="{{versionNext}}" bindtap="nextVersions" disabled="{{loading}}">较旧版本</button>
+          </view>
+        </view>
+        <block wx:if="{{project.role === 'author'}}">
+          <button wx:if="{{material}}" bindtap="newMaterial" disabled="{{loading}}">新增材料</button>
+          <picker wx:if="{{!material}}" range="{{categories}}" value="{{categoryIndex}}" bindchange="changeCategory" disabled="{{loading}}"><view>材料分类：{{categories[categoryIndex]}}</view></picker>
+          <button bindtap="uploadMaterial" disabled="{{loading}}">{{material ? '上传新版本' : '选择文件上传'}}</button>
+          <button wx:if="{{pendingUpload || pendingIntent}}" bindtap="retryUpload" disabled="{{loading}}">重试同一文件</button>
+        </block>
         <view class="title">后台任务</view>
         <button bindtap="refreshJobs" disabled="{{loading}}">刷新任务</button>
         <view wx:if="{{!loading && !jobs.length}}">暂无任务。</view>

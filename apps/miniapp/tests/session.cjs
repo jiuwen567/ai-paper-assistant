@@ -64,3 +64,17 @@ test('过期或撤销清除会话，网络失败可重新请求', async () => {
   requests.shift().fail();
   await assert.rejects(retry, /连接失败/);
 });
+
+test('上传携带会话且失败不伪装为成功', async () => {
+  const { api, wx } = environment();
+  wx.setStorageSync('', { token: 'upload-token', expires_at: new Date(Date.now() + 60000).toISOString() });
+  let upload;
+  wx.uploadFile = options => { upload = options; };
+  const pending = api.uploadFile('projects/test/uploads/test/', '/self-authored.txt');
+  assert.equal(upload.header.Authorization, 'Bearer upload-token');
+  upload.success({ statusCode: 503, data: JSON.stringify({ detail: '存储暂不可用' }) });
+  await assert.rejects(pending, /存储暂不可用/);
+  const retry = api.uploadFile('projects/test/uploads/test/', '/self-authored.txt');
+  upload.success({ statusCode: 200, data: JSON.stringify({ status: 'available' }) });
+  assert.equal((await retry).status, 'available');
+});

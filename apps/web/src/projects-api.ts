@@ -50,9 +50,9 @@ export async function request<T>(path: string, method = "GET", body?: unknown): 
     method,
     credentials: "same-origin",
     cache: "no-store",
-    headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
-    body: body === undefined ? undefined : JSON.stringify(body),
-    signal: AbortSignal.timeout(15000),
+    headers: body instanceof FormData ? { "X-CSRFToken": csrfToken } : { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
+    body: body instanceof FormData ? body : body === undefined ? undefined : JSON.stringify(body),
+    signal: AbortSignal.timeout(body instanceof FormData ? 60000 : 15000),
   });
   const data: unknown = await response.json().catch(() => null);
   if (!response.ok) {

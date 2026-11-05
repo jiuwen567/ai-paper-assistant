@@ -7,7 +7,7 @@
 * { box-sizing: border-box; }
 body { margin: 0; }
 a { color: inherit; text-decoration: none; }
-button:focus-visible, a:focus-visible {
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, summary:focus-visible {
   outline: 3px solid #26957c;
   outline-offset: 3px;
 }
@@ -58,6 +58,29 @@ button:disabled { opacity: .65; cursor: wait; }
 .services div + div { border-top: 1px solid #e6eadf; }
 dd { margin: 0; color: #59695c; }
 dd.ready { color: #326247; }
+.page-header, .actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.page-header { justify-content: space-between; margin-bottom: 24px; }
+.page-header h1 { margin: 0; }
+.page-header .actions { max-width: 100%; overflow-wrap: anywhere; }
+.editor { margin: 24px 0; }
+.editor h2 { margin-top: 0; }
+.editor fieldset { padding: 0; border: 0; min-width: 0; }
+.editor label { display: grid; gap: 6px; margin-bottom: 16px; }
+input, textarea, select { font: inherit; color: inherit; background: #fff; padding: 9px 10px; border: 1px solid #bdcdb6; border-radius: 6px; width: 100%; min-width: 0; }
+textarea { resize: vertical; }
+.editor .check-label { display: flex; align-items: center; gap: 8px; }
+input[type="checkbox"] { width: auto; }
+.action-options { display: flex; flex-wrap: wrap; gap: 0 20px; }
+.login-form { max-width: 360px; }
+.error { color: #a32a26; overflow-wrap: anywhere; }
+.project-list, .member-list { list-style: none; padding: 0; }
+.project-list li + li { border-top: 1px solid #dce4d5; }
+.project-list button { display: flex; justify-content: space-between; gap: 16px; width: 100%; border: 0; border-radius: 0; padding: 20px 12px; text-align: left; white-space: normal; overflow-wrap: anywhere; }
+.project-list button span { flex-shrink: 0; }
+.member-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; overflow-wrap: anywhere; }
+.history-item { padding: 10px 0; border-bottom: 1px solid #dce4d5; overflow-wrap: anywhere; }
+summary { cursor: pointer; }
+.preserve-lines { white-space: pre-wrap; }
 @media (max-width: 760px) {
   .shell { display: block; }
   .sidebar { width: auto; padding: 16px 20px; border: 0; border-bottom: 1px solid #dce4d5; }

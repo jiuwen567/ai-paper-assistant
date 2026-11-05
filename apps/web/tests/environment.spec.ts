@@ -7,7 +7,7 @@ test("Web 代理请求真实 Django API，并能从连接失败恢复", async ({
   expect(live.ok()).toBeTruthy();
   expect((await live.json()).service).toBe("api");
   const responsePromise = page.waitForResponse("**/api/v1/health/ready/");
-  await page.goto("/");
+  await page.goto("/environment");
   const response = await responsePromise;
   expect([200, 503]).toContain(response.status());
   const report = await response.json();

@@ -58,7 +58,7 @@ def model_configuration(purpose="note"):
         "prompt_version": {
             "reading": "reading-v2",
             "comparison": "reading-v2",
-            "review": "review-v1",
+            "review": "review-v2",
             "expression": "expression-v1",
             "feedback": "feedback-v1",
             "impact": "impact-v1",
@@ -367,7 +367,12 @@ class AIRun:
                         kind="validation_error",
                         details={"code": exc.code, "number": self.tools},
                     )
-                    return {"status": "rejected", "code": exc.code, "message": exc.message}
+                    return {
+                        "status": "rejected",
+                        "code": exc.code,
+                        "message": exc.message
+                        + " 已读结果仍在上下文中，请直接修正 submit_review，不必重复读取已有内容。",
+                    }
                 if self.review is not None and self.review != candidate:
                     raise ParseFailure("review_duplicate", "模型重复提交了不同的诊断结果。")
                 self.review = candidate
@@ -476,6 +481,8 @@ class AIRun:
             finish(job, Job.Status.SUCCEEDED)
             return {}
         elif kind == "validation_error":
+            if message.get("reason") not in (None, "missing_submission"):
+                raise ParseFailure("runner_protocol", "模型执行协议异常。")
             if (
                 job.input_snapshot.get("purpose")
                 not in ["reading", "comparison", "review", "expression", "feedback", "impact"]
@@ -491,7 +498,12 @@ class AIRun:
             self.tools += 1
             if self.tools > 32:
                 raise ParseFailure("tool_call_limit", "工具调用达到上限。")
-            details = {"code": "result_schema_invalid", "number": self.tools}
+            details = {
+                "code": "result_unsubmitted"
+                if message.get("reason") == "missing_submission"
+                else "result_schema_invalid",
+                "number": self.tools,
+            }
         elif kind == "tool_error":
             raise ParseFailure("tool_rejected", "模型工具调用未通过校验。")
         else:
@@ -636,21 +648,23 @@ def execute_ai(job):
             from core.reviews import REVIEW_PROMPT
 
             submit = "submit_review" if purpose == "review" else "submit_expression"
+            read_prompt = "先调用 read_manuscript。" + (
+                "再直接调用 read_evidence 批量读取下面目录的 chunk_ids，不要先检索。"
+                if catalog
+                else "本次没有外部材料，只能检查原稿和作者研究说明，不要编造证据编号。"
+            )
+            if purpose == "review" and catalog:
+                read_prompt = (
+                    "第一轮在同一响应中提出 read_manuscript 与 read_evidence 两个只读调用；"
+                    "后者一次读取下面目录的 chunk_ids，执行器依次执行，不要先检索。"
+                )
 
             config.update(
                 system_prompt=REVIEW_PROMPT if purpose == "review" else EXPRESSION_PROMPT,
                 block_version_ids=[
                     item["version_id"] for item in job.input_snapshot["manuscript"]["blocks"]
                 ],
-                prompt=(
-                    "先调用 read_manuscript。"
-                    + (
-                        "再直接调用 read_evidence 批量读取下面目录的 chunk_ids，不要先检索。"
-                        if catalog
-                        else "本次没有外部材料，只能检查原稿和作者研究说明，不要编造证据编号。"
-                    )
-                    + f"随后必须调用 {submit} 提交结果，普通文字答复不会保存。\n"
-                )
+                prompt=(read_prompt + f"随后必须调用 {submit} 提交结果，普通文字答复不会保存。\n")
                 + json.dumps(
                     {
                         "question": job.input_snapshot["question"],
@@ -660,6 +674,11 @@ def execute_ai(job):
                     ensure_ascii=False,
                 ),
             )
+            if purpose == "review":
+                config["prompt"] += (
+                    "\n只提交原稿中确有具体问题的主张；已有依据支持的内容不用列为问题。"
+                    "研究说明只作核对依据，不作为待修改正文。不要为每种分类各造一条问题。"
+                )
     run_pi(
         config,
         run.handle,

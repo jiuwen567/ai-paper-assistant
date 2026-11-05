@@ -126,7 +126,6 @@ def main():
                     finding_output(manuscript, source)
                     if not data.get("recheck")
                     else {
-                        "summary": "协议复查样例：当前所选范围未识别出明确问题，仍需作者核对。",
                         "findings": [],
                     }
                 )

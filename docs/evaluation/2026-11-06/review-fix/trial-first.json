@@ -1,0 +1,988 @@
+[
+  {
+    "case": "overclaim",
+    "input_manuscript": [
+      "催化剂甲在所有温度与浓度下都保持 0.8 mmol/(L·min) 的速率，可直接用于实际装置。"
+    ],
+    "selected_sources": {
+      "eb4e6503-a4da-40e3-bdd2-0950108cbd4a": "source-1"
+    },
+    "tools": [
+      {
+        "name": "read_manuscript",
+        "args": {},
+        "response": {
+          "version": 1,
+          "blocks": [
+            {
+              "block_version_id": "a052e36c-06d8-47dd-b06c-ae5e47b3af5f",
+              "block_id": "369071c8-3b55-48bf-ab0b-bce97032318c",
+              "position": 1,
+              "text": "催化剂甲在所有温度与浓度下都保持 0.8 mmol/(L·min) 的速率，可直接用于实际装置。"
+            }
+          ],
+          "author_research": {
+            "method": "",
+            "result": "",
+            "question": "虚构材料的效果范围"
+          },
+          "research_limited": false,
+          "sources": [
+            {
+              "version_id": "eb4e6503-a4da-40e3-bdd2-0950108cbd4a",
+              "file_name": "实验甲.txt",
+              "source_number": 1,
+              "title": "实验甲",
+              "material_exists": true,
+              "bibliography_registered": true,
+              "publication_status": "unverified",
+              "source_scope": "research"
+            }
+          ]
+        }
+      },
+      {
+        "name": "read_evidence",
+        "args": {
+          "chunk_ids": [
+            "061d9a1c-fc78-447a-b55c-7089229eb1b7",
+            "237cedf4-c7a9-4cd9-b128-324346bad16b",
+            "c7105c3c-92c6-4b5e-b262-517a7229d63b",
+            "d2d5e0a8-d82c-45cc-9702-33523182679f",
+            "f6b44e2e-7cce-4e59-8a85-245ef79c70e4"
+          ]
+        },
+        "response": [
+          {
+            "chunk_id": "061d9a1c-fc78-447a-b55c-7089229eb1b7",
+            "source_version_id": "eb4e6503-a4da-40e3-bdd2-0950108cbd4a",
+            "source_scope": "research",
+            "text": "软件验收用虚构实验甲，以下不是实际研究结果。",
+            "anchor": {
+              "end": 22,
+              "kind": "txt",
+              "line": 1,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "237cedf4-c7a9-4cd9-b128-324346bad16b",
+            "source_version_id": "eb4e6503-a4da-40e3-bdd2-0950108cbd4a",
+            "source_scope": "research",
+            "text": "局限：未测试长期稳定性。适用范围：仅限此模拟体系和条件，不外推到实际装置。",
+            "anchor": {
+              "end": 37,
+              "kind": "txt",
+              "line": 5,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "c7105c3c-92c6-4b5e-b262-517a7229d63b",
+            "source_version_id": "eb4e6503-a4da-40e3-bdd2-0950108cbd4a",
+            "source_scope": "research",
+            "text": "结果：平均速率 0.8 mmol/(L·min)，标准差 0.1 mmol/(L·min)；无催化剂对照为 0.2 mmol/(L·min)。",
+            "anchor": {
+              "end": 71,
+              "kind": "txt",
+              "line": 4,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "d2d5e0a8-d82c-45cc-9702-33523182679f",
+            "source_version_id": "eb4e6503-a4da-40e3-bdd2-0950108cbd4a",
+            "source_scope": "research",
+            "text": "实验条件：25 摄氏度，初始底物浓度 1 mmol/L，pH 7，三次重复。",
+            "anchor": {
+              "end": 38,
+              "kind": "txt",
+              "line": 3,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "f6b44e2e-7cce-4e59-8a85-245ef79c70e4",
+            "source_version_id": "eb4e6503-a4da-40e3-bdd2-0950108cbd4a",
+            "source_scope": "research",
+            "text": "研究对象：催化剂甲对底物 Z 的模拟转化。方法：批次反应，测量前 10 分钟的产物浓度。",
+            "anchor": {
+              "end": 44,
+              "kind": "txt",
+              "line": 2,
+              "start": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "submit_review",
+        "args": {
+          "summary": "已核对作者所选原稿与资料。原稿主张催化剂甲在所有温度与浓度下均保持恒定速率并可直接用于实际装置，但资料明确指出该研究为模拟体系，且未测试长期稳定性，适用范围限于特定条件，不外推至实际装置。同时，资料中未提供实际装置应用的验证或证据。",
+          "findings": [
+            {
+              "action": "作者需核查原文中关于催化剂甲在所有温度与浓度下保持恒定速率的表述是否超出实验条件范围，并修改为‘在模拟条件下’或‘在特定实验参数下’等限定性语言。",
+              "block_version_id": "a052e36c-06d8-47dd-b06c-ae5e47b3af5f",
+              "category": "overclaim",
+              "citations": [],
+              "occurrence": 1,
+              "quote": "催化剂甲在所有温度与浓度下都保持 0.8 mmol/(L·min) 的速率，可直接用于实际装置。",
+              "reason": "资料明确指出该研究为模拟体系，仅限于特定实验条件（25℃，初始底物浓度1 mmol/L，pH 7），且未测试长期稳定性，不支持‘所有温度与浓度下’或‘直接用于实际装置’的结论。",
+              "related_blocks": [],
+              "research_evidence": [],
+              "support": "contradicts"
+            },
+            {
+              "action": "作者需补充说明‘实际装置’应用的验证依据，或明确指出该结论为模拟推断而非实际验证。",
+              "block_version_id": "a052e36c-06d8-47dd-b06c-ae5e47b3af5f",
+              "category": "evidence_missing",
+              "citations": [],
+              "occurrence": 1,
+              "quote": "催化剂甲在所有温度与浓度下都保持 0.8 mmol/(L·min) 的速率，可直接用于实际装置。",
+              "reason": "资料中未提供任何关于实际装置应用的实验数据或验证，该主张缺乏直接证据支持。",
+              "related_blocks": [],
+              "research_evidence": [],
+              "support": "insufficient"
+            }
+          ]
+        },
+        "response": {
+          "status": "rejected",
+          "code": "review_support_invalid",
+          "message": "判为矛盾必须提供可回查的依据。"
+        }
+      },
+      {
+        "name": "read_evidence",
+        "args": {
+          "chunk_ids": [
+            "061d9a1c-fc78-447a-b55c-7089229eb1b7",
+            "237cedf4-c7a9-4cd9-b128-324346bad16b",
+            "c7105c3c-92c6-4b5e-b262-517a7229d63b",
+            "d2d5e0a8-d82c-45cc-9702-33523182679f",
+            "f6b44e2e-7cce-4e59-8a85-245ef79c70e4"
+          ]
+        },
+        "response": [
+          {
+            "chunk_id": "061d9a1c-fc78-447a-b55c-7089229eb1b7",
+            "source_version_id": "eb4e6503-a4da-40e3-bdd2-0950108cbd4a",
+            "source_scope": "research",
+            "text": "软件验收用虚构实验甲，以下不是实际研究结果。",
+            "anchor": {
+              "end": 22,
+              "kind": "txt",
+              "line": 1,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "237cedf4-c7a9-4cd9-b128-324346bad16b",
+            "source_version_id": "eb4e6503-a4da-40e3-bdd2-0950108cbd4a",
+            "source_scope": "research",
+            "text": "局限：未测试长期稳定性。适用范围：仅限此模拟体系和条件，不外推到实际装置。",
+            "anchor": {
+              "end": 37,
+              "kind": "txt",
+              "line": 5,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "c7105c3c-92c6-4b5e-b262-517a7229d63b",
+            "source_version_id": "eb4e6503-a4da-40e3-bdd2-0950108cbd4a",
+            "source_scope": "research",
+            "text": "结果：平均速率 0.8 mmol/(L·min)，标准差 0.1 mmol/(L·min)；无催化剂对照为 0.2 mmol/(L·min)。",
+            "anchor": {
+              "end": 71,
+              "kind": "txt",
+              "line": 4,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "d2d5e0a8-d82c-45cc-9702-33523182679f",
+            "source_version_id": "eb4e6503-a4da-40e3-bdd2-0950108cbd4a",
+            "source_scope": "research",
+            "text": "实验条件：25 摄氏度，初始底物浓度 1 mmol/L，pH 7，三次重复。",
+            "anchor": {
+              "end": 38,
+              "kind": "txt",
+              "line": 3,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "f6b44e2e-7cce-4e59-8a85-245ef79c70e4",
+            "source_version_id": "eb4e6503-a4da-40e3-bdd2-0950108cbd4a",
+            "source_scope": "research",
+            "text": "研究对象：催化剂甲对底物 Z 的模拟转化。方法：批次反应，测量前 10 分钟的产物浓度。",
+            "anchor": {
+              "end": 44,
+              "kind": "txt",
+              "line": 2,
+              "start": 0
+            }
+          }
+        ]
+      }
+    ],
+    "expected": "应指出超出单一模拟条件和适用范围。",
+    "model": "qwen3:4b-instruct",
+    "prompt_version": "review-v2",
+    "prompt_characters": 1240,
+    "status": "failed",
+    "error_code": "model_call_limit",
+    "elapsed_seconds": 15.42,
+    "calls": [
+      {
+        "number": 1,
+        "status": "succeeded",
+        "usage": {
+          "input": 2212,
+          "output": 18,
+          "cache_read": 0,
+          "cache_write": 0
+        },
+        "elapsed_ms": 3922,
+        "error_code": ""
+      },
+      {
+        "number": 2,
+        "status": "succeeded",
+        "usage": {
+          "input": 227,
+          "output": 194,
+          "cache_read": 2229,
+          "cache_write": 0
+        },
+        "elapsed_ms": 2294,
+        "error_code": ""
+      },
+      {
+        "number": 3,
+        "status": "succeeded",
+        "usage": {
+          "input": 650,
+          "output": 500,
+          "cache_read": 2649,
+          "cache_write": 0
+        },
+        "elapsed_ms": 6198,
+        "error_code": ""
+      },
+      {
+        "number": 4,
+        "status": "succeeded",
+        "usage": {
+          "input": 38,
+          "output": 194,
+          "cache_read": 3798,
+          "cache_write": 0
+        },
+        "elapsed_ms": 1379,
+        "error_code": ""
+      }
+    ],
+    "summary": null,
+    "source_checks": null,
+    "findings": null
+  },
+  {
+    "case": "contradiction",
+    "input_manuscript": [
+      "本次模拟实验进行了三次重复。",
+      "上述同一次模拟实验仅进行了一次重复。"
+    ],
+    "selected_sources": {},
+    "tools": [
+      {
+        "name": "read_manuscript",
+        "args": {},
+        "response": {
+          "version": 2,
+          "blocks": [
+            {
+              "block_version_id": "401e4209-ab98-48fb-8d3c-2b2bac946c82",
+              "block_id": "b157d1c0-7d76-4f9d-9b8c-976d4eba8c0b",
+              "position": 1,
+              "text": "本次模拟实验进行了三次重复。"
+            },
+            {
+              "block_version_id": "5d163e13-ed31-44f8-91aa-f6fc182102a1",
+              "block_id": "fe863e64-3fd8-4c13-b72b-b1b8ab359841",
+              "position": 2,
+              "text": "上述同一次模拟实验仅进行了一次重复。"
+            }
+          ],
+          "author_research": {
+            "method": "",
+            "result": "",
+            "question": "虚构材料的效果范围"
+          },
+          "research_limited": false,
+          "sources": []
+        }
+      },
+      {
+        "name": "submit_review",
+        "args": {
+          "summary": "核对了原稿正文与作者研究说明，发现结论范围与实验描述存在矛盾，且研究说明中未提供方法或结果支持，存在证据缺口与范围外推问题。",
+          "findings": [
+            {
+              "action": "作者需核查正文第1段与第2段的实验描述是否一致，明确模拟实验的实际重复次数与研究范围。",
+              "block_version_id": "401e4209-ab98-48fb-8d3c-2b2bac946c82",
+              "category": "contradiction",
+              "citations": [],
+              "occurrence": 1,
+              "quote": "本次模拟实验进行了三次重复。",
+              "reason": "原稿第1段声称实验进行了三次重复，但作者研究说明中明确指出‘虚构材料的效果范围’，未提供任何方法或结果支持，且第2段明确指出‘上述同一次模拟实验仅进行了一次重复’，存在前后矛盾。",
+              "related_blocks": [
+                {
+                  "block_version_id": "5d163e13-ed31-44f8-91aa-f6fc182102a1",
+                  "occurrence": 2,
+                  "quote": "上述同一次模拟实验仅进行了一次重复。"
+                }
+              ],
+              "research_evidence": [],
+              "support": "contradicts"
+            },
+            {
+              "action": "作者需补充‘虚构材料’在研究说明中的具体方法与结果，或明确说明该研究的实验设计与验证范围。",
+              "block_version_id": "5d163e13-ed31-44f8-91aa-f6fc182102a1",
+              "category": "evidence_missing",
+              "citations": [],
+              "occurrence": 2,
+              "quote": "上述同一次模拟实验仅进行了一次重复。",
+              "reason": "作者研究说明中‘question’字段为空，未提供任何关于‘虚构材料’效果的具体方法或结果，无法支持‘仅进行了一次重复’的结论，存在证据缺失。",
+              "related_blocks": [],
+              "research_evidence": [],
+              "support": "insufficient"
+            }
+          ]
+        },
+        "response": {
+          "status": "rejected",
+          "code": "review_quote_invalid",
+          "message": "问题引文与固定原稿不符。"
+        }
+      },
+      {
+        "name": "read_manuscript",
+        "args": {},
+        "response": {
+          "version": 2,
+          "blocks": [
+            {
+              "block_version_id": "401e4209-ab98-48fb-8d3c-2b2bac946c82",
+              "block_id": "b157d1c0-7d76-4f9d-9b8c-976d4eba8c0b",
+              "position": 1,
+              "text": "本次模拟实验进行了三次重复。"
+            },
+            {
+              "block_version_id": "5d163e13-ed31-44f8-91aa-f6fc182102a1",
+              "block_id": "fe863e64-3fd8-4c13-b72b-b1b8ab359841",
+              "position": 2,
+              "text": "上述同一次模拟实验仅进行了一次重复。"
+            }
+          ],
+          "author_research": {
+            "method": "",
+            "result": "",
+            "question": "虚构材料的效果范围"
+          },
+          "research_limited": false,
+          "sources": []
+        }
+      },
+      {
+        "name": "submit_review",
+        "args": {
+          "summary": "核对了原稿正文与作者研究说明，发现结论范围与实验描述存在矛盾，且研究说明中未提供方法或结果支持，存在证据缺口与范围外推问题。",
+          "findings": [
+            {
+              "action": "作者需核查正文第1段与第2段的实验描述是否一致，明确模拟实验的实际重复次数与研究范围。",
+              "block_version_id": "401e4209-ab98-48fb-8d3c-2b2bac946c82",
+              "category": "contradiction",
+              "citations": [],
+              "occurrence": 1,
+              "quote": "本次模拟实验进行了三次重复。",
+              "reason": "原稿第1段声称实验进行了三次重复，但作者研究说明中明确指出‘虚构材料的效果范围’，未提供任何方法或结果支持，且第2段明确指出‘上述同一次模拟实验仅进行了一次重复’，存在前后矛盾。",
+              "related_blocks": [
+                {
+                  "block_version_id": "5d163e13-ed31-44f8-91aa-f6fc182102a1",
+                  "occurrence": 2,
+                  "quote": "上述同一次模拟实验仅进行了一次重复。"
+                }
+              ],
+              "research_evidence": [],
+              "support": "contradicts"
+            },
+            {
+              "action": "作者需补充‘虚构材料’在研究说明中的具体方法与结果，或明确说明该研究的实验设计与验证范围。",
+              "block_version_id": "5d163e13-ed31-44f8-91aa-f6fc182102a1",
+              "category": "evidence_missing",
+              "citations": [],
+              "occurrence": 2,
+              "quote": "上述同一次模拟实验仅进行了一次重复。",
+              "reason": "作者研究说明中‘question’字段为空，未提供任何关于‘虚构材料’效果的具体方法或结果，无法支持‘仅进行了一次重复’的结论，存在证据缺失。",
+              "related_blocks": [],
+              "research_evidence": [],
+              "support": "insufficient"
+            }
+          ]
+        },
+        "response": {
+          "status": "rejected",
+          "code": "review_quote_invalid",
+          "message": "问题引文与固定原稿不符。"
+        }
+      }
+    ],
+    "expected": "应指出同一实验重复次数的前后矛盾。",
+    "model": "qwen3:4b-instruct",
+    "prompt_version": "review-v2",
+    "prompt_characters": 1240,
+    "status": "failed",
+    "error_code": "model_call_limit",
+    "elapsed_seconds": 13.11,
+    "calls": [
+      {
+        "number": 1,
+        "status": "succeeded",
+        "usage": {
+          "input": 1197,
+          "output": 18,
+          "cache_read": 709,
+          "cache_write": 0
+        },
+        "elapsed_ms": 1051,
+        "error_code": ""
+      },
+      {
+        "number": 2,
+        "status": "succeeded",
+        "usage": {
+          "input": 223,
+          "output": 478,
+          "cache_read": 1923,
+          "cache_write": 0
+        },
+        "elapsed_ms": 5580,
+        "error_code": ""
+      },
+      {
+        "number": 3,
+        "status": "succeeded",
+        "usage": {
+          "input": 36,
+          "output": 18,
+          "cache_read": 2623,
+          "cache_write": 0
+        },
+        "elapsed_ms": 270,
+        "error_code": ""
+      },
+      {
+        "number": 4,
+        "status": "succeeded",
+        "usage": {
+          "input": 223,
+          "output": 478,
+          "cache_read": 2676,
+          "cache_write": 0
+        },
+        "elapsed_ms": 5712,
+        "error_code": ""
+      }
+    ],
+    "summary": null,
+    "source_checks": null,
+    "findings": null
+  },
+  {
+    "case": "supported_control",
+    "input_manuscript": [
+      "在 25 摄氏度、初始底物浓度 1 mmol/L、pH 7 的模拟体系中，催化剂甲平均速率为 0.8 mmol/(L·min)。该记录未测试长期稳定性，不外推到实际装置。"
+    ],
+    "selected_sources": {
+      "eb4e6503-a4da-40e3-bdd2-0950108cbd4a": "source-1"
+    },
+    "tools": [
+      {
+        "name": "read_manuscript",
+        "args": {},
+        "response": {
+          "version": 3,
+          "blocks": [
+            {
+              "block_version_id": "311531b7-468b-4479-95dc-dc1587d35178",
+              "block_id": "5c2ce94f-c62c-4341-b33b-b8de4362f3c4",
+              "position": 1,
+              "text": "在 25 摄氏度、初始底物浓度 1 mmol/L、pH 7 的模拟体系中，催化剂甲平均速率为 0.8 mmol/(L·min)。该记录未测试长期稳定性，不外推到实际装置。"
+            }
+          ],
+          "author_research": {
+            "method": "",
+            "result": "",
+            "question": "虚构材料的效果范围"
+          },
+          "research_limited": false,
+          "sources": [
+            {
+              "version_id": "eb4e6503-a4da-40e3-bdd2-0950108cbd4a",
+              "file_name": "实验甲.txt",
+              "source_number": 1,
+              "title": "实验甲",
+              "material_exists": true,
+              "bibliography_registered": true,
+              "publication_status": "unverified",
+              "source_scope": "research"
+            }
+          ]
+        }
+      },
+      {
+        "name": "read_evidence",
+        "args": {
+          "chunk_ids": [
+            "061d9a1c-fc78-447a-b55c-7089229eb1b7",
+            "237cedf4-c7a9-4cd9-b128-324346bad16b",
+            "c7105c3c-92c6-4b5e-b262-517a7229d63b",
+            "d2d5e0a8-d82c-45cc-9702-33523182679f",
+            "f6b44e2e-7cce-4e59-8a85-245ef79c70e4"
+          ]
+        },
+        "response": [
+          {
+            "chunk_id": "061d9a1c-fc78-447a-b55c-7089229eb1b7",
+            "source_version_id": "eb4e6503-a4da-40e3-bdd2-0950108cbd4a",
+            "source_scope": "research",
+            "text": "软件验收用虚构实验甲，以下不是实际研究结果。",
+            "anchor": {
+              "end": 22,
+              "kind": "txt",
+              "line": 1,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "237cedf4-c7a9-4cd9-b128-324346bad16b",
+            "source_version_id": "eb4e6503-a4da-40e3-bdd2-0950108cbd4a",
+            "source_scope": "research",
+            "text": "局限：未测试长期稳定性。适用范围：仅限此模拟体系和条件，不外推到实际装置。",
+            "anchor": {
+              "end": 37,
+              "kind": "txt",
+              "line": 5,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "c7105c3c-92c6-4b5e-b262-517a7229d63b",
+            "source_version_id": "eb4e6503-a4da-40e3-bdd2-0950108cbd4a",
+            "source_scope": "research",
+            "text": "结果：平均速率 0.8 mmol/(L·min)，标准差 0.1 mmol/(L·min)；无催化剂对照为 0.2 mmol/(L·min)。",
+            "anchor": {
+              "end": 71,
+              "kind": "txt",
+              "line": 4,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "d2d5e0a8-d82c-45cc-9702-33523182679f",
+            "source_version_id": "eb4e6503-a4da-40e3-bdd2-0950108cbd4a",
+            "source_scope": "research",
+            "text": "实验条件：25 摄氏度，初始底物浓度 1 mmol/L，pH 7，三次重复。",
+            "anchor": {
+              "end": 38,
+              "kind": "txt",
+              "line": 3,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "f6b44e2e-7cce-4e59-8a85-245ef79c70e4",
+            "source_version_id": "eb4e6503-a4da-40e3-bdd2-0950108cbd4a",
+            "source_scope": "research",
+            "text": "研究对象：催化剂甲对底物 Z 的模拟转化。方法：批次反应，测量前 10 分钟的产物浓度。",
+            "anchor": {
+              "end": 44,
+              "kind": "txt",
+              "line": 2,
+              "start": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "submit_review",
+        "args": {
+          "summary": "已核对作者所选原稿与资料。原稿中关于催化剂甲的速率数据来自模拟体系，明确标注不外推至实际装置，且资料中支持该数据的实验条件与结果一致。研究说明中未提供方法或结果支持，且作者声明该材料为虚构。所有主张均在模拟体系内，未超出条件范围。",
+          "findings": [
+            {
+              "action": "作者需确认正文第1段中‘该记录未测试长期稳定性，不外推到实际装置’是否与资料中‘局限：未测试长期稳定性。适用范围：仅限此模拟体系和条件，不外推到实际装置’完全一致，确保表述一致且无遗漏。",
+              "block_version_id": "311531b7-468b-4479-95dc-dc1587d35178",
+              "category": "evidence_missing",
+              "citations": [],
+              "occurrence": 1,
+              "quote": "在 25 摄氏度、初始底物浓度 1 mmol/L、pH 7 的模拟体系中，催化剂甲平均速率为 0.8 mmol/(L·min)。该记录未测试长期稳定性，不外推到实际装置。",
+              "reason": "原文中‘不外推到实际装置’已明确，但未引用资料中‘适用范围：仅限此模拟体系和条件’的完整表述，存在信息不完整风险。资料中‘局限’与‘适用范围’内容完整，但原稿未直接引用，建议补充以增强透明度。",
+              "related_blocks": [],
+              "research_evidence": [],
+              "support": "insufficient"
+            },
+            {
+              "action": "作者需核查‘虚构材料的效果范围’是否在研究说明中明确标注，确保与正文‘模拟体系’的描述一致，避免读者误解为真实实验结果。",
+              "block_version_id": "311531b7-468b-4479-95dc-dc1587d35178",
+              "category": "overclaim",
+              "citations": [],
+              "occurrence": 1,
+              "quote": "在 25 摄氏度、初始底物浓度 1 mmol/L、pH 7 的模拟体系中，催化剂甲平均速率为 0.8 mmol/(L·min)。该记录未测试长期稳定性，不外推到实际装置。",
+              "reason": "作者在研究说明中声明‘虚构材料’，但正文未明确指出该数据为模拟结果，存在将虚构材料误当作真实实验结果的风险。应明确标注‘模拟’或‘虚构’以避免误解。",
+              "related_blocks": [],
+              "research_evidence": [],
+              "support": "contradicts"
+            }
+          ]
+        },
+        "response": {
+          "status": "rejected",
+          "code": "review_support_invalid",
+          "message": "判为矛盾必须提供可回查的依据。"
+        }
+      },
+      {
+        "name": "submit_review",
+        "args": {
+          "summary": "已核对作者所选原稿与资料。原稿中关于催化剂甲的速率数据来自模拟体系，明确标注不外推至实际装置，且资料中支持该数据的实验条件与结果一致。研究说明中未提供方法或结果支持，且作者声明该材料为虚构。所有主张均在模拟体系内，未超出条件范围。",
+          "findings": [
+            {
+              "action": "作者需确认正文第1段中‘该记录未测试长期稳定性，不外推到实际装置’是否与资料中‘局限：未测试长期稳定性。适用范围：仅限此模拟体系和条件，不外推到实际装置’完全一致，确保表述一致且无遗漏。",
+              "block_version_id": "311531b7-468b-4479-95dc-dc1587d35178",
+              "category": "evidence_missing",
+              "citations": [],
+              "occurrence": 1,
+              "quote": "在 25 摄氏度、初始底物浓度 1 mmol/L、pH 7 的模拟体系中，催化剂甲平均速率为 0.8 mmol/(L·min)。该记录未测试长期稳定性，不外推到实际装置。",
+              "reason": "原文中‘不外推到实际装置’已明确，但未引用资料中‘适用范围：仅限此模拟体系和条件’的完整表述，存在信息不完整风险。资料中‘局限’与‘适用范围’内容完整，但原稿未直接引用，建议补充以增强透明度。",
+              "related_blocks": [],
+              "research_evidence": [],
+              "support": "insufficient"
+            },
+            {
+              "action": "作者需在研究说明中明确标注‘虚构材料’的性质，并在正文中标注‘模拟体系’或‘虚构实验’，以避免读者误认为该数据来自真实实验。",
+              "block_version_id": "311531b7-468b-4479-95dc-dc1587d35178",
+              "category": "overclaim",
+              "citations": [],
+              "occurrence": 1,
+              "quote": "在 25 摄氏度、初始底物浓度 1 mmol/L、pH 7 的模拟体系中，催化剂甲平均速率为 0.8 mmol/(L·min)。该记录未测试长期稳定性，不外推到实际装置。",
+              "reason": "作者在研究说明中声明‘虚构材料’，但正文未明确指出该数据为模拟结果，存在将虚构材料误当作真实实验结果的风险。应明确标注‘模拟’或‘虚构’以避免误解。",
+              "related_blocks": [],
+              "research_evidence": [],
+              "support": "contradicts"
+            }
+          ]
+        },
+        "response": {
+          "status": "rejected",
+          "code": "review_support_invalid",
+          "message": "判为矛盾必须提供可回查的依据。"
+        }
+      }
+    ],
+    "expected": "材料已支持所述范围，不应报结论越界或与原文矛盾。",
+    "model": "qwen3:4b-instruct",
+    "prompt_version": "review-v2",
+    "prompt_characters": 1240,
+    "status": "failed",
+    "error_code": "model_call_limit",
+    "elapsed_seconds": 19.48,
+    "calls": [
+      {
+        "number": 1,
+        "status": "succeeded",
+        "usage": {
+          "input": 1167,
+          "output": 18,
+          "cache_read": 1049,
+          "cache_write": 0
+        },
+        "elapsed_ms": 1091,
+        "error_code": ""
+      },
+      {
+        "number": 2,
+        "status": "succeeded",
+        "usage": {
+          "input": 259,
+          "output": 194,
+          "cache_read": 2233,
+          "cache_write": 0
+        },
+        "elapsed_ms": 2355,
+        "error_code": ""
+      },
+      {
+        "number": 3,
+        "status": "succeeded",
+        "usage": {
+          "input": 650,
+          "output": 623,
+          "cache_read": 2685,
+          "cache_write": 0
+        },
+        "elapsed_ms": 7592,
+        "error_code": ""
+      },
+      {
+        "number": 4,
+        "status": "succeeded",
+        "usage": {
+          "input": 38,
+          "output": 627,
+          "cache_read": 3957,
+          "cache_write": 0
+        },
+        "elapsed_ms": 7379,
+        "error_code": ""
+      }
+    ],
+    "summary": null,
+    "source_checks": null,
+    "findings": null
+  },
+  {
+    "case": "abstract_gap",
+    "input_manuscript": [
+      "材料 Q 的相关研究证明，该材料已在实际生产中显著提高了加工效率。"
+    ],
+    "selected_sources": {
+      "10ade3f4-bf45-48d4-a270-4f60aa88cf9c": "source-3"
+    },
+    "tools": [
+      {
+        "name": "read_manuscript",
+        "args": {},
+        "response": {
+          "version": 4,
+          "blocks": [
+            {
+              "block_version_id": "d7e49b26-3133-4d44-9685-043d7c2c9e58",
+              "block_id": "9087edf9-594b-4ee1-830a-d83536d20d67",
+              "position": 1,
+              "text": "材料 Q 的相关研究证明，该材料已在实际生产中显著提高了加工效率。"
+            }
+          ],
+          "author_research": {
+            "method": "",
+            "result": "",
+            "question": "虚构材料的效果范围"
+          },
+          "research_limited": false,
+          "sources": [
+            {
+              "version_id": "10ade3f4-bf45-48d4-a270-4f60aa88cf9c",
+              "file_name": "仅摘要.txt",
+              "source_number": 1,
+              "title": "仅摘要",
+              "material_exists": true,
+              "bibliography_registered": true,
+              "publication_status": "unverified",
+              "source_scope": "abstract"
+            }
+          ]
+        }
+      },
+      {
+        "name": "read_evidence",
+        "args": {
+          "chunk_ids": [
+            "318362c5-1940-46cb-b083-0099a3a51029",
+            "9c6334c4-371f-48a9-a83e-14f45dea1d22"
+          ]
+        },
+        "response": [
+          {
+            "chunk_id": "318362c5-1940-46cb-b083-0099a3a51029",
+            "source_version_id": "10ade3f4-bf45-48d4-a270-4f60aa88cf9c",
+            "source_scope": "abstract",
+            "text": "自制软件验收摘要：本模拟研究讨论光照对虚构材料 Q 的影响，观察到颜色变化。",
+            "anchor": {
+              "end": 38,
+              "kind": "txt",
+              "line": 1,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "9c6334c4-371f-48a9-a83e-14f45dea1d22",
+            "source_version_id": "10ade3f4-bf45-48d4-a270-4f60aa88cf9c",
+            "source_scope": "abstract",
+            "text": "这里只提供摘要，全文尚未取得；摘要未披露样本量、温度、效应大小和统计方法。",
+            "anchor": {
+              "end": 37,
+              "kind": "txt",
+              "line": 2,
+              "start": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "submit_review",
+        "args": {
+          "summary": "核对了作者所选稿件的正文、研究说明与资料摘要。发现关键证据缺口与范围外推问题，具体如下：",
+          "findings": [
+            {
+              "action": "作者需核查‘材料Q’是否为虚构材料，若属实，则‘显著提高了加工效率’的结论超出现有证据范围；若为真实材料，需补充实际生产数据以支持该主张。",
+              "block_version_id": "d7e49b26-3133-4d44-9685-043d7c2c9e58",
+              "category": "overclaim",
+              "citations": [],
+              "occurrence": 1,
+              "quote": "材料 Q 的相关研究证明，该材料已在实际生产中显著提高了加工效率。",
+              "reason": "资料仅提供模拟研究，观察到颜色变化，未涉及加工效率；作者研究说明中‘虚构材料’的字段为空，但正文却声称实际生产效果，构成范围外推。",
+              "related_blocks": [],
+              "research_evidence": [],
+              "support": "contradicts"
+            },
+            {
+              "action": "作者需确认‘光照对虚构材料Q的影响’是否为真实实验，若为模拟，则应明确标注为模拟研究，避免误导读者；若为真实实验，需补充样本量、温度、效应大小和统计方法等关键信息。",
+              "block_version_id": "d7e49b26-3133-4d44-9685-043d7c2c9e58",
+              "category": "evidence_missing",
+              "citations": [
+                {
+                  "chunk_id": "318362c5-1940-46cb-b083-0099a3a51029",
+                  "quote": "本模拟研究讨论光照对虚构材料 Q 的影响，观察到颜色变化。"
+                }
+              ],
+              "occurrence": 1,
+              "quote": "本模拟研究讨论光照对虚构材料 Q 的影响，观察到颜色变化。",
+              "reason": "该陈述未提供实验设计、样本量或统计验证，仅描述观察现象，缺乏支持其科学性的证据，属于证据缺失。",
+              "related_blocks": [],
+              "research_evidence": [],
+              "support": "insufficient"
+            },
+            {
+              "action": "作者需明确说明‘摘要未披露样本量、温度、效应大小和统计方法’的局限，避免读者误以为研究已达到可推广的科学水平。",
+              "block_version_id": "d7e49b26-3133-4d44-9685-043d7c2c9e58",
+              "category": "evidence_missing",
+              "citations": [
+                {
+                  "chunk_id": "9c6334c4-371f-48a9-a83e-14f45dea1d22",
+                  "quote": "这里只提供摘要，全文尚未取得；摘要未披露样本量、温度、效应大小和统计方法。"
+                }
+              ],
+              "occurrence": 1,
+              "quote": "这里只提供摘要，全文尚未取得；摘要未披露样本量、温度、效应大小和统计方法。",
+              "reason": "原文摘要明确指出未披露关键研究参数，但正文却以‘相关研究证明’为依据，构成证据缺失与不当推断。",
+              "related_blocks": [],
+              "research_evidence": [],
+              "support": "insufficient"
+            }
+          ]
+        },
+        "response": {
+          "status": "rejected",
+          "code": "review_support_invalid",
+          "message": "判为矛盾必须提供可回查的依据。"
+        }
+      },
+      {
+        "name": "read_evidence",
+        "args": {
+          "chunk_ids": [
+            "318362c5-1940-46cb-b083-0099a3a51029",
+            "9c6334c4-371f-48a9-a83e-14f45dea1d22"
+          ]
+        },
+        "response": [
+          {
+            "chunk_id": "318362c5-1940-46cb-b083-0099a3a51029",
+            "source_version_id": "10ade3f4-bf45-48d4-a270-4f60aa88cf9c",
+            "source_scope": "abstract",
+            "text": "自制软件验收摘要：本模拟研究讨论光照对虚构材料 Q 的影响，观察到颜色变化。",
+            "anchor": {
+              "end": 38,
+              "kind": "txt",
+              "line": 1,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "9c6334c4-371f-48a9-a83e-14f45dea1d22",
+            "source_version_id": "10ade3f4-bf45-48d4-a270-4f60aa88cf9c",
+            "source_scope": "abstract",
+            "text": "这里只提供摘要，全文尚未取得；摘要未披露样本量、温度、效应大小和统计方法。",
+            "anchor": {
+              "end": 37,
+              "kind": "txt",
+              "line": 2,
+              "start": 0
+            }
+          }
+        ]
+      }
+    ],
+    "expected": "仅有摘要的颜色观察，不支持实际生产效率的结论。",
+    "model": "qwen3:4b-instruct",
+    "prompt_version": "review-v2",
+    "prompt_characters": 1240,
+    "status": "failed",
+    "error_code": "model_call_limit",
+    "elapsed_seconds": 13.21,
+    "calls": [
+      {
+        "number": 1,
+        "status": "succeeded",
+        "usage": {
+          "input": 1069,
+          "output": 18,
+          "cache_read": 1049,
+          "cache_write": 0
+        },
+        "elapsed_ms": 1127,
+        "error_code": ""
+      },
+      {
+        "number": 2,
+        "status": "succeeded",
+        "usage": {
+          "input": 222,
+          "output": 91,
+          "cache_read": 2135,
+          "cache_write": 0
+        },
+        "elapsed_ms": 1137,
+        "error_code": ""
+      },
+      {
+        "number": 3,
+        "status": "succeeded",
+        "usage": {
+          "input": 261,
+          "output": 759,
+          "cache_read": 2447,
+          "cache_write": 0
+        },
+        "elapsed_ms": 7874,
+        "error_code": ""
+      },
+      {
+        "number": 4,
+        "status": "succeeded",
+        "usage": {
+          "input": 720,
+          "output": 91,
+          "cache_read": 2785,
+          "cache_write": 0
+        },
+        "elapsed_ms": 1308,
+        "error_code": ""
+      }
+    ],
+    "summary": null,
+    "source_checks": null,
+    "findings": null
+  }
+]

@@ -69,7 +69,6 @@ def finding_output(manuscript, source=None):
         chunk = source[1].chunks.order_by("ordinal").first()
         citations = [{"chunk_id": str(chunk.pk), "quote": chunk.text}]
     return {
-        "summary": "仅检查作者所选原稿与资料，以下问题待核对。",
         "findings": [
             {
                 "block_version_id": manuscript["blocks"][1]["version_id"],
@@ -117,6 +116,7 @@ def test_sdk_review_source_dimensions_author_decisions_and_recheck(context, manu
         assert job.status == "succeeded", job.error_code
         assert len(requests) == 3
         record = ReviewRecord.objects.get(job=job)
+        assert "1 条" in record.summary and "不代表全文正确" in record.summary
         item = record.findings.get()
         assert item.status == "pending" and item.model_output["start"] == 0
         assert record.source_checks[0]["material_exists"] is True
@@ -167,7 +167,7 @@ def test_sdk_review_source_dimensions_author_decisions_and_recheck(context, manu
         # 新结果固定在新稿，旧问题及忽略原因仍可回查。
         with provider(
             respond_with(
-                {"summary": "所选范围内未识别出明确问题，不能据此认定全文无误。", "findings": []},
+                {"findings": []},
                 source,
             )
         ):
@@ -183,6 +183,7 @@ def test_sdk_review_source_dimensions_author_decisions_and_recheck(context, manu
             newer.refresh_from_db()
             assert newer.status == "succeeded", newer.error_code
             assert ReviewRecord.objects.get(job=newer).previous_review_id == record.pk
+            assert "0 条" in ReviewRecord.objects.get(job=newer).summary
         assert ReviewDecision.objects.get().reason == ignored["reason"]
         assert Manuscript.objects.get(project=project).current_revision.number == 2
 
@@ -279,7 +280,11 @@ def test_staged_review_discarded_when_input_or_permission_changes(
             }
         )
         run.handle(
-            {"type": "tool", "name": "submit_review", "args": finding_output(manuscript, source)}
+            {
+                "type": "tool",
+                "name": "submit_review",
+                "args": finding_output(manuscript, source),
+            }
         )
         if change == "source":
             Material.objects.filter(pk=source[0].material_id).update(state_version=2)
@@ -367,6 +372,104 @@ def test_sdk_invalid_quote_cannot_publish_or_exceed_budget(context, manuscript):
         assert not ReviewRecord.objects.filter(job=job).exists()
 
 
+def test_missing_submission_gets_one_protocol_repair_without_new_permissions(context, manuscript):
+    output = finding_output(manuscript)
+
+    def respond(number, _):
+        if number == 1:
+            return [("read_manuscript", {})]
+        return [] if number == 2 else [("submit_review", output)]
+
+    with provider(respond) as requests:
+        job = create_review(context, manuscript)
+        execute_job(str(job.pk))
+        job.refresh_from_db()
+        assert job.status == "succeeded", job.error_code
+        assert len(requests) == 3 and ReviewRecord.objects.filter(job=job).count() == 1
+        assert (
+            job.ai_events.filter(
+                kind="validation_error", details__code="result_unsubmitted"
+            ).count()
+            == 1
+        )
+
+
+def test_repeated_missing_submission_stops_without_publishing(context, manuscript):
+    with provider(lambda *_: []) as requests:
+        job = create_review(context, manuscript)
+        execute_job(str(job.pk))
+        job.refresh_from_db()
+        assert job.status == "failed" and job.error_code == "result_invalid"
+        assert len(requests) == 2
+        assert not ReviewRecord.objects.exists()
+
+
+def test_old_review_prompt_is_cancelled_before_model_request(context, manuscript):
+    with provider(lambda *_: []) as requests:
+        job = create_review(context, manuscript)
+        job.input_snapshot["model"]["prompt_version"] = "review-v1"
+        job.save(update_fields=["input_snapshot"])
+        execute_job(str(job.pk))
+        job.refresh_from_db()
+        assert job.status == "cancelled", job.error_code
+        assert requests == [] and not ReviewRecord.objects.exists()
+
+
+def test_missing_submission_does_not_continue_after_policy_revocation(context, manuscript):
+    def respond(number, _):
+        if number == 1:
+            return [("read_manuscript", {})]
+        ProjectPolicy.objects.filter(project=context[1]).update(verified=False, allowed_actions=[])
+        return []
+
+    with provider(respond) as requests:
+        job = create_review(context, manuscript)
+        execute_job(str(job.pk))
+        job.refresh_from_db()
+        assert job.status == "cancelled", job.error_code
+        assert len(requests) == 2 and not ReviewRecord.objects.exists()
+
+
+def test_occurrence_feedback_counts_within_block_and_requires_resubmission(context, manuscript):
+    valid = finding_output(manuscript)
+    invalid = copy.deepcopy(valid)
+    invalid["findings"][0]["occurrence"] = 2
+
+    def respond(number, body):
+        if number == 1:
+            return [("read_manuscript", {})]
+        if number == 3:
+            assert "只有 1 处" in str(body)
+            assert "不是段落编号" in str(body)
+            assert not ReviewRecord.objects.exists()
+        return [("submit_review", invalid if number == 2 else valid)]
+
+    with provider(respond) as requests:
+        job = create_review(context, manuscript)
+        execute_job(str(job.pk))
+        job.refresh_from_db()
+        assert job.status == "succeeded", job.error_code
+        assert len(requests) == 3
+        assert ReviewRecord.objects.get(job=job).findings.count() == 1
+
+
+def test_same_claim_and_basis_cannot_repeat_by_changing_category(context, manuscript, source):
+    with provider(lambda *_: []):
+        job = create_review(context, manuscript, [source])
+        result = finding_output(manuscript, source)
+        second = copy.deepcopy(result["findings"][0])
+        second["category"] = "evidence_missing"
+        result["findings"].append(second)
+        ids = {str(chunk.pk) for chunk in source[1].chunks.all()}
+        with pytest.raises(ParseFailure, match="review_duplicate_finding"):
+            validate_review(job, copy.deepcopy(result), ids, True)
+        # 同一位置有不同依据的独立问题仍可保留，不按文本位置一概合并。
+        second["citations"] = []
+        validated = validate_review(job, result, ids, True)
+        assert len(validated["findings"]) == 2
+        assert not ReviewRecord.objects.exists()
+
+
 def test_related_manuscript_and_unicode_occurrence_without_material_tools(context):
     body = payload()
     body["blocks"][1]["text"] = "🧪三次重复。补记：三次重复。"
@@ -398,3 +501,58 @@ def test_related_manuscript_and_unicode_occurrence_without_material_tools(contex
         assert result["related_blocks"][0]["block_id"] == manuscript["blocks"][2]["id"]
         names = {tool["function"]["name"] for tool in requests[0]["tools"]}
         assert names == {"read_manuscript", "submit_review"}
+
+
+def test_reversed_contradiction_is_rejected_but_can_be_merged(context, manuscript):
+    output = finding_output(manuscript)
+    first, second = manuscript["blocks"]
+    finding = output["findings"][0]
+    finding.update(
+        category="contradiction",
+        support="contradicts",
+        related_blocks=[
+            {
+                "block_version_id": first["version_id"],
+                "quote": first["text"],
+                "occurrence": 1,
+            }
+        ],
+    )
+    reverse = copy.deepcopy(finding)
+    reverse.update(finding["related_blocks"][0])
+    reverse["related_blocks"] = [
+        {
+            "block_version_id": second["version_id"],
+            "quote": finding["quote"],
+            "occurrence": 1,
+        }
+    ]
+    invalid = copy.deepcopy(output)
+    invalid["findings"].append(reverse)
+
+    def respond(number, body):
+        if number == 1:
+            return [("read_manuscript", {})]
+        if number == 3:
+            assert "不能交换主句" in str(body)
+            assert not ReviewRecord.objects.exists()
+        return [("submit_review", invalid if number == 2 else output)]
+
+    with provider(respond) as requests:
+        job = create_review(context, manuscript)
+        execute_job(str(job.pk))
+        job.refresh_from_db()
+        assert job.status == "succeeded", job.error_code
+        assert len(requests) == 3 and ReviewRecord.objects.get(job=job).findings.count() == 1
+
+
+def test_number_feedback_requires_explicit_evidence_not_just_reading(context, manuscript, source):
+    output = finding_output(manuscript, source)
+    output["findings"][0]["reason"] = "现有引文没有记录 987654 次重复。"
+    with provider(lambda *_: []):
+        job = create_review(context, manuscript, [source])
+        ids = {str(chunk.pk) for chunk in source[1].chunks.all()}
+        with pytest.raises(ParseFailure, match="review_number_mismatch") as error:
+            validate_review(job, output, ids, True)
+        assert "987654" in error.value.message and "chunk_id" in error.value.message
+        assert not ReviewRecord.objects.exists()

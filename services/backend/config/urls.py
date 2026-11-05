@@ -2,6 +2,13 @@ from django.urls import path
 
 from core.accounts import LogoutView, SessionView
 from core.ai_views import AITaskView, AITraceView
+from core.disclosure_views import (
+    DisclosureHistoryView,
+    DisclosureRevisionView,
+    DisclosureView,
+    UsageDetailView,
+    UsageListView,
+)
 from core.expression_views import (
     ExpressionTaskView,
     SuggestionDecisionView,
@@ -78,6 +85,14 @@ urlpatterns = [
     path("api/v1/projects/<uuid:project_id>/members/<int:user_id>/", MemberDetailView.as_view()),
     path("api/v1/projects/<uuid:project_id>/ai-permissions/", AIPermissionView.as_view()),
     path("api/v1/projects/<uuid:project_id>/jobs/", JobListView.as_view()),
+    path("api/v1/projects/<uuid:project_id>/usage/", UsageListView.as_view()),
+    path("api/v1/projects/<uuid:project_id>/usage/<uuid:job_id>/", UsageDetailView.as_view()),
+    path("api/v1/projects/<uuid:project_id>/disclosure/", DisclosureView.as_view()),
+    path("api/v1/projects/<uuid:project_id>/disclosure/history/", DisclosureHistoryView.as_view()),
+    path(
+        "api/v1/projects/<uuid:project_id>/disclosure/history/<int:number>/",
+        DisclosureRevisionView.as_view(),
+    ),
     path("api/v1/projects/<uuid:project_id>/manuscript/", ManuscriptView.as_view()),
     path("api/v1/projects/<uuid:project_id>/manuscript/history/", ManuscriptHistoryView.as_view()),
     path(

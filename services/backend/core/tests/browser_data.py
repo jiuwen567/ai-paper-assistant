@@ -83,7 +83,11 @@ def main():
                 from core.tests.test_expressions import output_for, respond_with
 
                 manuscript = revision_data(Manuscript.objects.get(project=project).current_revision)
-                source = (available[0], available[0].parses.get(job__status="succeeded"))
+                source = (
+                    (available[0], available[0].parses.get(job__status="succeeded"))
+                    if available
+                    else None
+                )
                 respond = respond_with(output_for(manuscript, source), source)
                 endpoint = "expressions/tasks/"
                 body = data["payload"]

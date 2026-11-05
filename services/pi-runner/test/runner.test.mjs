@@ -7,7 +7,7 @@ import test from "node:test";
 
 const chunk = "00000000-0000-4000-8000-000000000001";
 
-async function exercise(t, turns, responseStatus = 200) {
+async function exercise(t, turns, responseStatus = 200, config = {}) {
   let requests = 0;
   const payloads = [], events = [];
   const server = createServer(async (request, response) => {
@@ -38,7 +38,7 @@ async function exercise(t, turns, responseStatus = 200) {
   let stderr = "";
   child.stderr.on("data", data => { stderr += data; });
   child.stdin.write(JSON.stringify({ base_url: `http://127.0.0.1:${server.address().port}/v1`, model: "test",
-    api_key: "test-secret", system_prompt: "仅处理资料。", prompt: "读取材料并提交摘记。" }) + "\n");
+    api_key: "test-secret", system_prompt: "仅处理资料。", prompt: "读取材料并提交摘记。", ...config }) + "\n");
   for await (const line of createInterface({ input: child.stdout })) {
     const event = JSON.parse(line);
     events.push(event);
@@ -83,4 +83,20 @@ test("拒绝模型端点重定向，不向另一个路径发送材料", { timeou
   const result = await exercise(t, [], 302);
   assert.equal(result.requests, 1);
   assert.equal(result.events.at(-1).success, false);
+});
+
+test("阅读请求声明单次工具调用，提交后不再请求模型", { timeout: 15000 }, async t => {
+  const version = "00000000-0000-4000-8000-000000000002";
+  const fields = Object.fromEntries(["subject", "method", "result", "limitations", "conditions", "applicability"].map(name => [name, { status: "not_mentioned", text: "", citations: [] }]));
+  const output = { documents: [{ version_id: version, fields }], comparison: null };
+  const result = await exercise(t, [
+    [["read_evidence", { chunk_ids: [chunk] }]],
+    [["submit_reading", output], ["submit_reading", output]],
+  ], 200, { purpose: "reading", version_ids: [version] });
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(result.requests, 2);
+  assert.ok(result.payloads.every(payload => payload.parallel_tool_calls === false));
+  // 供应商仍可能忽略约束返回多个调用；全部交业务端校验，不隐瞒第二次提交。
+  assert.equal(result.events.filter(event => event.type === "tool" && event.name === "submit_reading").length, 2);
+  assert.equal(result.events.at(-1).success, true);
 });

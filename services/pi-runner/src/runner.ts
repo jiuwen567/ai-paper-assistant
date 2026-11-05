@@ -70,7 +70,7 @@ try {
     name, label: name, description, parameters, executionMode: "sequential", replay: "never",
     async execute(_id, args) {
       const result = await rpc("tool", { name, args });
-      if (["submit_review", "submit_expression", "submit_feedback", "submit_impact"].includes(name) && result?.status === "rejected") {
+      if (["submit_reading", "submit_review", "submit_expression", "submit_feedback", "submit_impact"].includes(name) && result?.status === "rejected") {
         return { content: [{ type: "text", text: JSON.stringify(result) }], details: {}, isError: true };
       }
       return { content: [{ type: "text", text: JSON.stringify(result) }], details: {},
@@ -86,6 +86,10 @@ try {
         ...options, apiKey: config.api_key || "local", maxRetries: 0,
         timeoutMs: config.request_timeout_ms ?? 30_000,
         maxTokens: config.max_tokens ?? 2048, temperature: 0,
+        // 阅读一次提交全部资料；避免供应商在同一响应中反复生成完整提交。
+        onPayload: ["reading", "comparison"].includes(config.purpose)
+          ? payload => ({ ...(payload as Record<string, unknown>), parallel_tool_calls: false })
+          : options?.onPayload,
         // 重定向及非配置端点均拒绝；模型不能选择 URL、文件或调用服务器命令。
         fetch: async (input, init) => {
           const url = input instanceof Request ? input.url : String(input);

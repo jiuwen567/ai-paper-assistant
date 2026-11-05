@@ -1,0 +1,2239 @@
+[
+  {
+    "case": "single",
+    "selected_sources": {
+      "22c5557e-c94d-4bb3-8233-347ad44ba329": "source-1"
+    },
+    "model": "qwen3:4b-instruct",
+    "prompt_version": "reading-v2",
+    "input_samples": [
+      {
+        "id": "source-1",
+        "title": "实验甲",
+        "scope": "research",
+        "text": "软件验收用虚构实验甲，以下不是实际研究结果。\n研究对象：催化剂甲对底物 Z 的模拟转化。方法：批次反应，测量前 10 分钟的产物浓度。\n实验条件：25 摄氏度，初始底物浓度 1 mmol/L，pH 7，三次重复。\n结果：平均速率 0.8 mmol/(L·min)，标准差 0.1 mmol/(L·min)；无催化剂对照为 0.2 mmol/(L·min)。\n局限：未测试长期稳定性。适用范围：仅限此模拟体系和条件，不外推到实际装置。"
+      }
+    ],
+    "status": "succeeded",
+    "error_code": "",
+    "elapsed_seconds": 12.78,
+    "calls": [
+      {
+        "number": 1,
+        "status": "succeeded",
+        "usage": {
+          "input": 426,
+          "output": 183,
+          "cache_read": 1985,
+          "cache_write": 0
+        },
+        "elapsed_ms": 4250,
+        "error_code": ""
+      },
+      {
+        "number": 2,
+        "status": "succeeded",
+        "usage": {
+          "input": 654,
+          "output": 655,
+          "cache_read": 2593,
+          "cache_write": 0
+        },
+        "elapsed_ms": 8039,
+        "error_code": ""
+      }
+    ],
+    "result": {
+      "documents": [
+        {
+          "title": "实验甲",
+          "fields": {
+            "method": {
+              "text": "批次反应，测量前 10 分钟的产物浓度。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "批次反应，测量前 10 分钟的产物浓度。",
+                  "anchor": {
+                    "end": 44,
+                    "kind": "txt",
+                    "line": 2,
+                    "start": 0
+                  },
+                  "sha256": "d687fc128d609d44329e7eab2917f1b4a29d9ce7a2e9992dd18dfcf16b3dc640",
+                  "chunk_id": "f8ad9f06-adf0-48fc-bbb7-f5bb34e1d6c8",
+                  "parse_id": "5c91e3b3-c5a8-46e1-b1f1-32dc86550ad6",
+                  "text_digest": "0c2a91d9f00e6e16326fb5353d805dfd9014dc5a85bd21f5546563972e8647df",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "22c5557e-c94d-4bb3-8233-347ad44ba329",
+                  "bibliography_revision_id": "48b71066-7a9c-4193-9df6-d896f25bcd10"
+                }
+              ]
+            },
+            "result": {
+              "text": "平均速率 0.8 mmol/(L·min)，标准差 0.1 mmol/(L·min)；无催化剂对照为 0.2 mmol/(L·min)。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "平均速率 0.8 mmol/(L·min)，标准差 0.1 mmol/(L·min)；无催化剂对照为 0.2 mmol/(L·min)。",
+                  "anchor": {
+                    "end": 71,
+                    "kind": "txt",
+                    "line": 4,
+                    "start": 0
+                  },
+                  "sha256": "d687fc128d609d44329e7eab2917f1b4a29d9ce7a2e9992dd18dfcf16b3dc640",
+                  "chunk_id": "262f0ab5-de56-4ef9-aaec-969ec38dc18b",
+                  "parse_id": "5c91e3b3-c5a8-46e1-b1f1-32dc86550ad6",
+                  "text_digest": "4b572a2fbafc072c86d66a87a521609143df2ffb6890f9853bd66389194e5f71",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "22c5557e-c94d-4bb3-8233-347ad44ba329",
+                  "bibliography_revision_id": "48b71066-7a9c-4193-9df6-d896f25bcd10"
+                }
+              ]
+            },
+            "subject": {
+              "text": "催化剂甲对底物 Z 的模拟转化。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "催化剂甲对底物 Z 的模拟转化。",
+                  "anchor": {
+                    "end": 44,
+                    "kind": "txt",
+                    "line": 2,
+                    "start": 0
+                  },
+                  "sha256": "d687fc128d609d44329e7eab2917f1b4a29d9ce7a2e9992dd18dfcf16b3dc640",
+                  "chunk_id": "f8ad9f06-adf0-48fc-bbb7-f5bb34e1d6c8",
+                  "parse_id": "5c91e3b3-c5a8-46e1-b1f1-32dc86550ad6",
+                  "text_digest": "0c2a91d9f00e6e16326fb5353d805dfd9014dc5a85bd21f5546563972e8647df",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "22c5557e-c94d-4bb3-8233-347ad44ba329",
+                  "bibliography_revision_id": "48b71066-7a9c-4193-9df6-d896f25bcd10"
+                }
+              ]
+            },
+            "conditions": {
+              "text": "25 摄氏度，初始底物浓度 1 mmol/L，pH 7，三次重复。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "25 摄氏度，初始底物浓度 1 mmol/L，pH 7，三次重复。",
+                  "anchor": {
+                    "end": 38,
+                    "kind": "txt",
+                    "line": 3,
+                    "start": 0
+                  },
+                  "sha256": "d687fc128d609d44329e7eab2917f1b4a29d9ce7a2e9992dd18dfcf16b3dc640",
+                  "chunk_id": "b43894cd-8576-48af-8661-64e61c9c615f",
+                  "parse_id": "5c91e3b3-c5a8-46e1-b1f1-32dc86550ad6",
+                  "text_digest": "2cd8a874abcf7058bdc17b3ca7c25855265ccf44cfd36e4edf0f3ca56c880b00",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "22c5557e-c94d-4bb3-8233-347ad44ba329",
+                  "bibliography_revision_id": "48b71066-7a9c-4193-9df6-d896f25bcd10"
+                }
+              ]
+            },
+            "limitations": {
+              "text": "未测试长期稳定性。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "未测试长期稳定性。",
+                  "anchor": {
+                    "end": 37,
+                    "kind": "txt",
+                    "line": 5,
+                    "start": 0
+                  },
+                  "sha256": "d687fc128d609d44329e7eab2917f1b4a29d9ce7a2e9992dd18dfcf16b3dc640",
+                  "chunk_id": "4b162d96-fd2f-48f4-8dfc-7dc7934cb9d2",
+                  "parse_id": "5c91e3b3-c5a8-46e1-b1f1-32dc86550ad6",
+                  "text_digest": "5d20729101baa92ae6d07f002866d41903c7efb6fdda89cd66b2063ef7375cf7",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "22c5557e-c94d-4bb3-8233-347ad44ba329",
+                  "bibliography_revision_id": "48b71066-7a9c-4193-9df6-d896f25bcd10"
+                }
+              ]
+            },
+            "applicability": {
+              "text": "仅限此模拟体系和条件，不外推到实际装置。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "仅限此模拟体系和条件，不外推到实际装置。",
+                  "anchor": {
+                    "end": 37,
+                    "kind": "txt",
+                    "line": 5,
+                    "start": 0
+                  },
+                  "sha256": "d687fc128d609d44329e7eab2917f1b4a29d9ce7a2e9992dd18dfcf16b3dc640",
+                  "chunk_id": "4b162d96-fd2f-48f4-8dfc-7dc7934cb9d2",
+                  "parse_id": "5c91e3b3-c5a8-46e1-b1f1-32dc86550ad6",
+                  "text_digest": "5d20729101baa92ae6d07f002866d41903c7efb6fdda89cd66b2063ef7375cf7",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "22c5557e-c94d-4bb3-8233-347ad44ba329",
+                  "bibliography_revision_id": "48b71066-7a9c-4193-9df6-d896f25bcd10"
+                }
+              ]
+            }
+          },
+          "file_name": "实验甲.txt",
+          "version_id": "22c5557e-c94d-4bb3-8233-347ad44ba329",
+          "source_scope": "research",
+          "source_number": 1
+        }
+      ],
+      "comparison": null
+    },
+    "tools": [
+      {
+        "name": "read_evidence",
+        "args": {
+          "chunk_ids": [
+            "262f0ab5-de56-4ef9-aaec-969ec38dc18b",
+            "4b162d96-fd2f-48f4-8dfc-7dc7934cb9d2",
+            "9cfccf2f-d2a2-4dab-936f-98a4982e17ca",
+            "b43894cd-8576-48af-8661-64e61c9c615f",
+            "f8ad9f06-adf0-48fc-bbb7-f5bb34e1d6c8"
+          ]
+        },
+        "response": [
+          {
+            "chunk_id": "262f0ab5-de56-4ef9-aaec-969ec38dc18b",
+            "source_version_id": "22c5557e-c94d-4bb3-8233-347ad44ba329",
+            "source_scope": "research",
+            "text": "结果：平均速率 0.8 mmol/(L·min)，标准差 0.1 mmol/(L·min)；无催化剂对照为 0.2 mmol/(L·min)。",
+            "anchor": {
+              "end": 71,
+              "kind": "txt",
+              "line": 4,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "4b162d96-fd2f-48f4-8dfc-7dc7934cb9d2",
+            "source_version_id": "22c5557e-c94d-4bb3-8233-347ad44ba329",
+            "source_scope": "research",
+            "text": "局限：未测试长期稳定性。适用范围：仅限此模拟体系和条件，不外推到实际装置。",
+            "anchor": {
+              "end": 37,
+              "kind": "txt",
+              "line": 5,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "9cfccf2f-d2a2-4dab-936f-98a4982e17ca",
+            "source_version_id": "22c5557e-c94d-4bb3-8233-347ad44ba329",
+            "source_scope": "research",
+            "text": "软件验收用虚构实验甲，以下不是实际研究结果。",
+            "anchor": {
+              "end": 22,
+              "kind": "txt",
+              "line": 1,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "b43894cd-8576-48af-8661-64e61c9c615f",
+            "source_version_id": "22c5557e-c94d-4bb3-8233-347ad44ba329",
+            "source_scope": "research",
+            "text": "实验条件：25 摄氏度，初始底物浓度 1 mmol/L，pH 7，三次重复。",
+            "anchor": {
+              "end": 38,
+              "kind": "txt",
+              "line": 3,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "f8ad9f06-adf0-48fc-bbb7-f5bb34e1d6c8",
+            "source_version_id": "22c5557e-c94d-4bb3-8233-347ad44ba329",
+            "source_scope": "research",
+            "text": "研究对象：催化剂甲对底物 Z 的模拟转化。方法：批次反应，测量前 10 分钟的产物浓度。",
+            "anchor": {
+              "end": 44,
+              "kind": "txt",
+              "line": 2,
+              "start": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "submit_reading",
+        "args": {
+          "documents": [
+            {
+              "fields": {
+                "applicability": {
+                  "citations": [
+                    {
+                      "chunk_id": "4b162d96-fd2f-48f4-8dfc-7dc7934cb9d2",
+                      "quote": "仅限此模拟体系和条件，不外推到实际装置。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "仅限此模拟体系和条件，不外推到实际装置。"
+                },
+                "conditions": {
+                  "citations": [
+                    {
+                      "chunk_id": "b43894cd-8576-48af-8661-64e61c9c615f",
+                      "quote": "25 摄氏度，初始底物浓度 1 mmol/L，pH 7，三次重复。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "25 摄氏度，初始底物浓度 1 mmol/L，pH 7，三次重复。"
+                },
+                "limitations": {
+                  "citations": [
+                    {
+                      "chunk_id": "4b162d96-fd2f-48f4-8dfc-7dc7934cb9d2",
+                      "quote": "未测试长期稳定性。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "未测试长期稳定性。"
+                },
+                "method": {
+                  "citations": [
+                    {
+                      "chunk_id": "f8ad9f06-adf0-48fc-bbb7-f5bb34e1d6c8",
+                      "quote": "批次反应，测量前 10 分钟的产物浓度。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "批次反应，测量前 10 分钟的产物浓度。"
+                },
+                "result": {
+                  "citations": [
+                    {
+                      "chunk_id": "262f0ab5-de56-4ef9-aaec-969ec38dc18b",
+                      "quote": "平均速率 0.8 mmol/(L·min)，标准差 0.1 mmol/(L·min)；无催化剂对照为 0.2 mmol/(L·min)。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "平均速率 0.8 mmol/(L·min)，标准差 0.1 mmol/(L·min)；无催化剂对照为 0.2 mmol/(L·min)。"
+                },
+                "subject": {
+                  "citations": [
+                    {
+                      "chunk_id": "f8ad9f06-adf0-48fc-bbb7-f5bb34e1d6c8",
+                      "quote": "催化剂甲对底物 Z 的模拟转化。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "催化剂甲对底物 Z 的模拟转化。"
+                }
+              },
+              "version_id": "22c5557e-c94d-4bb3-8233-347ad44ba329"
+            }
+          ],
+          "comparison": null
+        },
+        "response": {
+          "status": "staged"
+        }
+      }
+    ]
+  },
+  {
+    "case": "different_conditions",
+    "selected_sources": {
+      "22c5557e-c94d-4bb3-8233-347ad44ba329": "source-1",
+      "3807bdb1-6e79-4c31-9487-7e37dc0cb948": "source-2"
+    },
+    "model": "qwen3:4b-instruct",
+    "prompt_version": "reading-v2",
+    "input_samples": [
+      {
+        "id": "source-1",
+        "title": "实验甲",
+        "scope": "research",
+        "text": "软件验收用虚构实验甲，以下不是实际研究结果。\n研究对象：催化剂甲对底物 Z 的模拟转化。方法：批次反应，测量前 10 分钟的产物浓度。\n实验条件：25 摄氏度，初始底物浓度 1 mmol/L，pH 7，三次重复。\n结果：平均速率 0.8 mmol/(L·min)，标准差 0.1 mmol/(L·min)；无催化剂对照为 0.2 mmol/(L·min)。\n局限：未测试长期稳定性。适用范围：仅限此模拟体系和条件，不外推到实际装置。"
+      },
+      {
+        "id": "source-2",
+        "title": "实验乙",
+        "scope": "research",
+        "text": "软件验收用虚构实验乙，以下不是实际研究结果。\n研究对象：催化剂乙对底物 Z 的模拟转化。方法：连续反应，测量 60 分钟时的产物浓度。\n实验条件：40 摄氏度，初始底物浓度 2 mmol/L，pH 9，两次重复。\n结果：平均速率 1200 μmol/(L·min)，未报告标准差。\n局限：重复次数少，未与甲进行同条件对照。适用范围：仅限此模拟体系，不能直接外推到其他温度或浓度。"
+      }
+    ],
+    "status": "failed",
+    "error_code": "model_failed",
+    "elapsed_seconds": 65.09,
+    "calls": [
+      {
+        "number": 1,
+        "status": "succeeded",
+        "usage": {
+          "input": 789,
+          "output": 372,
+          "cache_read": 2023,
+          "cache_write": 0
+        },
+        "elapsed_ms": 4630,
+        "error_code": ""
+      },
+      {
+        "number": 2,
+        "status": "failed",
+        "usage": null,
+        "elapsed_ms": 58044,
+        "error_code": "model_failed"
+      }
+    ],
+    "result": null,
+    "tools": [
+      {
+        "name": "read_evidence",
+        "args": {
+          "chunk_ids": [
+            "262f0ab5-de56-4ef9-aaec-969ec38dc18b",
+            "4b162d96-fd2f-48f4-8dfc-7dc7934cb9d2",
+            "9cfccf2f-d2a2-4dab-936f-98a4982e17ca",
+            "b43894cd-8576-48af-8661-64e61c9c615f",
+            "f8ad9f06-adf0-48fc-bbb7-f5bb34e1d6c8",
+            "272fb12f-f326-47bd-abfe-e4248b70f69c",
+            "7c3d41c4-40f4-4b0c-a8ca-03828090361e",
+            "89b3e213-79d1-4987-b8e0-1fe1a9e0f99a",
+            "e1baf0cf-e7e6-49fd-95e7-b3987e7f39b1",
+            "e4ff1568-9bf0-4fe8-b353-77e33ad11b39"
+          ]
+        },
+        "response": [
+          {
+            "chunk_id": "262f0ab5-de56-4ef9-aaec-969ec38dc18b",
+            "source_version_id": "22c5557e-c94d-4bb3-8233-347ad44ba329",
+            "source_scope": "research",
+            "text": "结果：平均速率 0.8 mmol/(L·min)，标准差 0.1 mmol/(L·min)；无催化剂对照为 0.2 mmol/(L·min)。",
+            "anchor": {
+              "end": 71,
+              "kind": "txt",
+              "line": 4,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "4b162d96-fd2f-48f4-8dfc-7dc7934cb9d2",
+            "source_version_id": "22c5557e-c94d-4bb3-8233-347ad44ba329",
+            "source_scope": "research",
+            "text": "局限：未测试长期稳定性。适用范围：仅限此模拟体系和条件，不外推到实际装置。",
+            "anchor": {
+              "end": 37,
+              "kind": "txt",
+              "line": 5,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "9cfccf2f-d2a2-4dab-936f-98a4982e17ca",
+            "source_version_id": "22c5557e-c94d-4bb3-8233-347ad44ba329",
+            "source_scope": "research",
+            "text": "软件验收用虚构实验甲，以下不是实际研究结果。",
+            "anchor": {
+              "end": 22,
+              "kind": "txt",
+              "line": 1,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "b43894cd-8576-48af-8661-64e61c9c615f",
+            "source_version_id": "22c5557e-c94d-4bb3-8233-347ad44ba329",
+            "source_scope": "research",
+            "text": "实验条件：25 摄氏度，初始底物浓度 1 mmol/L，pH 7，三次重复。",
+            "anchor": {
+              "end": 38,
+              "kind": "txt",
+              "line": 3,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "f8ad9f06-adf0-48fc-bbb7-f5bb34e1d6c8",
+            "source_version_id": "22c5557e-c94d-4bb3-8233-347ad44ba329",
+            "source_scope": "research",
+            "text": "研究对象：催化剂甲对底物 Z 的模拟转化。方法：批次反应，测量前 10 分钟的产物浓度。",
+            "anchor": {
+              "end": 44,
+              "kind": "txt",
+              "line": 2,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "272fb12f-f326-47bd-abfe-e4248b70f69c",
+            "source_version_id": "3807bdb1-6e79-4c31-9487-7e37dc0cb948",
+            "source_scope": "research",
+            "text": "实验条件：40 摄氏度，初始底物浓度 2 mmol/L，pH 9，两次重复。",
+            "anchor": {
+              "end": 38,
+              "kind": "txt",
+              "line": 3,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "7c3d41c4-40f4-4b0c-a8ca-03828090361e",
+            "source_version_id": "3807bdb1-6e79-4c31-9487-7e37dc0cb948",
+            "source_scope": "research",
+            "text": "局限：重复次数少，未与甲进行同条件对照。适用范围：仅限此模拟体系，不能直接外推到其他温度或浓度。",
+            "anchor": {
+              "end": 48,
+              "kind": "txt",
+              "line": 5,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "89b3e213-79d1-4987-b8e0-1fe1a9e0f99a",
+            "source_version_id": "3807bdb1-6e79-4c31-9487-7e37dc0cb948",
+            "source_scope": "research",
+            "text": "研究对象：催化剂乙对底物 Z 的模拟转化。方法：连续反应，测量 60 分钟时的产物浓度。",
+            "anchor": {
+              "end": 44,
+              "kind": "txt",
+              "line": 2,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "e1baf0cf-e7e6-49fd-95e7-b3987e7f39b1",
+            "source_version_id": "3807bdb1-6e79-4c31-9487-7e37dc0cb948",
+            "source_scope": "research",
+            "text": "结果：平均速率 1200 μmol/(L·min)，未报告标准差。",
+            "anchor": {
+              "end": 33,
+              "kind": "txt",
+              "line": 4,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "e4ff1568-9bf0-4fe8-b353-77e33ad11b39",
+            "source_version_id": "3807bdb1-6e79-4c31-9487-7e37dc0cb948",
+            "source_scope": "research",
+            "text": "软件验收用虚构实验乙，以下不是实际研究结果。",
+            "anchor": {
+              "end": 22,
+              "kind": "txt",
+              "line": 1,
+              "start": 0
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "case": "abstract_only",
+    "selected_sources": {
+      "51eed68a-ee2a-4fb7-abc1-a15a0a3b7681": "source-3"
+    },
+    "model": "qwen3:4b-instruct",
+    "prompt_version": "reading-v2",
+    "input_samples": [
+      {
+        "id": "source-3",
+        "title": "仅摘要",
+        "scope": "abstract",
+        "text": "自制软件验收摘要：本模拟研究讨论光照对虚构材料 Q 的影响，观察到颜色变化。\n这里只提供摘要，全文尚未取得；摘要未披露样本量、温度、效应大小和统计方法。"
+      }
+    ],
+    "status": "succeeded",
+    "error_code": "",
+    "elapsed_seconds": 14.24,
+    "calls": [
+      {
+        "number": 1,
+        "status": "succeeded",
+        "usage": {
+          "input": 329,
+          "output": 92,
+          "cache_read": 1985,
+          "cache_write": 0
+        },
+        "elapsed_ms": 2609,
+        "error_code": ""
+      },
+      {
+        "number": 2,
+        "status": "succeeded",
+        "usage": {
+          "input": 260,
+          "output": 488,
+          "cache_read": 2405,
+          "cache_write": 0
+        },
+        "elapsed_ms": 4793,
+        "error_code": ""
+      },
+      {
+        "number": 3,
+        "status": "succeeded",
+        "usage": {
+          "input": 622,
+          "output": 428,
+          "cache_read": 3152,
+          "cache_write": 0
+        },
+        "elapsed_ms": 5337,
+        "error_code": ""
+      }
+    ],
+    "result": {
+      "documents": [
+        {
+          "title": "仅摘要",
+          "fields": {
+            "method": {
+              "text": "所选摘要未提及。",
+              "status": "not_mentioned",
+              "citations": []
+            },
+            "result": {
+              "text": "观察到颜色变化。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "本模拟研究讨论光照对虚构材料 Q 的影响，观察到颜色变化。",
+                  "anchor": {
+                    "end": 38,
+                    "kind": "txt",
+                    "line": 1,
+                    "start": 0
+                  },
+                  "sha256": "d7059fde8b97287b734993d07e6b00f847ab8c076b5d4d39196675172a149fe0",
+                  "chunk_id": "533c86e3-1a1d-42cc-b1c3-03a2a0c230c9",
+                  "parse_id": "9c8ec383-f661-43de-a8d9-d52d03d12972",
+                  "text_digest": "b567a3193c1b12222b163c658710f5bb921a40f6a92135b6a33d3f0d22e33e83",
+                  "source_scope": "abstract",
+                  "state_version": 1,
+                  "source_version_id": "51eed68a-ee2a-4fb7-abc1-a15a0a3b7681",
+                  "bibliography_revision_id": "0b55ce47-54e9-42d1-bc65-7542c0a610c5"
+                }
+              ]
+            },
+            "subject": {
+              "text": "光照对虚构材料 Q 的影响",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "本模拟研究讨论光照对虚构材料 Q 的影响，观察到颜色变化。",
+                  "anchor": {
+                    "end": 38,
+                    "kind": "txt",
+                    "line": 1,
+                    "start": 0
+                  },
+                  "sha256": "d7059fde8b97287b734993d07e6b00f847ab8c076b5d4d39196675172a149fe0",
+                  "chunk_id": "533c86e3-1a1d-42cc-b1c3-03a2a0c230c9",
+                  "parse_id": "9c8ec383-f661-43de-a8d9-d52d03d12972",
+                  "text_digest": "b567a3193c1b12222b163c658710f5bb921a40f6a92135b6a33d3f0d22e33e83",
+                  "source_scope": "abstract",
+                  "state_version": 1,
+                  "source_version_id": "51eed68a-ee2a-4fb7-abc1-a15a0a3b7681",
+                  "bibliography_revision_id": "0b55ce47-54e9-42d1-bc65-7542c0a610c5"
+                }
+              ]
+            },
+            "conditions": {
+              "text": "所选摘要未提及。",
+              "status": "not_mentioned",
+              "citations": []
+            },
+            "limitations": {
+              "text": "所选摘要未提及。",
+              "status": "not_mentioned",
+              "citations": []
+            },
+            "applicability": {
+              "text": "所选摘要未提及。",
+              "status": "not_mentioned",
+              "citations": []
+            }
+          },
+          "file_name": "仅摘要.txt",
+          "version_id": "51eed68a-ee2a-4fb7-abc1-a15a0a3b7681",
+          "source_scope": "abstract",
+          "source_number": 1
+        }
+      ],
+      "comparison": null
+    },
+    "tools": [
+      {
+        "name": "read_evidence",
+        "args": {
+          "chunk_ids": [
+            "48c95924-5118-4da2-a462-8719d3e85e5e",
+            "533c86e3-1a1d-42cc-b1c3-03a2a0c230c9"
+          ]
+        },
+        "response": [
+          {
+            "chunk_id": "48c95924-5118-4da2-a462-8719d3e85e5e",
+            "source_version_id": "51eed68a-ee2a-4fb7-abc1-a15a0a3b7681",
+            "source_scope": "abstract",
+            "text": "这里只提供摘要，全文尚未取得；摘要未披露样本量、温度、效应大小和统计方法。",
+            "anchor": {
+              "end": 37,
+              "kind": "txt",
+              "line": 2,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "533c86e3-1a1d-42cc-b1c3-03a2a0c230c9",
+            "source_version_id": "51eed68a-ee2a-4fb7-abc1-a15a0a3b7681",
+            "source_scope": "abstract",
+            "text": "自制软件验收摘要：本模拟研究讨论光照对虚构材料 Q 的影响，观察到颜色变化。",
+            "anchor": {
+              "end": 38,
+              "kind": "txt",
+              "line": 1,
+              "start": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "submit_reading",
+        "args": {
+          "documents": [
+            {
+              "fields": {
+                "applicability": {
+                  "citations": [],
+                  "status": "not_mentioned",
+                  "text": ""
+                },
+                "conditions": {
+                  "citations": [],
+                  "status": "not_mentioned",
+                  "text": ""
+                },
+                "limitations": {
+                  "citations": [],
+                  "status": "not_mentioned",
+                  "text": ""
+                },
+                "method": {
+                  "citations": [],
+                  "status": "not_mentioned",
+                  "text": ""
+                },
+                "result": {
+                  "citations": [
+                    {
+                      "chunk_id": "533c86e3-1a1d-42cc-b1c3-03a2a0c230c9",
+                      "quote": "本模拟研究讨论光照对虚构材料 Q 的影响，观察到颜色变化。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "观察到颜色变化。"
+                },
+                "subject": {
+                  "citations": [
+                    {
+                      "chunk_id": "533c86e3-1a1d-42cc-b1c3-03a2a0c230c9",
+                      "quote": "本模拟研究讨论光照对虚构材料 Q 的影响，观察到颜色变化。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "光照对虚构材料 Q 的影响"
+                }
+              },
+              "version_id": "51eed68a-ee2a-4fb7-abc1-a15a0a3b7681"
+            }
+          ],
+          "comparison": null
+        },
+        "response": {
+          "status": "staged"
+        }
+      }
+    ]
+  },
+  {
+    "case": "qualitative_abstract",
+    "selected_sources": {
+      "904fff25-803f-4f28-87d2-5978d73121f4": "source-4"
+    },
+    "model": "qwen3:4b-instruct",
+    "prompt_version": "reading-v2",
+    "input_samples": [
+      {
+        "id": "source-4",
+        "title": "自制访谈摘要",
+        "scope": "abstract",
+        "text": "自制软件验收摘要，不是真实访谈结论。\n本记录比较参与者对布局甲与布局乙的偏好，采用访谈方法。访谈发现参与者更偏好布局乙。\n仅取得摘要，未提供参与人数、访谈时长、局限及适用范围。"
+      }
+    ],
+    "status": "succeeded",
+    "error_code": "",
+    "elapsed_seconds": 7.08,
+    "calls": [
+      {
+        "number": 1,
+        "status": "succeeded",
+        "usage": {
+          "input": 367,
+          "output": 120,
+          "cache_read": 1985,
+          "cache_write": 0
+        },
+        "elapsed_ms": 2179,
+        "error_code": ""
+      },
+      {
+        "number": 2,
+        "status": "succeeded",
+        "usage": {
+          "input": 375,
+          "output": 374,
+          "cache_read": 2471,
+          "cache_write": 0
+        },
+        "elapsed_ms": 4480,
+        "error_code": ""
+      }
+    ],
+    "result": {
+      "documents": [
+        {
+          "title": "自制访谈摘要",
+          "fields": {
+            "method": {
+              "text": "采用访谈方法",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "本记录比较参与者对布局甲与布局乙的偏好，采用访谈方法。",
+                  "anchor": {
+                    "end": 41,
+                    "kind": "txt",
+                    "line": 2,
+                    "start": 0
+                  },
+                  "sha256": "fb55c533b857629d42a50875a86ff89f182bf875d7e38bc4731bccd2317262ff",
+                  "chunk_id": "5cda4353-c000-4330-a35f-d614651ae538",
+                  "parse_id": "7672c99b-3ac8-4ff3-8f3b-f66a3d4ffc99",
+                  "text_digest": "90da126b179a04a98aa6a42ba30bf12d25e494857f675c6243410e50dedfa1f2",
+                  "source_scope": "abstract",
+                  "state_version": 1,
+                  "source_version_id": "904fff25-803f-4f28-87d2-5978d73121f4",
+                  "bibliography_revision_id": "7808cefb-965b-4475-94bc-f343f4534d34"
+                }
+              ]
+            },
+            "result": {
+              "text": "参与者更偏好布局乙",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "访谈发现参与者更偏好布局乙。",
+                  "anchor": {
+                    "end": 41,
+                    "kind": "txt",
+                    "line": 2,
+                    "start": 0
+                  },
+                  "sha256": "fb55c533b857629d42a50875a86ff89f182bf875d7e38bc4731bccd2317262ff",
+                  "chunk_id": "5cda4353-c000-4330-a35f-d614651ae538",
+                  "parse_id": "7672c99b-3ac8-4ff3-8f3b-f66a3d4ffc99",
+                  "text_digest": "90da126b179a04a98aa6a42ba30bf12d25e494857f675c6243410e50dedfa1f2",
+                  "source_scope": "abstract",
+                  "state_version": 1,
+                  "source_version_id": "904fff25-803f-4f28-87d2-5978d73121f4",
+                  "bibliography_revision_id": "7808cefb-965b-4475-94bc-f343f4534d34"
+                }
+              ]
+            },
+            "subject": {
+              "text": "参与者对布局甲与布局乙的偏好",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "本记录比较参与者对布局甲与布局乙的偏好，采用访谈方法。",
+                  "anchor": {
+                    "end": 41,
+                    "kind": "txt",
+                    "line": 2,
+                    "start": 0
+                  },
+                  "sha256": "fb55c533b857629d42a50875a86ff89f182bf875d7e38bc4731bccd2317262ff",
+                  "chunk_id": "5cda4353-c000-4330-a35f-d614651ae538",
+                  "parse_id": "7672c99b-3ac8-4ff3-8f3b-f66a3d4ffc99",
+                  "text_digest": "90da126b179a04a98aa6a42ba30bf12d25e494857f675c6243410e50dedfa1f2",
+                  "source_scope": "abstract",
+                  "state_version": 1,
+                  "source_version_id": "904fff25-803f-4f28-87d2-5978d73121f4",
+                  "bibliography_revision_id": "7808cefb-965b-4475-94bc-f343f4534d34"
+                }
+              ]
+            },
+            "conditions": {
+              "text": "所选摘要未提及。",
+              "status": "not_mentioned",
+              "citations": []
+            },
+            "limitations": {
+              "text": "所选摘要未提及。",
+              "status": "not_mentioned",
+              "citations": []
+            },
+            "applicability": {
+              "text": "所选摘要未提及。",
+              "status": "not_mentioned",
+              "citations": []
+            }
+          },
+          "file_name": "自制访谈摘要.txt",
+          "version_id": "904fff25-803f-4f28-87d2-5978d73121f4",
+          "source_scope": "abstract",
+          "source_number": 1
+        }
+      ],
+      "comparison": null
+    },
+    "tools": [
+      {
+        "name": "read_evidence",
+        "args": {
+          "chunk_ids": [
+            "52844c2b-5b76-4ac1-b6f0-0d32a5b346a8",
+            "5cda4353-c000-4330-a35f-d614651ae538",
+            "acbecd36-4d68-48a9-b348-7d6e5baaebbb"
+          ]
+        },
+        "response": [
+          {
+            "chunk_id": "52844c2b-5b76-4ac1-b6f0-0d32a5b346a8",
+            "source_version_id": "904fff25-803f-4f28-87d2-5978d73121f4",
+            "source_scope": "abstract",
+            "text": "自制软件验收摘要，不是真实访谈结论。",
+            "anchor": {
+              "end": 18,
+              "kind": "txt",
+              "line": 1,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "5cda4353-c000-4330-a35f-d614651ae538",
+            "source_version_id": "904fff25-803f-4f28-87d2-5978d73121f4",
+            "source_scope": "abstract",
+            "text": "本记录比较参与者对布局甲与布局乙的偏好，采用访谈方法。访谈发现参与者更偏好布局乙。",
+            "anchor": {
+              "end": 41,
+              "kind": "txt",
+              "line": 2,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "acbecd36-4d68-48a9-b348-7d6e5baaebbb",
+            "source_version_id": "904fff25-803f-4f28-87d2-5978d73121f4",
+            "source_scope": "abstract",
+            "text": "仅取得摘要，未提供参与人数、访谈时长、局限及适用范围。",
+            "anchor": {
+              "end": 27,
+              "kind": "txt",
+              "line": 3,
+              "start": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "submit_reading",
+        "args": {
+          "documents": [
+            {
+              "fields": {
+                "applicability": {
+                  "citations": [],
+                  "status": "not_mentioned",
+                  "text": ""
+                },
+                "conditions": {
+                  "citations": [],
+                  "status": "not_mentioned",
+                  "text": ""
+                },
+                "limitations": {
+                  "citations": [],
+                  "status": "not_mentioned",
+                  "text": ""
+                },
+                "method": {
+                  "citations": [
+                    {
+                      "chunk_id": "5cda4353-c000-4330-a35f-d614651ae538",
+                      "quote": "本记录比较参与者对布局甲与布局乙的偏好，采用访谈方法。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "采用访谈方法"
+                },
+                "result": {
+                  "citations": [
+                    {
+                      "chunk_id": "5cda4353-c000-4330-a35f-d614651ae538",
+                      "quote": "访谈发现参与者更偏好布局乙。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "参与者更偏好布局乙"
+                },
+                "subject": {
+                  "citations": [
+                    {
+                      "chunk_id": "5cda4353-c000-4330-a35f-d614651ae538",
+                      "quote": "本记录比较参与者对布局甲与布局乙的偏好，采用访谈方法。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "参与者对布局甲与布局乙的偏好"
+                }
+              },
+              "version_id": "904fff25-803f-4f28-87d2-5978d73121f4"
+            }
+          ],
+          "comparison": null
+        },
+        "response": {
+          "status": "staged"
+        }
+      }
+    ]
+  },
+  {
+    "case": "same_conditions",
+    "selected_sources": {
+      "5b652742-edff-4caa-a211-5e29884ae015": "source-5",
+      "6f0f2b16-e675-413f-847f-3ef7a1349149": "source-6"
+    },
+    "model": "qwen3:4b-instruct",
+    "prompt_version": "reading-v2",
+    "input_samples": [
+      {
+        "id": "source-5",
+        "title": "同条件配置丁",
+        "scope": "research",
+        "text": "自制软件验收记录，不是真实测量。\n研究对象：配置丁处理同一组合成输入的耗时。方法：固定脚本计时，与配置戊使用相同测量口径。\n条件：同一台模拟设备、输入长度100、三次重复。\n结果：平均耗时20毫秒，标准差2毫秒。\n局限：没有测量内存占用。适用范围：仅此模拟设备和输入。"
+      },
+      {
+        "id": "source-6",
+        "title": "同条件配置戊",
+        "scope": "research",
+        "text": "自制软件验收记录，不是真实测量。\n研究对象：配置戊处理同一组合成输入的耗时。方法：固定脚本计时，与配置丁使用相同测量口径。\n条件：同一台模拟设备、输入长度100、三次重复。\n结果：平均耗时30毫秒，标准差3毫秒。\n局限：没有测量内存占用。适用范围：仅此模拟设备和输入。"
+      }
+    ],
+    "status": "succeeded",
+    "error_code": "",
+    "elapsed_seconds": 76.26,
+    "calls": [
+      {
+        "number": 1,
+        "status": "succeeded",
+        "usage": {
+          "input": 835,
+          "output": 362,
+          "cache_read": 1985,
+          "cache_write": 0
+        },
+        "elapsed_ms": 4417,
+        "error_code": ""
+      },
+      {
+        "number": 2,
+        "status": "succeeded",
+        "usage": {
+          "input": 1198,
+          "output": 3478,
+          "cache_read": 3181,
+          "cache_write": 0
+        },
+        "elapsed_ms": 43525,
+        "error_code": ""
+      },
+      {
+        "number": 3,
+        "status": "succeeded",
+        "usage": {
+          "input": 2403,
+          "output": 55,
+          "cache_read": 5534,
+          "cache_write": 0
+        },
+        "elapsed_ms": 1479,
+        "error_code": ""
+      },
+      {
+        "number": 4,
+        "status": "succeeded",
+        "usage": {
+          "input": 149,
+          "output": 1710,
+          "cache_read": 7991,
+          "cache_write": 0
+        },
+        "elapsed_ms": 23285,
+        "error_code": ""
+      }
+    ],
+    "result": {
+      "documents": [
+        {
+          "title": "同条件配置丁",
+          "fields": {
+            "method": {
+              "text": "固定脚本计时，与配置戊使用相同测量口径。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "方法：固定脚本计时，与配置戊使用相同测量口径。",
+                  "anchor": {
+                    "end": 44,
+                    "kind": "txt",
+                    "line": 2,
+                    "start": 0
+                  },
+                  "sha256": "199a26112722dd20d32fa6cc66d25e82eb15e1d4c533dd3fec82bfa7bb4a92ea",
+                  "chunk_id": "f1671e77-adf5-4d5f-bcdc-25f13b8479c1",
+                  "parse_id": "813d91e6-910a-410d-b406-3472a88a6cb1",
+                  "text_digest": "f0aeef636403dce7c62b5ff8a434ac1ec2c08a419245a175fc7f2ea3fc97fdf2",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "5b652742-edff-4caa-a211-5e29884ae015",
+                  "bibliography_revision_id": "0eefb337-d63e-4698-ab42-1bd962e9cbe9"
+                }
+              ]
+            },
+            "result": {
+              "text": "平均耗时20毫秒，标准差2毫秒。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "结果：平均耗时20毫秒，标准差2毫秒。",
+                  "anchor": {
+                    "end": 19,
+                    "kind": "txt",
+                    "line": 4,
+                    "start": 0
+                  },
+                  "sha256": "199a26112722dd20d32fa6cc66d25e82eb15e1d4c533dd3fec82bfa7bb4a92ea",
+                  "chunk_id": "9c77e37b-1803-430e-be4b-8fa95bb7af42",
+                  "parse_id": "813d91e6-910a-410d-b406-3472a88a6cb1",
+                  "text_digest": "2fb32722822d0729d7a37082fb1b041b735a0c73d1ccafdbab1ae77c3974cc31",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "5b652742-edff-4caa-a211-5e29884ae015",
+                  "bibliography_revision_id": "0eefb337-d63e-4698-ab42-1bd962e9cbe9"
+                }
+              ]
+            },
+            "subject": {
+              "text": "配置丁处理同一组合成输入的耗时",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "研究对象：配置丁处理同一组合成输入的耗时。",
+                  "anchor": {
+                    "end": 44,
+                    "kind": "txt",
+                    "line": 2,
+                    "start": 0
+                  },
+                  "sha256": "199a26112722dd20d32fa6cc66d25e82eb15e1d4c533dd3fec82bfa7bb4a92ea",
+                  "chunk_id": "f1671e77-adf5-4d5f-bcdc-25f13b8479c1",
+                  "parse_id": "813d91e6-910a-410d-b406-3472a88a6cb1",
+                  "text_digest": "f0aeef636403dce7c62b5ff8a434ac1ec2c08a419245a175fc7f2ea3fc97fdf2",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "5b652742-edff-4caa-a211-5e29884ae015",
+                  "bibliography_revision_id": "0eefb337-d63e-4698-ab42-1bd962e9cbe9"
+                }
+              ]
+            },
+            "conditions": {
+              "text": "同一台模拟设备、输入长度100、三次重复。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "条件：同一台模拟设备、输入长度100、三次重复。",
+                  "anchor": {
+                    "end": 24,
+                    "kind": "txt",
+                    "line": 3,
+                    "start": 0
+                  },
+                  "sha256": "199a26112722dd20d32fa6cc66d25e82eb15e1d4c533dd3fec82bfa7bb4a92ea",
+                  "chunk_id": "5178b7da-b668-4e6f-a3df-4503a883798a",
+                  "parse_id": "813d91e6-910a-410d-b406-3472a88a6cb1",
+                  "text_digest": "c8e75565a0e5e81c955d73f5ed5634d49b442e31b121de5c53067d26cf70aae6",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "5b652742-edff-4caa-a211-5e29884ae015",
+                  "bibliography_revision_id": "0eefb337-d63e-4698-ab42-1bd962e9cbe9"
+                }
+              ]
+            },
+            "limitations": {
+              "text": "没有测量内存占用。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "局限：没有测量内存占用。",
+                  "anchor": {
+                    "end": 27,
+                    "kind": "txt",
+                    "line": 5,
+                    "start": 0
+                  },
+                  "sha256": "199a26112722dd20d32fa6cc66d25e82eb15e1d4c533dd3fec82bfa7bb4a92ea",
+                  "chunk_id": "0c6a4f92-e294-4cae-b1c1-774f2ba6b28f",
+                  "parse_id": "813d91e6-910a-410d-b406-3472a88a6cb1",
+                  "text_digest": "39ed364bb6b981df6dc2e97de39ceef9f72c18e8ee73d37715b7ed7114e9919a",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "5b652742-edff-4caa-a211-5e29884ae015",
+                  "bibliography_revision_id": "0eefb337-d63e-4698-ab42-1bd962e9cbe9"
+                }
+              ]
+            },
+            "applicability": {
+              "text": "仅此模拟设备和输入。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "局限：没有测量内存占用。适用范围：仅此模拟设备和输入。",
+                  "anchor": {
+                    "end": 27,
+                    "kind": "txt",
+                    "line": 5,
+                    "start": 0
+                  },
+                  "sha256": "199a26112722dd20d32fa6cc66d25e82eb15e1d4c533dd3fec82bfa7bb4a92ea",
+                  "chunk_id": "0c6a4f92-e294-4cae-b1c1-774f2ba6b28f",
+                  "parse_id": "813d91e6-910a-410d-b406-3472a88a6cb1",
+                  "text_digest": "39ed364bb6b981df6dc2e97de39ceef9f72c18e8ee73d37715b7ed7114e9919a",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "5b652742-edff-4caa-a211-5e29884ae015",
+                  "bibliography_revision_id": "0eefb337-d63e-4698-ab42-1bd962e9cbe9"
+                }
+              ]
+            }
+          },
+          "file_name": "同条件配置丁.txt",
+          "version_id": "5b652742-edff-4caa-a211-5e29884ae015",
+          "source_scope": "research",
+          "source_number": 1
+        },
+        {
+          "title": "同条件配置戊",
+          "fields": {
+            "method": {
+              "text": "固定脚本计时，与配置丁使用相同测量口径。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "方法：固定脚本计时，与配置丁使用相同测量口径。",
+                  "anchor": {
+                    "end": 44,
+                    "kind": "txt",
+                    "line": 2,
+                    "start": 0
+                  },
+                  "sha256": "4277bcf7fc2503949b3e4a8d480a15327b4ecf230baa2bca2f4f69144e1638b8",
+                  "chunk_id": "02a88486-3730-4fdc-9e43-3d6c2120fba9",
+                  "parse_id": "fcb14727-77a1-4f88-81a6-041a774264cf",
+                  "text_digest": "2bb2a18cdb989c6e653d833dcea16039fc0a14692f191774d745ae2f46465fad",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "6f0f2b16-e675-413f-847f-3ef7a1349149",
+                  "bibliography_revision_id": "2cf39f13-3837-451d-8f48-b247c8f1f091"
+                }
+              ]
+            },
+            "result": {
+              "text": "平均耗时30毫秒，标准差3毫秒。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "结果：平均耗时30毫秒，标准差3毫秒。",
+                  "anchor": {
+                    "end": 19,
+                    "kind": "txt",
+                    "line": 4,
+                    "start": 0
+                  },
+                  "sha256": "4277bcf7fc2503949b3e4a8d480a15327b4ecf230baa2bca2f4f69144e1638b8",
+                  "chunk_id": "425d4ea2-5c9b-47ac-9d96-e985caf061f2",
+                  "parse_id": "fcb14727-77a1-4f88-81a6-041a774264cf",
+                  "text_digest": "92e47203547c25d18593535bb1d5ca34e1de731c54201d640b3db0c4b4f1634f",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "6f0f2b16-e675-413f-847f-3ef7a1349149",
+                  "bibliography_revision_id": "2cf39f13-3837-451d-8f48-b247c8f1f091"
+                }
+              ]
+            },
+            "subject": {
+              "text": "配置戊处理同一组合成输入的耗时",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "研究对象：配置戊处理同一组合成输入的耗时。",
+                  "anchor": {
+                    "end": 44,
+                    "kind": "txt",
+                    "line": 2,
+                    "start": 0
+                  },
+                  "sha256": "4277bcf7fc2503949b3e4a8d480a15327b4ecf230baa2bca2f4f69144e1638b8",
+                  "chunk_id": "02a88486-3730-4fdc-9e43-3d6c2120fba9",
+                  "parse_id": "fcb14727-77a1-4f88-81a6-041a774264cf",
+                  "text_digest": "2bb2a18cdb989c6e653d833dcea16039fc0a14692f191774d745ae2f46465fad",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "6f0f2b16-e675-413f-847f-3ef7a1349149",
+                  "bibliography_revision_id": "2cf39f13-3837-451d-8f48-b247c8f1f091"
+                }
+              ]
+            },
+            "conditions": {
+              "text": "同一台模拟设备、输入长度100、三次重复。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "条件：同一台模拟设备、输入长度100、三次重复。",
+                  "anchor": {
+                    "end": 24,
+                    "kind": "txt",
+                    "line": 3,
+                    "start": 0
+                  },
+                  "sha256": "4277bcf7fc2503949b3e4a8d480a15327b4ecf230baa2bca2f4f69144e1638b8",
+                  "chunk_id": "81bb6224-de8c-45b5-894f-7a9e1d19ef89",
+                  "parse_id": "fcb14727-77a1-4f88-81a6-041a774264cf",
+                  "text_digest": "c8e75565a0e5e81c955d73f5ed5634d49b442e31b121de5c53067d26cf70aae6",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "6f0f2b16-e675-413f-847f-3ef7a1349149",
+                  "bibliography_revision_id": "2cf39f13-3837-451d-8f48-b247c8f1f091"
+                }
+              ]
+            },
+            "limitations": {
+              "text": "自制软件验收记录，不是真实测量。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "自制软件验收记录，不是真实测量。",
+                  "anchor": {
+                    "end": 16,
+                    "kind": "txt",
+                    "line": 1,
+                    "start": 0
+                  },
+                  "sha256": "4277bcf7fc2503949b3e4a8d480a15327b4ecf230baa2bca2f4f69144e1638b8",
+                  "chunk_id": "d3c2ef2b-9b30-42a5-b9e4-c0634a6559c1",
+                  "parse_id": "fcb14727-77a1-4f88-81a6-041a774264cf",
+                  "text_digest": "35af4470e17edecabb1f0f0f0975d53a2c00ae50bc4bc50c1f1b6d98490652b9",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "6f0f2b16-e675-413f-847f-3ef7a1349149",
+                  "bibliography_revision_id": "2cf39f13-3837-451d-8f48-b247c8f1f091"
+                }
+              ]
+            },
+            "applicability": {
+              "text": "仅此模拟设备和输入。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "局限：没有测量内存占用。适用范围：仅此模拟设备和输入。",
+                  "anchor": {
+                    "end": 27,
+                    "kind": "txt",
+                    "line": 5,
+                    "start": 0
+                  },
+                  "sha256": "4277bcf7fc2503949b3e4a8d480a15327b4ecf230baa2bca2f4f69144e1638b8",
+                  "chunk_id": "cfd42400-f923-4df0-940e-892546634242",
+                  "parse_id": "fcb14727-77a1-4f88-81a6-041a774264cf",
+                  "text_digest": "39ed364bb6b981df6dc2e97de39ceef9f72c18e8ee73d37715b7ed7114e9919a",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "6f0f2b16-e675-413f-847f-3ef7a1349149",
+                  "bibliography_revision_id": "2cf39f13-3837-451d-8f48-b247c8f1f091"
+                }
+              ]
+            }
+          },
+          "file_name": "同条件配置戊.txt",
+          "version_id": "6f0f2b16-e675-413f-847f-3ef7a1349149",
+          "source_scope": "research",
+          "source_number": 1
+        }
+      ],
+      "comparison": {
+        "reason": "两研究均在相同条件下（同一台模拟设备、输入长度100、三次重复）进行，使用相同方法（固定脚本计时），测量对象为不同配置（丁 vs 戊）处理同一组合成输入的耗时，且均未测量内存占用，均基于自制软件验收记录，非真实测量。",
+        "status": "comparable",
+        "citations": [
+          {
+            "quote": "条件：同一台模拟设备、输入长度100、三次重复。",
+            "anchor": {
+              "end": 24,
+              "kind": "txt",
+              "line": 3,
+              "start": 0
+            },
+            "sha256": "199a26112722dd20d32fa6cc66d25e82eb15e1d4c533dd3fec82bfa7bb4a92ea",
+            "chunk_id": "5178b7da-b668-4e6f-a3df-4503a883798a",
+            "parse_id": "813d91e6-910a-410d-b406-3472a88a6cb1",
+            "text_digest": "c8e75565a0e5e81c955d73f5ed5634d49b442e31b121de5c53067d26cf70aae6",
+            "source_scope": "research",
+            "state_version": 1,
+            "source_version_id": "5b652742-edff-4caa-a211-5e29884ae015",
+            "bibliography_revision_id": "0eefb337-d63e-4698-ab42-1bd962e9cbe9"
+          },
+          {
+            "quote": "条件：同一台模拟设备、输入长度100、三次重复。",
+            "anchor": {
+              "end": 24,
+              "kind": "txt",
+              "line": 3,
+              "start": 0
+            },
+            "sha256": "4277bcf7fc2503949b3e4a8d480a15327b4ecf230baa2bca2f4f69144e1638b8",
+            "chunk_id": "81bb6224-de8c-45b5-894f-7a9e1d19ef89",
+            "parse_id": "fcb14727-77a1-4f88-81a6-041a774264cf",
+            "text_digest": "c8e75565a0e5e81c955d73f5ed5634d49b442e31b121de5c53067d26cf70aae6",
+            "source_scope": "research",
+            "state_version": 1,
+            "source_version_id": "6f0f2b16-e675-413f-847f-3ef7a1349149",
+            "bibliography_revision_id": "2cf39f13-3837-451d-8f48-b247c8f1f091"
+          },
+          {
+            "quote": "方法：固定脚本计时，与配置戊使用相同测量口径。",
+            "anchor": {
+              "end": 44,
+              "kind": "txt",
+              "line": 2,
+              "start": 0
+            },
+            "sha256": "199a26112722dd20d32fa6cc66d25e82eb15e1d4c533dd3fec82bfa7bb4a92ea",
+            "chunk_id": "f1671e77-adf5-4d5f-bcdc-25f13b8479c1",
+            "parse_id": "813d91e6-910a-410d-b406-3472a88a6cb1",
+            "text_digest": "f0aeef636403dce7c62b5ff8a434ac1ec2c08a419245a175fc7f2ea3fc97fdf2",
+            "source_scope": "research",
+            "state_version": 1,
+            "source_version_id": "5b652742-edff-4caa-a211-5e29884ae015",
+            "bibliography_revision_id": "0eefb337-d63e-4698-ab42-1bd962e9cbe9"
+          },
+          {
+            "quote": "方法：固定脚本计时，与配置丁使用相同测量口径。",
+            "anchor": {
+              "end": 44,
+              "kind": "txt",
+              "line": 2,
+              "start": 0
+            },
+            "sha256": "4277bcf7fc2503949b3e4a8d480a15327b4ecf230baa2bca2f4f69144e1638b8",
+            "chunk_id": "02a88486-3730-4fdc-9e43-3d6c2120fba9",
+            "parse_id": "fcb14727-77a1-4f88-81a6-041a774264cf",
+            "text_digest": "2bb2a18cdb989c6e653d833dcea16039fc0a14692f191774d745ae2f46465fad",
+            "source_scope": "research",
+            "state_version": 1,
+            "source_version_id": "6f0f2b16-e675-413f-847f-3ef7a1349149",
+            "bibliography_revision_id": "2cf39f13-3837-451d-8f48-b247c8f1f091"
+          },
+          {
+            "quote": "局限：没有测量内存占用。适用范围：仅此模拟设备和输入。",
+            "anchor": {
+              "end": 27,
+              "kind": "txt",
+              "line": 5,
+              "start": 0
+            },
+            "sha256": "199a26112722dd20d32fa6cc66d25e82eb15e1d4c533dd3fec82bfa7bb4a92ea",
+            "chunk_id": "0c6a4f92-e294-4cae-b1c1-774f2ba6b28f",
+            "parse_id": "813d91e6-910a-410d-b406-3472a88a6cb1",
+            "text_digest": "39ed364bb6b981df6dc2e97de39ceef9f72c18e8ee73d37715b7ed7114e9919a",
+            "source_scope": "research",
+            "state_version": 1,
+            "source_version_id": "5b652742-edff-4caa-a211-5e29884ae015",
+            "bibliography_revision_id": "0eefb337-d63e-4698-ab42-1bd962e9cbe9"
+          },
+          {
+            "quote": "局限：没有测量内存占用。适用范围：仅此模拟设备和输入。",
+            "anchor": {
+              "end": 27,
+              "kind": "txt",
+              "line": 5,
+              "start": 0
+            },
+            "sha256": "4277bcf7fc2503949b3e4a8d480a15327b4ecf230baa2bca2f4f69144e1638b8",
+            "chunk_id": "cfd42400-f923-4df0-940e-892546634242",
+            "parse_id": "fcb14727-77a1-4f88-81a6-041a774264cf",
+            "text_digest": "39ed364bb6b981df6dc2e97de39ceef9f72c18e8ee73d37715b7ed7114e9919a",
+            "source_scope": "research",
+            "state_version": 1,
+            "source_version_id": "6f0f2b16-e675-413f-847f-3ef7a1349149",
+            "bibliography_revision_id": "2cf39f13-3837-451d-8f48-b247c8f1f091"
+          },
+          {
+            "quote": "自制软件验收记录，不是真实测量。",
+            "anchor": {
+              "end": 16,
+              "kind": "txt",
+              "line": 1,
+              "start": 0
+            },
+            "sha256": "199a26112722dd20d32fa6cc66d25e82eb15e1d4c533dd3fec82bfa7bb4a92ea",
+            "chunk_id": "104001f9-61d9-4f68-ae26-404849336c73",
+            "parse_id": "813d91e6-910a-410d-b406-3472a88a6cb1",
+            "text_digest": "35af4470e17edecabb1f0f0f0975d53a2c00ae50bc4bc50c1f1b6d98490652b9",
+            "source_scope": "research",
+            "state_version": 1,
+            "source_version_id": "5b652742-edff-4caa-a211-5e29884ae015",
+            "bibliography_revision_id": "0eefb337-d63e-4698-ab42-1bd962e9cbe9"
+          },
+          {
+            "quote": "自制软件验收记录，不是真实测量。",
+            "anchor": {
+              "end": 16,
+              "kind": "txt",
+              "line": 1,
+              "start": 0
+            },
+            "sha256": "4277bcf7fc2503949b3e4a8d480a15327b4ecf230baa2bca2f4f69144e1638b8",
+            "chunk_id": "d3c2ef2b-9b30-42a5-b9e4-c0634a6559c1",
+            "parse_id": "fcb14727-77a1-4f88-81a6-041a774264cf",
+            "text_digest": "35af4470e17edecabb1f0f0f0975d53a2c00ae50bc4bc50c1f1b6d98490652b9",
+            "source_scope": "research",
+            "state_version": 1,
+            "source_version_id": "6f0f2b16-e675-413f-847f-3ef7a1349149",
+            "bibliography_revision_id": "2cf39f13-3837-451d-8f48-b247c8f1f091"
+          }
+        ]
+      }
+    },
+    "tools": [
+      {
+        "name": "read_evidence",
+        "args": {
+          "chunk_ids": [
+            "0c6a4f92-e294-4cae-b1c1-774f2ba6b28f",
+            "104001f9-61d9-4f68-ae26-404849336c73",
+            "5178b7da-b668-4e6f-a3df-4503a883798a",
+            "9c77e37b-1803-430e-be4b-8fa95bb7af42",
+            "f1671e77-adf5-4d5f-bcdc-25f13b8479c1",
+            "02a88486-3730-4fdc-9e43-3d6c2120fba9",
+            "425d4ea2-5c9b-47ac-9d96-e985caf061f2",
+            "81bb6224-de8c-45b5-894f-7a9e1d19ef89",
+            "cfd42400-f923-4df0-940e-892546634242",
+            "d3c2ef2b-9b30-42a5-b9e4-c0634a6559c1"
+          ]
+        },
+        "response": [
+          {
+            "chunk_id": "0c6a4f92-e294-4cae-b1c1-774f2ba6b28f",
+            "source_version_id": "5b652742-edff-4caa-a211-5e29884ae015",
+            "source_scope": "research",
+            "text": "局限：没有测量内存占用。适用范围：仅此模拟设备和输入。",
+            "anchor": {
+              "end": 27,
+              "kind": "txt",
+              "line": 5,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "104001f9-61d9-4f68-ae26-404849336c73",
+            "source_version_id": "5b652742-edff-4caa-a211-5e29884ae015",
+            "source_scope": "research",
+            "text": "自制软件验收记录，不是真实测量。",
+            "anchor": {
+              "end": 16,
+              "kind": "txt",
+              "line": 1,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "5178b7da-b668-4e6f-a3df-4503a883798a",
+            "source_version_id": "5b652742-edff-4caa-a211-5e29884ae015",
+            "source_scope": "research",
+            "text": "条件：同一台模拟设备、输入长度100、三次重复。",
+            "anchor": {
+              "end": 24,
+              "kind": "txt",
+              "line": 3,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "9c77e37b-1803-430e-be4b-8fa95bb7af42",
+            "source_version_id": "5b652742-edff-4caa-a211-5e29884ae015",
+            "source_scope": "research",
+            "text": "结果：平均耗时20毫秒，标准差2毫秒。",
+            "anchor": {
+              "end": 19,
+              "kind": "txt",
+              "line": 4,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "f1671e77-adf5-4d5f-bcdc-25f13b8479c1",
+            "source_version_id": "5b652742-edff-4caa-a211-5e29884ae015",
+            "source_scope": "research",
+            "text": "研究对象：配置丁处理同一组合成输入的耗时。方法：固定脚本计时，与配置戊使用相同测量口径。",
+            "anchor": {
+              "end": 44,
+              "kind": "txt",
+              "line": 2,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "02a88486-3730-4fdc-9e43-3d6c2120fba9",
+            "source_version_id": "6f0f2b16-e675-413f-847f-3ef7a1349149",
+            "source_scope": "research",
+            "text": "研究对象：配置戊处理同一组合成输入的耗时。方法：固定脚本计时，与配置丁使用相同测量口径。",
+            "anchor": {
+              "end": 44,
+              "kind": "txt",
+              "line": 2,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "425d4ea2-5c9b-47ac-9d96-e985caf061f2",
+            "source_version_id": "6f0f2b16-e675-413f-847f-3ef7a1349149",
+            "source_scope": "research",
+            "text": "结果：平均耗时30毫秒，标准差3毫秒。",
+            "anchor": {
+              "end": 19,
+              "kind": "txt",
+              "line": 4,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "81bb6224-de8c-45b5-894f-7a9e1d19ef89",
+            "source_version_id": "6f0f2b16-e675-413f-847f-3ef7a1349149",
+            "source_scope": "research",
+            "text": "条件：同一台模拟设备、输入长度100、三次重复。",
+            "anchor": {
+              "end": 24,
+              "kind": "txt",
+              "line": 3,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "cfd42400-f923-4df0-940e-892546634242",
+            "source_version_id": "6f0f2b16-e675-413f-847f-3ef7a1349149",
+            "source_scope": "research",
+            "text": "局限：没有测量内存占用。适用范围：仅此模拟设备和输入。",
+            "anchor": {
+              "end": 27,
+              "kind": "txt",
+              "line": 5,
+              "start": 0
+            }
+          },
+          {
+            "chunk_id": "d3c2ef2b-9b30-42a5-b9e4-c0634a6559c1",
+            "source_version_id": "6f0f2b16-e675-413f-847f-3ef7a1349149",
+            "source_scope": "research",
+            "text": "自制软件验收记录，不是真实测量。",
+            "anchor": {
+              "end": 16,
+              "kind": "txt",
+              "line": 1,
+              "start": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "submit_reading",
+        "args": {
+          "documents": [
+            {
+              "fields": {
+                "applicability": {
+                  "citations": [
+                    {
+                      "chunk_id": "0c6a4f92-e294-4cae-b1c1-774f2ba6b28f",
+                      "quote": "局限：没有测量内存占用。适用范围：仅此模拟设备和输入。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "仅此模拟设备和输入。"
+                },
+                "conditions": {
+                  "citations": [
+                    {
+                      "chunk_id": "5178b7da-b668-4e6f-a3df-4503a883798a",
+                      "quote": "条件：同一台模拟设备、输入长度100、三次重复。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "同一台模拟设备、输入长度100、三次重复。"
+                },
+                "limitations": {
+                  "citations": [
+                    {
+                      "chunk_id": "0c6a4f92-e294-4cae-b1c1-774f2ba6b28f",
+                      "quote": "局限：没有测量内存占用。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "没有测量内存占用。"
+                },
+                "method": {
+                  "citations": [
+                    {
+                      "chunk_id": "f1671e77-adf5-4d5f-bcdc-25f13b8479c1",
+                      "quote": "方法：固定脚本计时，与配置戊使用相同测量口径。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "固定脚本计时，与配置戊使用相同测量口径。"
+                },
+                "result": {
+                  "citations": [
+                    {
+                      "chunk_id": "9c77e37b-1803-430e-be4b-8fa95bb7af42",
+                      "quote": "结果：平均耗时20毫秒，标准差2毫秒。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "平均耗时20毫秒，标准差2毫秒。"
+                },
+                "subject": {
+                  "citations": [
+                    {
+                      "chunk_id": "f1671e77-adf5-4d5f-bcdc-25f13b8479c1",
+                      "quote": "研究对象：配置丁处理同一组合成输入的耗时。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "配置丁处理同一组合成输入的耗时"
+                }
+              },
+              "version_id": "5b652742-edff-4caa-a211-5e29884ae015"
+            },
+            {
+              "fields": {
+                "applicability": {
+                  "citations": [
+                    {
+                      "chunk_id": "cfd42400-f923-4df0-940e-892546634242",
+                      "quote": "局限：没有测量内存占用。适用范围：仅此模拟设备和输入。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "仅此模拟设备和输入。"
+                },
+                "conditions": {
+                  "citations": [
+                    {
+                      "chunk_id": "81bb6224-de8c-45b5-894f-7a9e1d19ef89",
+                      "quote": "条件：同一台模拟设备、输入长度100、三次重复。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "同一台模拟设备、输入长度100、三次重复。"
+                },
+                "limitations": {
+                  "citations": [
+                    {
+                      "chunk_id": "d3c2ef2b-9b30-42a5-b9e4-c0634a6559c1",
+                      "quote": "自制软件验收记录，不是真实测量。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "自制软件验收记录，不是真实测量。"
+                },
+                "method": {
+                  "citations": [
+                    {
+                      "chunk_id": "02a88486-3730-4fdc-9e43-3d6c2120fba9",
+                      "quote": "方法：固定脚本计时，与配置丁使用相同测量口径。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "固定脚本计时，与配置丁使用相同测量口径。"
+                },
+                "result": {
+                  "citations": [
+                    {
+                      "chunk_id": "425d4ea2-5c9b-47ac-9d96-e985caf061f2",
+                      "quote": "结果：平均耗时30毫秒，标准差3毫秒。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "平均耗时30毫秒，标准差3毫秒。"
+                },
+                "subject": {
+                  "citations": [
+                    {
+                      "chunk_id": "02a88486-3730-4fdc-9e47-3d6c2120fba9",
+                      "quote": "研究对象：配置戊处理同一组合成输入的耗时。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "配置戊处理同一组合成输入的耗时"
+                }
+              },
+              "version_id": "6f0f2b16-e675-413f-847f-3ef7a1349149"
+            }
+          ],
+          "comparison": {
+            "citations": [
+              {
+                "chunk_id": "5178b7da-b668-4e6f-a3df-4503a883798a",
+                "quote": "条件：同一台模拟设备、输入长度100、三次重复。"
+              },
+              {
+                "chunk_id": "81bb6224-de8c-45b5-894f-7a9e1d19ef89",
+                "quote": "条件：同一台模拟设备、输入长度100、三次重复。"
+              },
+              {
+                "chunk_id": "f1671e77-adf5-4d5f-bcdc-25f13b8479c1",
+                "quote": "方法：固定脚本计时，与配置戊使用相同测量口径。"
+              },
+              {
+                "chunk_id": "02a88486-3730-4fdc-9e43-3d6c2120fba9",
+                "quote": "方法：固定脚本计时，与配置丁使用相同测量口径。"
+              },
+              {
+                "chunk_id": "0c6a4f92-e294-4cae-b1c1-774f2ba6b28f",
+                "quote": "局限：没有测量内存占用。适用范围：仅此模拟设备和输入。"
+              },
+              {
+                "chunk_id": "cfd42400-f923-4df0-940e-892546634242",
+                "quote": "局限：没有测量内存占用。适用范围：仅此模拟设备和输入。"
+              },
+              {
+                "chunk_id": "104001f9-61d9-4f68-ae26-404849336c73",
+                "quote": "自制软件验收记录，不是真实测量。"
+              },
+              {
+                "chunk_id": "d3c2ef2b-9b30-42a5-b9e4-c0634a6559c1",
+                "quote": "自制软件验收记录，不是真实测量。"
+              }
+            ],
+            "reason": "两研究均在相同条件下（同一台模拟设备、输入长度100、三次重复）进行，使用相同方法（固定脚本计时），测量对象为不同配置（丁 vs 戊）处理同一组合成输入的耗时，且均未测量内存占用，均基于自制软件验收记录，非真实测量。",
+            "status": "comparable"
+          }
+        },
+        "response": {
+          "status": "rejected",
+          "code": "reading_citation_invalid",
+          "message": "请一并修正：6f0f2b16-e675-413f-847f-3ef7a1349149.subject 引用了未获准读取的 chunk_id，请核对目录。；6f0f2b16-e675-413f-847f-3ef7a1349149.subject 必须有提取内容及有效原文依据。"
+        }
+      },
+      {
+        "name": "submit_reading",
+        "args": {
+          "documents": [
+            {
+              "fields": {
+                "applicability": {
+                  "citations": [
+                    {
+                      "chunk_id": "0c6a4f92-e294-4cae-b1c1-774f2ba6b28f",
+                      "quote": "局限：没有测量内存占用。适用范围：仅此模拟设备和输入。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "仅此模拟设备和输入。"
+                },
+                "conditions": {
+                  "citations": [
+                    {
+                      "chunk_id": "5178b7da-b668-4e6f-a3df-4503a883798a",
+                      "quote": "条件：同一台模拟设备、输入长度100、三次重复。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "同一台模拟设备、输入长度100、三次重复。"
+                },
+                "limitations": {
+                  "citations": [
+                    {
+                      "chunk_id": "0c6a4f92-e294-4cae-b1c1-774f2ba6b28f",
+                      "quote": "局限：没有测量内存占用。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "没有测量内存占用。"
+                },
+                "method": {
+                  "citations": [
+                    {
+                      "chunk_id": "f1671e77-adf5-4d5f-bcdc-25f13b8479c1",
+                      "quote": "方法：固定脚本计时，与配置戊使用相同测量口径。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "固定脚本计时，与配置戊使用相同测量口径。"
+                },
+                "result": {
+                  "citations": [
+                    {
+                      "chunk_id": "9c77e37b-1803-430e-be4b-8fa95bb7af42",
+                      "quote": "结果：平均耗时20毫秒，标准差2毫秒。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "平均耗时20毫秒，标准差2毫秒。"
+                },
+                "subject": {
+                  "citations": [
+                    {
+                      "chunk_id": "f1671e77-adf5-4d5f-bcdc-25f13b8479c1",
+                      "quote": "研究对象：配置丁处理同一组合成输入的耗时。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "配置丁处理同一组合成输入的耗时"
+                }
+              },
+              "version_id": "5b652742-edff-4caa-a211-5e29884ae015"
+            },
+            {
+              "fields": {
+                "applicability": {
+                  "citations": [
+                    {
+                      "chunk_id": "cfd42400-f923-4df0-940e-892546634242",
+                      "quote": "局限：没有测量内存占用。适用范围：仅此模拟设备和输入。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "仅此模拟设备和输入。"
+                },
+                "conditions": {
+                  "citations": [
+                    {
+                      "chunk_id": "81bb6224-de8c-45b5-894f-7a9e1d19ef89",
+                      "quote": "条件：同一台模拟设备、输入长度100、三次重复。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "同一台模拟设备、输入长度100、三次重复。"
+                },
+                "limitations": {
+                  "citations": [
+                    {
+                      "chunk_id": "d3c2ef2b-9b30-42a5-b9e4-c0634a6559c1",
+                      "quote": "自制软件验收记录，不是真实测量。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "自制软件验收记录，不是真实测量。"
+                },
+                "method": {
+                  "citations": [
+                    {
+                      "chunk_id": "02a88486-3730-4fdc-9e43-3d6c2120fba9",
+                      "quote": "方法：固定脚本计时，与配置丁使用相同测量口径。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "固定脚本计时，与配置丁使用相同测量口径。"
+                },
+                "result": {
+                  "citations": [
+                    {
+                      "chunk_id": "425d4ea2-5c9b-47ac-9d96-e985caf061f2",
+                      "quote": "结果：平均耗时30毫秒，标准差3毫秒。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "平均耗时30毫秒，标准差3毫秒。"
+                },
+                "subject": {
+                  "citations": [
+                    {
+                      "chunk_id": "02a88486-3730-4fdc-9e43-3d6c2120fba9",
+                      "quote": "研究对象：配置戊处理同一组合成输入的耗时。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "配置戊处理同一组合成输入的耗时"
+                }
+              },
+              "version_id": "6f0f2b16-e675-413f-847f-3ef7a1349149"
+            }
+          ],
+          "comparison": {
+            "citations": [
+              {
+                "chunk_id": "5178b7da-b668-4e6f-a3df-4503a883798a",
+                "quote": "条件：同一台模拟设备、输入长度100、三次重复。"
+              },
+              {
+                "chunk_id": "81bb6224-de8c-45b5-894f-7a9e1d19ef89",
+                "quote": "条件：同一台模拟设备、输入长度100、三次重复。"
+              },
+              {
+                "chunk_id": "f1671e77-adf5-4d5f-bcdc-25f13b8479c1",
+                "quote": "方法：固定脚本计时，与配置戊使用相同测量口径。"
+              },
+              {
+                "chunk_id": "02a88486-3730-4fdc-9e43-3d6c2120fba9",
+                "quote": "方法：固定脚本计时，与配置丁使用相同测量口径。"
+              },
+              {
+                "chunk_id": "0c6a4f92-e294-4cae-b1c1-774f2ba6b28f",
+                "quote": "局限：没有测量内存占用。适用范围：仅此模拟设备和输入。"
+              },
+              {
+                "chunk_id": "cfd42400-f923-4df0-940e-892546634242",
+                "quote": "局限：没有测量内存占用。适用范围：仅此模拟设备和输入。"
+              },
+              {
+                "chunk_id": "104001f9-61d9-4f68-ae26-404849336c73",
+                "quote": "自制软件验收记录，不是真实测量。"
+              },
+              {
+                "chunk_id": "d3c2ef2b-9b30-42a5-b9e4-c0634a6559c1",
+                "quote": "自制软件验收记录，不是真实测量。"
+              }
+            ],
+            "reason": "两研究均在相同条件下（同一台模拟设备、输入长度100、三次重复）进行，使用相同方法（固定脚本计时），测量对象为不同配置（丁 vs 戊）处理同一组合成输入的耗时，且均未测量内存占用，均基于自制软件验收记录，非真实测量。",
+            "status": "comparable"
+          }
+        },
+        "response": {
+          "status": "staged"
+        }
+      },
+      {
+        "name": "read_evidence",
+        "args": {
+          "chunk_ids": [
+            "02a88486-3730-4fdc-9e43-3d6c2120fba9"
+          ]
+        },
+        "response": [
+          {
+            "chunk_id": "02a88486-3730-4fdc-9e43-3d6c2120fba9",
+            "source_version_id": "6f0f2b16-e675-413f-847f-3ef7a1349149",
+            "source_scope": "research",
+            "text": "研究对象：配置戊处理同一组合成输入的耗时。方法：固定脚本计时，与配置丁使用相同测量口径。",
+            "anchor": {
+              "end": 44,
+              "kind": "txt",
+              "line": 2,
+              "start": 0
+            }
+          }
+        ]
+      },
+      {
+        "name": "submit_reading",
+        "args": {
+          "documents": [
+            {
+              "fields": {
+                "applicability": {
+                  "citations": [
+                    {
+                      "chunk_id": "0c6a4f92-e294-4cae-b1c1-774f2ba6b28f",
+                      "quote": "局限：没有测量内存占用。适用范围：仅此模拟设备和输入。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "仅此模拟设备和输入。"
+                },
+                "conditions": {
+                  "citations": [
+                    {
+                      "chunk_id": "5178b7da-b668-4e6f-a3df-4503a883798a",
+                      "quote": "条件：同一台模拟设备、输入长度100、三次重复。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "同一台模拟设备、输入长度100、三次重复。"
+                },
+                "limitations": {
+                  "citations": [
+                    {
+                      "chunk_id": "0c6a4f92-e294-4cae-b1c1-774f2ba6b28f",
+                      "quote": "局限：没有测量内存占用。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "没有测量内存占用。"
+                },
+                "method": {
+                  "citations": [
+                    {
+                      "chunk_id": "f1671e77-adf5-4d5f-bcdc-25f13b8479c1",
+                      "quote": "方法：固定脚本计时，与配置戊使用相同测量口径。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "固定脚本计时，与配置戊使用相同测量口径。"
+                },
+                "result": {
+                  "citations": [
+                    {
+                      "chunk_id": "9c77e37b-1803-430e-be4b-8fa95bb7af42",
+                      "quote": "结果：平均耗时20毫秒，标准差2毫秒。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "平均耗时20毫秒，标准差2毫秒。"
+                },
+                "subject": {
+                  "citations": [
+                    {
+                      "chunk_id": "f1671e77-adf5-4d5f-bcdc-25f13b8479c1",
+                      "quote": "研究对象：配置丁处理同一组合成输入的耗时。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "配置丁处理同一组合成输入的耗时"
+                }
+              },
+              "version_id": "5b652742-edff-4caa-a211-5e29884ae015"
+            },
+            {
+              "fields": {
+                "applicability": {
+                  "citations": [
+                    {
+                      "chunk_id": "cfd42400-f923-4df0-940e-892546634242",
+                      "quote": "局限：没有测量内存占用。适用范围：仅此模拟设备和输入。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "仅此模拟设备和输入。"
+                },
+                "conditions": {
+                  "citations": [
+                    {
+                      "chunk_id": "81bb6224-de8c-45b5-894f-7a9e1d19ef89",
+                      "quote": "条件：同一台模拟设备、输入长度100、三次重复。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "同一台模拟设备、输入长度100、三次重复。"
+                },
+                "limitations": {
+                  "citations": [
+                    {
+                      "chunk_id": "d3c2ef2b-9b30-42a5-b9e4-c0634a6559c1",
+                      "quote": "自制软件验收记录，不是真实测量。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "自制软件验收记录，不是真实测量。"
+                },
+                "method": {
+                  "citations": [
+                    {
+                      "chunk_id": "02a88486-3730-4fdc-9e43-3d6c2120fba9",
+                      "quote": "方法：固定脚本计时，与配置丁使用相同测量口径。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "固定脚本计时，与配置丁使用相同测量口径。"
+                },
+                "result": {
+                  "citations": [
+                    {
+                      "chunk_id": "425d4ea2-5c9b-47ac-9d96-e985caf061f2",
+                      "quote": "结果：平均耗时30毫秒，标准差3毫秒。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "平均耗时30毫秒，标准差3毫秒。"
+                },
+                "subject": {
+                  "citations": [
+                    {
+                      "chunk_id": "02a88486-3730-4fdc-9e43-3d6c2120fba9",
+                      "quote": "研究对象：配置戊处理同一组合成输入的耗时。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "配置戊处理同一组合成输入的耗时"
+                }
+              },
+              "version_id": "6f0f2b16-e675-413f-847f-3ef7a1349149"
+            }
+          ],
+          "comparison": {
+            "citations": [
+              {
+                "chunk_id": "5178b7da-b668-4e6f-a3df-4503a883798a",
+                "quote": "条件：同一台模拟设备、输入长度100、三次重复。"
+              },
+              {
+                "chunk_id": "81bb6224-de8c-45b5-894f-7a9e1d19ef89",
+                "quote": "条件：同一台模拟设备、输入长度100、三次重复。"
+              },
+              {
+                "chunk_id": "f1671e77-adf5-4d5f-bcdc-25f13b8479c1",
+                "quote": "方法：固定脚本计时，与配置戊使用相同测量口径。"
+              },
+              {
+                "chunk_id": "02a88486-3730-4fdc-9e43-3d6c2120fba9",
+                "quote": "方法：固定脚本计时，与配置丁使用相同测量口径。"
+              },
+              {
+                "chunk_id": "0c6a4f92-e294-4cae-b1c1-774f2ba6b28f",
+                "quote": "局限：没有测量内存占用。适用范围：仅此模拟设备和输入。"
+              },
+              {
+                "chunk_id": "cfd42400-f923-4df0-940e-892546634242",
+                "quote": "局限：没有测量内存占用。适用范围：仅此模拟设备和输入。"
+              },
+              {
+                "chunk_id": "104001f9-61d9-4f68-ae26-404849336c73",
+                "quote": "自制软件验收记录，不是真实测量。"
+              },
+              {
+                "chunk_id": "d3c2ef2b-9b30-42a5-b9e4-c0634a6559c1",
+                "quote": "自制软件验收记录，不是真实测量。"
+              }
+            ],
+            "reason": "两研究均在相同条件下（同一台模拟设备、输入长度100、三次重复）进行，使用相同方法（固定脚本计时），测量对象为不同配置（丁 vs 戊）处理同一组合成输入的耗时，且均未测量内存占用，均基于自制软件验收记录，非真实测量。",
+            "status": "comparable"
+          }
+        },
+        "response": {
+          "status": "staged"
+        }
+      }
+    ]
+  }
+]

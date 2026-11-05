@@ -1,0 +1,1056 @@
+[
+  {
+    "case": "single",
+    "selected_sources": {
+      "efd79722-9ba7-4361-97dc-d91b225276a1": "source-1"
+    },
+    "model": "qwen3:4b-instruct",
+    "status": "succeeded",
+    "error_code": "",
+    "elapsed_seconds": 12.61,
+    "calls": [
+      {
+        "number": 1,
+        "status": "succeeded",
+        "usage": {
+          "input": 2310,
+          "output": 192,
+          "cache_read": 3,
+          "cache_write": 0
+        },
+        "elapsed_ms": 3945,
+        "error_code": ""
+      },
+      {
+        "number": 2,
+        "status": "succeeded",
+        "usage": {
+          "input": 658,
+          "output": 675,
+          "cache_read": 2504,
+          "cache_write": 0
+        },
+        "elapsed_ms": 8211,
+        "error_code": ""
+      }
+    ],
+    "result": {
+      "documents": [
+        {
+          "title": "实验甲",
+          "fields": {
+            "method": {
+              "text": "批次反应，测量前 10 分钟的产物浓度。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "批次反应，测量前 10 分钟的产物浓度。",
+                  "anchor": {
+                    "end": 44,
+                    "kind": "txt",
+                    "line": 2,
+                    "start": 0
+                  },
+                  "sha256": "d687fc128d609d44329e7eab2917f1b4a29d9ce7a2e9992dd18dfcf16b3dc640",
+                  "chunk_id": "cd6660b8-f95c-4c95-9bf3-1c56aedf494f",
+                  "parse_id": "cb2bc2bb-ca19-49a0-a0c9-c93f7f0d1394",
+                  "text_digest": "0c2a91d9f00e6e16326fb5353d805dfd9014dc5a85bd21f5546563972e8647df",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "efd79722-9ba7-4361-97dc-d91b225276a1",
+                  "bibliography_revision_id": "156e30a1-682d-44f8-b5ae-3f3cd13730ba"
+                }
+              ]
+            },
+            "result": {
+              "text": "平均速率 0.8 mmol/(L·min)，标准差 0.1 mmol/(L·min)；无催化剂对照为 0.2 mmol/(L·min)。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "结果：平均速率 0.8 mmol/(L·min)，标准差 0.1 mmol/(L·min)；无催化剂对照为 0.2 mmol/(L·min)。",
+                  "anchor": {
+                    "end": 71,
+                    "kind": "txt",
+                    "line": 4,
+                    "start": 0
+                  },
+                  "sha256": "d687fc128d609d44329e7eab2917f1b4a29d9ce7a2e9992dd18dfcf16b3dc640",
+                  "chunk_id": "27105f18-7f90-43fb-ae06-50673a1a233a",
+                  "parse_id": "cb2bc2bb-ca19-49a0-a0c9-c93f7f0d1394",
+                  "text_digest": "4b572a2fbafc072c86d66a87a521609143df2ffb6890f9853bd66389194e5f71",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "efd79722-9ba7-4361-97dc-d91b225276a1",
+                  "bibliography_revision_id": "156e30a1-682d-44f8-b5ae-3f3cd13730ba"
+                }
+              ]
+            },
+            "subject": {
+              "text": "催化剂甲对底物 Z 的模拟转化。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "研究对象：催化剂甲对底物 Z 的模拟转化。",
+                  "anchor": {
+                    "end": 44,
+                    "kind": "txt",
+                    "line": 2,
+                    "start": 0
+                  },
+                  "sha256": "d687fc128d609d44329e7eab2917f1b4a29d9ce7a2e9992dd18dfcf16b3dc640",
+                  "chunk_id": "cd6660b8-f95c-4c95-9bf3-1c56aedf494f",
+                  "parse_id": "cb2bc2bb-ca19-49a0-a0c9-c93f7f0d1394",
+                  "text_digest": "0c2a91d9f00e6e16326fb5353d805dfd9014dc5a85bd21f5546563972e8647df",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "efd79722-9ba7-4361-97dc-d91b225276a1",
+                  "bibliography_revision_id": "156e30a1-682d-44f8-b5ae-3f3cd13730ba"
+                }
+              ]
+            },
+            "conditions": {
+              "text": "25 摄氏度，初始底物浓度 1 mmol/L，pH 7，三次重复。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "实验条件：25 摄氏度，初始底物浓度 1 mmol/L，pH 7，三次重复。",
+                  "anchor": {
+                    "end": 38,
+                    "kind": "txt",
+                    "line": 3,
+                    "start": 0
+                  },
+                  "sha256": "d687fc128d609d44329e7eab2917f1b4a29d9ce7a2e9992dd18dfcf16b3dc640",
+                  "chunk_id": "d5fddd6e-3ec6-4283-a8b1-03cde7f45ceb",
+                  "parse_id": "cb2bc2bb-ca19-49a0-a0c9-c93f7f0d1394",
+                  "text_digest": "2cd8a874abcf7058bdc17b3ca7c25855265ccf44cfd36e4edf0f3ca56c880b00",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "efd79722-9ba7-4361-97dc-d91b225276a1",
+                  "bibliography_revision_id": "156e30a1-682d-44f8-b5ae-3f3cd13730ba"
+                }
+              ]
+            },
+            "limitations": {
+              "text": "未测试长期稳定性。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "未测试长期稳定性。",
+                  "anchor": {
+                    "end": 37,
+                    "kind": "txt",
+                    "line": 5,
+                    "start": 0
+                  },
+                  "sha256": "d687fc128d609d44329e7eab2917f1b4a29d9ce7a2e9992dd18dfcf16b3dc640",
+                  "chunk_id": "48d06c43-e3d5-4d74-8a96-730b08846c89",
+                  "parse_id": "cb2bc2bb-ca19-49a0-a0c9-c93f7f0d1394",
+                  "text_digest": "5d20729101baa92ae6d07f002866d41903c7efb6fdda89cd66b2063ef7375cf7",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "efd79722-9ba7-4361-97dc-d91b225276a1",
+                  "bibliography_revision_id": "156e30a1-682d-44f8-b5ae-3f3cd13730ba"
+                }
+              ]
+            },
+            "applicability": {
+              "text": "仅限此模拟体系和条件，不外推到实际装置。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "仅限此模拟体系和条件，不外推到实际装置。",
+                  "anchor": {
+                    "end": 37,
+                    "kind": "txt",
+                    "line": 5,
+                    "start": 0
+                  },
+                  "sha256": "d687fc128d609d44329e7eab2917f1b4a29d9ce7a2e9992dd18dfcf16b3dc640",
+                  "chunk_id": "48d06c43-e3d5-4d74-8a96-730b08846c89",
+                  "parse_id": "cb2bc2bb-ca19-49a0-a0c9-c93f7f0d1394",
+                  "text_digest": "5d20729101baa92ae6d07f002866d41903c7efb6fdda89cd66b2063ef7375cf7",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "efd79722-9ba7-4361-97dc-d91b225276a1",
+                  "bibliography_revision_id": "156e30a1-682d-44f8-b5ae-3f3cd13730ba"
+                }
+              ]
+            }
+          },
+          "file_name": "实验甲.txt",
+          "version_id": "efd79722-9ba7-4361-97dc-d91b225276a1",
+          "source_scope": "research",
+          "source_number": 1
+        }
+      ],
+      "comparison": null
+    },
+    "tools": [
+      {
+        "name": "read_evidence",
+        "args": {
+          "chunk_ids": [
+            "27105f18-7f90-43fb-ae06-50673a1a233a",
+            "48d06c43-e3d5-4d74-8a96-730b08846c89",
+            "a94464d0-9ec0-485c-95e9-b59f06cda49b",
+            "cd6660b8-f95c-4c95-9bf3-1c56aedf494f",
+            "d5fddd6e-3ec6-4283-a8b1-03cde7f45ceb"
+          ]
+        }
+      },
+      {
+        "name": "submit_reading",
+        "args": {
+          "documents": [
+            {
+              "fields": {
+                "applicability": {
+                  "citations": [
+                    {
+                      "chunk_id": "48d06c43-e3d5-4d74-8a96-730b08846c89",
+                      "quote": "仅限此模拟体系和条件，不外推到实际装置。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "仅限此模拟体系和条件，不外推到实际装置。"
+                },
+                "conditions": {
+                  "citations": [
+                    {
+                      "chunk_id": "d5fddd6e-3ec6-4283-a8b1-03cde7f45ceb",
+                      "quote": "实验条件：25 摄氏度，初始底物浓度 1 mmol/L，pH 7，三次重复。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "25 摄氏度，初始底物浓度 1 mmol/L，pH 7，三次重复。"
+                },
+                "limitations": {
+                  "citations": [
+                    {
+                      "chunk_id": "48d06c43-e3d5-4d74-8a96-730b08846c89",
+                      "quote": "未测试长期稳定性。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "未测试长期稳定性。"
+                },
+                "method": {
+                  "citations": [
+                    {
+                      "chunk_id": "cd6660b8-f95c-4c95-9bf3-1c56aedf494f",
+                      "quote": "批次反应，测量前 10 分钟的产物浓度。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "批次反应，测量前 10 分钟的产物浓度。"
+                },
+                "result": {
+                  "citations": [
+                    {
+                      "chunk_id": "27105f18-7f90-43fb-ae06-50673a1a233a",
+                      "quote": "结果：平均速率 0.8 mmol/(L·min)，标准差 0.1 mmol/(L·min)；无催化剂对照为 0.2 mmol/(L·min)。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "平均速率 0.8 mmol/(L·min)，标准差 0.1 mmol/(L·min)；无催化剂对照为 0.2 mmol/(L·min)。"
+                },
+                "subject": {
+                  "citations": [
+                    {
+                      "chunk_id": "cd6660b8-f95c-4c95-9bf3-1c56aedf494f",
+                      "quote": "研究对象：催化剂甲对底物 Z 的模拟转化。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "催化剂甲对底物 Z 的模拟转化。"
+                }
+              },
+              "version_id": "efd79722-9ba7-4361-97dc-d91b225276a1"
+            }
+          ],
+          "comparison": null
+        }
+      }
+    ]
+  },
+  {
+    "case": "different_conditions",
+    "selected_sources": {
+      "efd79722-9ba7-4361-97dc-d91b225276a1": "source-1",
+      "9afe6d40-3cbf-439e-b4b6-cc698efc10a4": "source-2"
+    },
+    "model": "qwen3:4b-instruct",
+    "status": "succeeded",
+    "error_code": "",
+    "elapsed_seconds": 26.04,
+    "calls": [
+      {
+        "number": 1,
+        "status": "succeeded",
+        "usage": {
+          "input": 833,
+          "output": 364,
+          "cache_read": 1880,
+          "cache_write": 0
+        },
+        "elapsed_ms": 5130,
+        "error_code": ""
+      },
+      {
+        "number": 2,
+        "status": "succeeded",
+        "usage": {
+          "input": 1280,
+          "output": 1589,
+          "cache_read": 3076,
+          "cache_write": 0
+        },
+        "elapsed_ms": 19549,
+        "error_code": ""
+      }
+    ],
+    "result": {
+      "documents": [
+        {
+          "title": "实验乙",
+          "fields": {
+            "method": {
+              "text": "连续反应，测量 60 分钟时的产物浓度。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "连续反应，测量 60 分钟时的产物浓度。",
+                  "anchor": {
+                    "end": 44,
+                    "kind": "txt",
+                    "line": 2,
+                    "start": 0
+                  },
+                  "sha256": "ac0cad8d03f7f9a8d264a35b52ae49f0f6a2b91229b9db67cbbfa033aa15539e",
+                  "chunk_id": "62b403e6-b82a-49e6-99e2-e5ac5a922d7a",
+                  "parse_id": "6eed7a73-a610-4e47-a371-95c3c58d6821",
+                  "text_digest": "f61d42ecbaf19f4c8c789b8b8a07c3315d0fb2a336b43ea260ec1a097d212ce8",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "9afe6d40-3cbf-439e-b4b6-cc698efc10a4",
+                  "bibliography_revision_id": "7848aec5-e525-4ba1-9515-8d505a0d0a15"
+                }
+              ]
+            },
+            "result": {
+              "text": "平均速率 1200 μmol/(L·min)，未报告标准差。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "平均速率 1200 μmol/(L·min)，未报告标准差。",
+                  "anchor": {
+                    "end": 33,
+                    "kind": "txt",
+                    "line": 4,
+                    "start": 0
+                  },
+                  "sha256": "ac0cad8d03f7f9a8d264a35b52ae49f0f6a2b91229b9db67cbbfa033aa15539e",
+                  "chunk_id": "7749aa31-80d8-45c4-a0c4-ba42fb678237",
+                  "parse_id": "6eed7a73-a610-4e47-a371-95c3c58d6821",
+                  "text_digest": "6ae607a5267afb57ff12be1df39e6fb2532d763f74b16d77c6f84879d3ad43d6",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "9afe6d40-3cbf-439e-b4b6-cc698efc10a4",
+                  "bibliography_revision_id": "7848aec5-e525-4ba1-9515-8d505a0d0a15"
+                }
+              ]
+            },
+            "subject": {
+              "text": "催化剂乙对底物 Z 的模拟转化。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "催化剂乙对底物 Z 的模拟转化。",
+                  "anchor": {
+                    "end": 44,
+                    "kind": "txt",
+                    "line": 2,
+                    "start": 0
+                  },
+                  "sha256": "ac0cad8d03f7f9a8d264a35b52ae49f0f6a2b91229b9db67cbbfa033aa15539e",
+                  "chunk_id": "62b403e6-b82a-49e6-99e2-e5ac5a922d7a",
+                  "parse_id": "6eed7a73-a610-4e47-a371-95c3c58d6821",
+                  "text_digest": "f61d42ecbaf19f4c8c789b8b8a07c3315d0fb2a336b43ea260ec1a097d212ce8",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "9afe6d40-3cbf-439e-b4b6-cc698efc10a4",
+                  "bibliography_revision_id": "7848aec5-e525-4ba1-9515-8d505a0d0a15"
+                }
+              ]
+            },
+            "conditions": {
+              "text": "40 摄氏度，初始底物浓度 2 mmol/L，pH 9，两次重复。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "40 摄氏度，初始底物浓度 2 mmol/L，pH 9，两次重复。",
+                  "anchor": {
+                    "end": 38,
+                    "kind": "txt",
+                    "line": 3,
+                    "start": 0
+                  },
+                  "sha256": "ac0cad8d03f7f9a8d264a35b52ae49f0f6a2b91229b9db67cbbfa033aa15539e",
+                  "chunk_id": "f0043238-d0f0-4c31-8be6-8650c7134002",
+                  "parse_id": "6eed7a73-a610-4e47-a371-95c3c58d6821",
+                  "text_digest": "78fba1716194544fe232dc73a4cc2c44b1678bb5fc976186483897bfcd786c88",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "9afe6d40-3cbf-439e-b4b6-cc698efc10a4",
+                  "bibliography_revision_id": "7848aec5-e525-4ba1-9515-8d505a0d0a15"
+                }
+              ]
+            },
+            "limitations": {
+              "text": "重复次数少，未与甲进行同条件对照。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "重复次数少，未与甲进行同条件对照。",
+                  "anchor": {
+                    "end": 48,
+                    "kind": "txt",
+                    "line": 5,
+                    "start": 0
+                  },
+                  "sha256": "ac0cad8d03f7f9a8d264a35b52ae49f0f6a2b91229b9db67cbbfa033aa15539e",
+                  "chunk_id": "dc59a9e1-9ee8-4438-a0c8-7d04dd8c395a",
+                  "parse_id": "6eed7a73-a610-4e47-a371-95c3c58d6821",
+                  "text_digest": "05162f20cd897a9ed8f83b4f743e5f0d780b1fdac74e98f322e64fa5aa275ad7",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "9afe6d40-3cbf-439e-b4b6-cc698efc10a4",
+                  "bibliography_revision_id": "7848aec5-e525-4ba1-9515-8d505a0d0a15"
+                }
+              ]
+            },
+            "applicability": {
+              "text": "仅限此模拟体系，不能直接外推到其他温度或浓度。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "仅限此模拟体系，不能直接外推到其他温度或浓度。",
+                  "anchor": {
+                    "end": 48,
+                    "kind": "txt",
+                    "line": 5,
+                    "start": 0
+                  },
+                  "sha256": "ac0cad8d03f7f9a8d264a35b52ae49f0f6a2b91229b9db67cbbfa033aa15539e",
+                  "chunk_id": "dc59a9e1-9ee8-4438-a0c8-7d04dd8c395a",
+                  "parse_id": "6eed7a73-a610-4e47-a371-95c3c58d6821",
+                  "text_digest": "05162f20cd897a9ed8f83b4f743e5f0d780b1fdac74e98f322e64fa5aa275ad7",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "9afe6d40-3cbf-439e-b4b6-cc698efc10a4",
+                  "bibliography_revision_id": "7848aec5-e525-4ba1-9515-8d505a0d0a15"
+                }
+              ]
+            }
+          },
+          "file_name": "实验乙.txt",
+          "version_id": "9afe6d40-3cbf-439e-b4b6-cc698efc10a4",
+          "source_scope": "research",
+          "source_number": 1
+        },
+        {
+          "title": "实验甲",
+          "fields": {
+            "method": {
+              "text": "批次反应，测量前 10 分钟的产物浓度。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "批次反应，测量前 10 分钟的产物浓度。",
+                  "anchor": {
+                    "end": 44,
+                    "kind": "txt",
+                    "line": 2,
+                    "start": 0
+                  },
+                  "sha256": "d687fc128d609d44329e7eab2917f1b4a29d9ce7a2e9992dd18dfcf16b3dc640",
+                  "chunk_id": "cd6660b8-f95c-4c95-9bf3-1c56aedf494f",
+                  "parse_id": "cb2bc2bb-ca19-49a0-a0c9-c93f7f0d1394",
+                  "text_digest": "0c2a91d9f00e6e16326fb5353d805dfd9014dc5a85bd21f5546563972e8647df",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "efd79722-9ba7-4361-97dc-d91b225276a1",
+                  "bibliography_revision_id": "156e30a1-682d-44f8-b5ae-3f3cd13730ba"
+                }
+              ]
+            },
+            "result": {
+              "text": "平均速率 0.8 mmol/(L·min)，标准差 0.1 mmol/(L·min)；无催化剂对照为 0.2 mmol/(L·min)。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "平均速率 0.8 mmol/(L·min)，标准差 0.1 mmol/(L·min)；无催化剂对照为 0.2 mmol/(L·min)。",
+                  "anchor": {
+                    "end": 71,
+                    "kind": "txt",
+                    "line": 4,
+                    "start": 0
+                  },
+                  "sha256": "d687fc128d609d44329e7eab2917f1b4a29d9ce7a2e9992dd18dfcf16b3dc640",
+                  "chunk_id": "27105f18-7f90-43fb-ae06-50673a1a233a",
+                  "parse_id": "cb2bc2bb-ca19-49a0-a0c9-c93f7f0d1394",
+                  "text_digest": "4b572a2fbafc072c86d66a87a521609143df2ffb6890f9853bd66389194e5f71",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "efd79722-9ba7-4361-97dc-d91b225276a1",
+                  "bibliography_revision_id": "156e30a1-682d-44f8-b5ae-3f3cd13730ba"
+                }
+              ]
+            },
+            "subject": {
+              "text": "催化剂甲对底物 Z 的模拟转化。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "催化剂甲对底物 Z 的模拟转化。",
+                  "anchor": {
+                    "end": 44,
+                    "kind": "txt",
+                    "line": 2,
+                    "start": 0
+                  },
+                  "sha256": "d687fc128d609d44329e7eab2917f1b4a29d9ce7a2e9992dd18dfcf16b3dc640",
+                  "chunk_id": "cd6660b8-f95c-4c95-9bf3-1c56aedf494f",
+                  "parse_id": "cb2bc2bb-ca19-49a0-a0c9-c93f7f0d1394",
+                  "text_digest": "0c2a91d9f00e6e16326fb5353d805dfd9014dc5a85bd21f5546563972e8647df",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "efd79722-9ba7-4361-97dc-d91b225276a1",
+                  "bibliography_revision_id": "156e30a1-682d-44f8-b5ae-3f3cd13730ba"
+                }
+              ]
+            },
+            "conditions": {
+              "text": "25 摄氏度，初始底物浓度 1 mmol/L，pH 7，三次重复。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "25 摄氏度，初始底物浓度 1 mmol/L，pH 7，三次重复。",
+                  "anchor": {
+                    "end": 38,
+                    "kind": "txt",
+                    "line": 3,
+                    "start": 0
+                  },
+                  "sha256": "d687fc128d609d44329e7eab2917f1b4a29d9ce7a2e9992dd18dfcf16b3dc640",
+                  "chunk_id": "d5fddd6e-3ec6-4283-a8b1-03cde7f45ceb",
+                  "parse_id": "cb2bc2bb-ca19-49a0-a0c9-c93f7f0d1394",
+                  "text_digest": "2cd8a874abcf7058bdc17b3ca7c25855265ccf44cfd36e4edf0f3ca56c880b00",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "efd79722-9ba7-4361-97dc-d91b225276a1",
+                  "bibliography_revision_id": "156e30a1-682d-44f8-b5ae-3f3cd13730ba"
+                }
+              ]
+            },
+            "limitations": {
+              "text": "未测试长期稳定性。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "未测试长期稳定性。",
+                  "anchor": {
+                    "end": 37,
+                    "kind": "txt",
+                    "line": 5,
+                    "start": 0
+                  },
+                  "sha256": "d687fc128d609d44329e7eab2917f1b4a29d9ce7a2e9992dd18dfcf16b3dc640",
+                  "chunk_id": "48d06c43-e3d5-4d74-8a96-730b08846c89",
+                  "parse_id": "cb2bc2bb-ca19-49a0-a0c9-c93f7f0d1394",
+                  "text_digest": "5d20729101baa92ae6d07f002866d41903c7efb6fdda89cd66b2063ef7375cf7",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "efd79722-9ba7-4361-97dc-d91b225276a1",
+                  "bibliography_revision_id": "156e30a1-682d-44f8-b5ae-3f3cd13730ba"
+                }
+              ]
+            },
+            "applicability": {
+              "text": "仅限此模拟体系和条件，不外推到实际装置。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "仅限此模拟体系和条件，不外推到实际装置。",
+                  "anchor": {
+                    "end": 37,
+                    "kind": "txt",
+                    "line": 5,
+                    "start": 0
+                  },
+                  "sha256": "d687fc128d609d44329e7eab2917f1b4a29d9ce7a2e9992dd18dfcf16b3dc640",
+                  "chunk_id": "48d06c43-e3d5-4d74-8a96-730b08846c89",
+                  "parse_id": "cb2bc2bb-ca19-49a0-a0c9-c93f7f0d1394",
+                  "text_digest": "5d20729101baa92ae6d07f002866d41903c7efb6fdda89cd66b2063ef7375cf7",
+                  "source_scope": "research",
+                  "state_version": 1,
+                  "source_version_id": "efd79722-9ba7-4361-97dc-d91b225276a1",
+                  "bibliography_revision_id": "156e30a1-682d-44f8-b5ae-3f3cd13730ba"
+                }
+              ]
+            }
+          },
+          "file_name": "实验甲.txt",
+          "version_id": "efd79722-9ba7-4361-97dc-d91b225276a1",
+          "source_scope": "research",
+          "source_number": 1
+        }
+      ],
+      "comparison": {
+        "reason": "两研究对象不同（催化剂甲 vs 催化剂乙），实验条件（温度、浓度、pH）不同，方法不同（批次 vs 连续），且均标注为‘模拟转化’，不具备可比性。",
+        "status": "not_comparable",
+        "citations": [
+          {
+            "quote": "催化剂乙对底物 Z 的模拟转化。",
+            "anchor": {
+              "end": 44,
+              "kind": "txt",
+              "line": 2,
+              "start": 0
+            },
+            "sha256": "ac0cad8d03f7f9a8d264a35b52ae49f0f6a2b91229b9db67cbbfa033aa15539e",
+            "chunk_id": "62b403e6-b82a-49e6-99e2-e5ac5a922d7a",
+            "parse_id": "6eed7a73-a610-4e47-a371-95c3c58d6821",
+            "text_digest": "f61d42ecbaf19f4c8c789b8b8a07c3315d0fb2a336b43ea260ec1a097d212ce8",
+            "source_scope": "research",
+            "state_version": 1,
+            "source_version_id": "9afe6d40-3cbf-439e-b4b6-cc698efc10a4",
+            "bibliography_revision_id": "7848aec5-e525-4ba1-9515-8d505a0d0a15"
+          },
+          {
+            "quote": "催化剂甲对底物 Z 的模拟转化。",
+            "anchor": {
+              "end": 44,
+              "kind": "txt",
+              "line": 2,
+              "start": 0
+            },
+            "sha256": "d687fc128d609d44329e7eab2917f1b4a29d9ce7a2e9992dd18dfcf16b3dc640",
+            "chunk_id": "cd6660b8-f95c-4c95-9bf3-1c56aedf494f",
+            "parse_id": "cb2bc2bb-ca19-49a0-a0c9-c93f7f0d1394",
+            "text_digest": "0c2a91d9f00e6e16326fb5353d805dfd9014dc5a85bd21f5546563972e8647df",
+            "source_scope": "research",
+            "state_version": 1,
+            "source_version_id": "efd79722-9ba7-4361-97dc-d91b225276a1",
+            "bibliography_revision_id": "156e30a1-682d-44f8-b5ae-3f3cd13730ba"
+          },
+          {
+            "quote": "40 摄氏度，初始底物浓度 2 mmol/L，pH 9，两次重复。",
+            "anchor": {
+              "end": 38,
+              "kind": "txt",
+              "line": 3,
+              "start": 0
+            },
+            "sha256": "ac0cad8d03f7f9a8d264a35b52ae49f0f6a2b91229b9db67cbbfa033aa15539e",
+            "chunk_id": "f0043238-d0f0-4c31-8be6-8650c7134002",
+            "parse_id": "6eed7a73-a610-4e47-a371-95c3c58d6821",
+            "text_digest": "78fba1716194544fe232dc73a4cc2c44b1678bb5fc976186483897bfcd786c88",
+            "source_scope": "research",
+            "state_version": 1,
+            "source_version_id": "9afe6d40-3cbf-439e-b4b6-cc698efc10a4",
+            "bibliography_revision_id": "7848aec5-e525-4ba1-9515-8d505a0d0a15"
+          },
+          {
+            "quote": "25 摄氏度，初始底物浓度 1 mmol/L，pH 7，三次重复。",
+            "anchor": {
+              "end": 38,
+              "kind": "txt",
+              "line": 3,
+              "start": 0
+            },
+            "sha256": "d687fc128d609d44329e7eab2917f1b4a29d9ce7a2e9992dd18dfcf16b3dc640",
+            "chunk_id": "d5fddd6e-3ec6-4283-a8b1-03cde7f45ceb",
+            "parse_id": "cb2bc2bb-ca19-49a0-a0c9-c93f7f0d1394",
+            "text_digest": "2cd8a874abcf7058bdc17b3ca7c25855265ccf44cfd36e4edf0f3ca56c880b00",
+            "source_scope": "research",
+            "state_version": 1,
+            "source_version_id": "efd79722-9ba7-4361-97dc-d91b225276a1",
+            "bibliography_revision_id": "156e30a1-682d-44f8-b5ae-3f3cd13730ba"
+          }
+        ]
+      }
+    },
+    "tools": [
+      {
+        "name": "read_evidence",
+        "args": {
+          "chunk_ids": [
+            "62b403e6-b82a-49e6-99e2-e5ac5a922d7a",
+            "7749aa31-80d8-45c4-a0c4-ba42fb678237",
+            "acbd0b95-2a10-43a5-a427-97eaf78fa85f",
+            "dc59a9e1-9ee8-4438-a0c8-7d04dd8c395a",
+            "f0043238-d0f0-4c31-8be6-8650c7134002",
+            "27105f18-7f90-43fb-ae06-50673a1a233a",
+            "48d06c43-e3d5-4d74-8a96-730b08846c89",
+            "a94464d0-9ec0-485c-95e9-b59f06cda49b",
+            "cd6660b8-f95c-4c95-9bf3-1c56aedf494f",
+            "d5fddd6e-3ec6-4283-a8b1-03cde7f45ceb"
+          ]
+        }
+      },
+      {
+        "name": "submit_reading",
+        "args": {
+          "documents": [
+            {
+              "fields": {
+                "applicability": {
+                  "citations": [
+                    {
+                      "chunk_id": "dc59a9e1-9ee8-4438-a0c8-7d04dd8c395a",
+                      "quote": "仅限此模拟体系，不能直接外推到其他温度或浓度。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "仅限此模拟体系，不能直接外推到其他温度或浓度。"
+                },
+                "conditions": {
+                  "citations": [
+                    {
+                      "chunk_id": "f0043238-d0f0-4c31-8be6-8650c7134002",
+                      "quote": "40 摄氏度，初始底物浓度 2 mmol/L，pH 9，两次重复。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "40 摄氏度，初始底物浓度 2 mmol/L，pH 9，两次重复。"
+                },
+                "limitations": {
+                  "citations": [
+                    {
+                      "chunk_id": "dc59a9e1-9ee8-4438-a0c8-7d04dd8c395a",
+                      "quote": "重复次数少，未与甲进行同条件对照。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "重复次数少，未与甲进行同条件对照。"
+                },
+                "method": {
+                  "citations": [
+                    {
+                      "chunk_id": "62b403e6-b82a-49e6-99e2-e5ac5a922d7a",
+                      "quote": "连续反应，测量 60 分钟时的产物浓度。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "连续反应，测量 60 分钟时的产物浓度。"
+                },
+                "result": {
+                  "citations": [
+                    {
+                      "chunk_id": "7749aa31-80d8-45c4-a0c4-ba42fb678237",
+                      "quote": "平均速率 1200 μmol/(L·min)，未报告标准差。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "平均速率 1200 μmol/(L·min)，未报告标准差。"
+                },
+                "subject": {
+                  "citations": [
+                    {
+                      "chunk_id": "62b403e6-b82a-49e6-99e2-e5ac5a922d7a",
+                      "quote": "催化剂乙对底物 Z 的模拟转化。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "催化剂乙对底物 Z 的模拟转化。"
+                }
+              },
+              "version_id": "9afe6d40-3cbf-439e-b4b6-cc698efc10a4"
+            },
+            {
+              "fields": {
+                "applicability": {
+                  "citations": [
+                    {
+                      "chunk_id": "48d06c43-e3d5-4d74-8a96-730b08846c89",
+                      "quote": "仅限此模拟体系和条件，不外推到实际装置。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "仅限此模拟体系和条件，不外推到实际装置。"
+                },
+                "conditions": {
+                  "citations": [
+                    {
+                      "chunk_id": "d5fddd6e-3ec6-4283-a8b1-03cde7f45ceb",
+                      "quote": "25 摄氏度，初始底物浓度 1 mmol/L，pH 7，三次重复。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "25 摄氏度，初始底物浓度 1 mmol/L，pH 7，三次重复。"
+                },
+                "limitations": {
+                  "citations": [
+                    {
+                      "chunk_id": "48d06c43-e3d5-4d74-8a96-730b08846c89",
+                      "quote": "未测试长期稳定性。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "未测试长期稳定性。"
+                },
+                "method": {
+                  "citations": [
+                    {
+                      "chunk_id": "cd6660b8-f95c-4c95-9bf3-1c56aedf494f",
+                      "quote": "批次反应，测量前 10 分钟的产物浓度。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "批次反应，测量前 10 分钟的产物浓度。"
+                },
+                "result": {
+                  "citations": [
+                    {
+                      "chunk_id": "27105f18-7f90-43fb-ae06-50673a1a233a",
+                      "quote": "平均速率 0.8 mmol/(L·min)，标准差 0.1 mmol/(L·min)；无催化剂对照为 0.2 mmol/(L·min)。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "平均速率 0.8 mmol/(L·min)，标准差 0.1 mmol/(L·min)；无催化剂对照为 0.2 mmol/(L·min)。"
+                },
+                "subject": {
+                  "citations": [
+                    {
+                      "chunk_id": "cd6660b8-f95c-4c95-9bf3-1c56aedf494f",
+                      "quote": "催化剂甲对底物 Z 的模拟转化。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "催化剂甲对底物 Z 的模拟转化。"
+                }
+              },
+              "version_id": "efd79722-9ba7-4361-97dc-d91b225276a1"
+            }
+          ],
+          "comparison": {
+            "citations": [
+              {
+                "chunk_id": "62b403e6-b82a-49e6-99e2-e5ac5a922d7a",
+                "quote": "催化剂乙对底物 Z 的模拟转化。"
+              },
+              {
+                "chunk_id": "cd6660b8-f95c-4c95-9bf3-1c56aedf494f",
+                "quote": "催化剂甲对底物 Z 的模拟转化。"
+              },
+              {
+                "chunk_id": "f0043238-d0f0-4c31-8be6-8650c7134002",
+                "quote": "40 摄氏度，初始底物浓度 2 mmol/L，pH 9，两次重复。"
+              },
+              {
+                "chunk_id": "d5fddd6e-3ec6-4283-a8b1-03cde7f45ceb",
+                "quote": "25 摄氏度，初始底物浓度 1 mmol/L，pH 7，三次重复。"
+              }
+            ],
+            "reason": "两研究对象不同（催化剂甲 vs 催化剂乙），实验条件（温度、浓度、pH）不同，方法不同（批次 vs 连续），且均标注为‘模拟转化’，不具备可比性。",
+            "status": "not_comparable"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "case": "abstract_only",
+    "selected_sources": {
+      "881208e5-dcd2-4834-aee7-f9a6f5f402fd": "source-3"
+    },
+    "model": "qwen3:4b-instruct",
+    "status": "succeeded",
+    "error_code": "",
+    "elapsed_seconds": 11.49,
+    "calls": [
+      {
+        "number": 1,
+        "status": "succeeded",
+        "usage": {
+          "input": 319,
+          "output": 80,
+          "cache_read": 1880,
+          "cache_write": 0
+        },
+        "elapsed_ms": 2157,
+        "error_code": ""
+      },
+      {
+        "number": 2,
+        "status": "succeeded",
+        "usage": {
+          "input": 250,
+          "output": 444,
+          "cache_read": 2278,
+          "cache_write": 0
+        },
+        "elapsed_ms": 5297,
+        "error_code": ""
+      },
+      {
+        "number": 3,
+        "status": "succeeded",
+        "usage": {
+          "input": 578,
+          "output": 277,
+          "cache_read": 2971,
+          "cache_write": 0
+        },
+        "elapsed_ms": 3552,
+        "error_code": ""
+      }
+    ],
+    "result": {
+      "documents": [
+        {
+          "title": "仅摘要",
+          "fields": {
+            "method": {
+              "text": "所选摘要未提及。",
+              "status": "not_mentioned",
+              "citations": []
+            },
+            "result": {
+              "text": "观察到颜色变化。",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "观察到颜色变化。",
+                  "anchor": {
+                    "end": 38,
+                    "kind": "txt",
+                    "line": 1,
+                    "start": 0
+                  },
+                  "sha256": "d7059fde8b97287b734993d07e6b00f847ab8c076b5d4d39196675172a149fe0",
+                  "chunk_id": "6dfbe030-dbbd-4af6-b030-ce374fd8fc5b",
+                  "parse_id": "bdab8876-478b-47fc-831f-ffd0c6833030",
+                  "text_digest": "b567a3193c1b12222b163c658710f5bb921a40f6a92135b6a33d3f0d22e33e83",
+                  "source_scope": "abstract",
+                  "state_version": 1,
+                  "source_version_id": "881208e5-dcd2-4834-aee7-f9a6f5f402fd",
+                  "bibliography_revision_id": "89fda183-85d1-44e4-b4a0-46242982ca85"
+                }
+              ]
+            },
+            "subject": {
+              "text": "虚构材料 Q",
+              "status": "reported",
+              "citations": [
+                {
+                  "quote": "虚构材料 Q",
+                  "anchor": {
+                    "end": 38,
+                    "kind": "txt",
+                    "line": 1,
+                    "start": 0
+                  },
+                  "sha256": "d7059fde8b97287b734993d07e6b00f847ab8c076b5d4d39196675172a149fe0",
+                  "chunk_id": "6dfbe030-dbbd-4af6-b030-ce374fd8fc5b",
+                  "parse_id": "bdab8876-478b-47fc-831f-ffd0c6833030",
+                  "text_digest": "b567a3193c1b12222b163c658710f5bb921a40f6a92135b6a33d3f0d22e33e83",
+                  "source_scope": "abstract",
+                  "state_version": 1,
+                  "source_version_id": "881208e5-dcd2-4834-aee7-f9a6f5f402fd",
+                  "bibliography_revision_id": "89fda183-85d1-44e4-b4a0-46242982ca85"
+                }
+              ]
+            },
+            "conditions": {
+              "text": "所选摘要未提及。",
+              "status": "not_mentioned",
+              "citations": []
+            },
+            "limitations": {
+              "text": "所选摘要未提及。",
+              "status": "not_mentioned",
+              "citations": []
+            },
+            "applicability": {
+              "text": "所选摘要未提及。",
+              "status": "not_mentioned",
+              "citations": []
+            }
+          },
+          "file_name": "仅摘要.txt",
+          "version_id": "881208e5-dcd2-4834-aee7-f9a6f5f402fd",
+          "source_scope": "abstract",
+          "source_number": 1
+        }
+      ],
+      "comparison": null
+    },
+    "tools": [
+      {
+        "name": "read_evidence",
+        "args": {
+          "chunk_ids": [
+            "6dfbe030-dbbd-4af6-b030-ce374fd8fc5b",
+            "79284c41-c5aa-41e1-a21e-c14c8e0d8cdb"
+          ]
+        }
+      },
+      {
+        "name": "submit_reading",
+        "args": {
+          "documents": [
+            {
+              "fields": {
+                "applicability": {
+                  "citations": [],
+                  "status": "not_mentioned",
+                  "text": ""
+                },
+                "conditions": {
+                  "citations": [],
+                  "status": "not_mentioned",
+                  "text": ""
+                },
+                "limitations": {
+                  "citations": [],
+                  "status": "not_mentioned",
+                  "text": ""
+                },
+                "method": {
+                  "citations": [],
+                  "status": "not_mentioned",
+                  "text": ""
+                },
+                "result": {
+                  "citations": [
+                    {
+                      "chunk_id": "6dfbe030-dbbd-4af6-b030-ce374fd8fc5b",
+                      "quote": "观察到颜色变化。"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "观察到颜色变化。"
+                },
+                "subject": {
+                  "citations": [
+                    {
+                      "chunk_id": "6dfbe030-dbbd-4af6-b030-ce374fd8fc5b",
+                      "quote": "虚构材料 Q"
+                    }
+                  ],
+                  "status": "reported",
+                  "text": "虚构材料 Q"
+                }
+              },
+              "version_id": "881208e5-dcd2-4834-aee7-f9a6f5f402fd"
+            }
+          ],
+          "comparison": null
+        }
+      }
+    ]
+  }
+]

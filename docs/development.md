@@ -678,3 +678,36 @@ JSON 顶层字段是 `code`、`name`、`source_label`、`rights_note`、`layout`
 数据库部分在确认事务中执行，文件与图由 Worker 处理；scheduler 每 15 秒补投未派发请求，并将过期执行记录为失败。首版单次最多 50000 条业务记录，超限拒绝确认，不部分删除；尚未进行大规模删除性能验收。不要绕过 API 直接删除项目或文件记录，否则可能遗漏对象清单。
 
 删除无法撤回已下载文件、手工转抄或已发送给模型服务的内容；已开始发出的下载也不能追回。当前没有自动备份过期或第三方内容删除承诺。备份由部署维护者按实际保留策略管理；恢复时先保持服务离线，保留备份时间之后的删除账本，重新执行这些删除及图重建，再开放访问。不要仅恢复旧 PostgreSQL/对象备份便宣称删除仍有效。恢复操作与实际演练由 #20 补充，未演练不算通过。
+
+## 固定模型对照评测（Issue #19，验收进行中）
+
+`evaluation_cases.py` 将已有分模块自制样例统一为 14 个案例，包含阅读/比较、诊断、表达、反馈拆分和材料更正。它们是虚构软件验收资料，不是真实研究论文；预期标注由实现者/AI 起草，尚待人工核对。运行器固定代码摘要、样例内容、模型文件摘要和服务版本，保存两组原始结果、用量和时间。只在 DEBUG 环境使用本机已下载模型，不读取应用的模型密钥。
+
+```bash
+PYTHONPATH=services/backend uv run python services/backend/core/tests/evaluate_core.py \
+  --model qwen3:4b-instruct --base-url http://127.0.0.1:11434/v1 \
+  --output-dir .local/core-evaluation-v1
+```
+
+目标目录必须是新目录。系统组使用真实 Pi 执行器和业务 API，通过同步派发完成专用任务；直接组使用同一模型的单次请求，协议参见 [Ollama 官方兼容接口说明](https://docs.ollama.com/api/openai-compatibility)。系统最多四次调用，直接组一次；两组每次输出上限相同，但工具读取、校验和返回结构不同。固定先运行系统组再运行直接组，没有平衡模型冷启动和缓存，不能据此推断普遍效率提升。格式不合格时保留原始文本与失败状态，不把空结果当作正确判断。
+
+`run.json` 保存整轮结果，`system-*.json` 保存分模块原始记录，`review-template.json` 是待填写复核表。中断后可加 `--resume` 续写已确认完整的分组与尚未发出的直接请求；代码、模型或样例变化时拒绝续写。部分执行的系统分组需先检查保留的日志，不自动重跑掩盖原失败。专用项目使用永久清理流程移除文件及派生数据，失败时保留清理账本。
+
+复核者应先检查样例预期，再逐项填写 `correct/incorrect/partial/neutral`、对应预期 ID 与理由，并核对阴性条件。正确项只匹配一个预期；重复正确输出计为误报，部分正确单列且不消耗预期，失败任务的内部草稿不算交付。`assistant_draft` 与 `human` 分开报告；前者不能填写人类核验用时或操作量。未测值保留 null，不能用推测数字补齐。完成复核后：
+
+```bash
+PYTHONPATH=services/backend uv run python services/backend/core/tests/evaluate_core.py \
+  --output-dir .local/core-evaluation-v1 --review .local/review.json
+```
+
+结果写入 `scores.json`。整轮未结束、配置变更、复核遗漏或结果摘要不匹配时拒绝评分。此评测与常规 CI 分开，不增加每次推送的模型调用。软件集成测试、真实模型输出、人工复核和微信/Word 外部验收分别记录；尚未验证的部分不能因脚本执行成功而打勾。
+
+运行结束还会生成离线 `review.html`。用浏览器打开，先核对资料与预期，再填写每项判断、对应预期及理由，主动开始/暂停计时，最后导出复核 JSON。页面隐藏、切换计时项或导出会停止计时；未计时保留未知。操作量只统计判断字段修改次数，不代表完成整个论文任务的总操作量。草稿按本轮摘要保存在浏览器本机，清除浏览器数据会丢失；请导出保存。不认可预期时不要勾选确认，也不要将 AI 草案改名为人工标注。
+
+公开自制运行记录见 [2026-11-06 评测结果](evaluation/2026-11-06/run.json)，逐项 AI 草案及计数与原始试跑同目录保存，人工复核仍待进行。无需模型服务即可复算草案：
+
+```bash
+PYTHONPATH=services/backend uv run python -c 'import json; from pathlib import Path; from core.tests.evaluation_metrics import score; p=Path("docs/evaluation/2026-11-06"); assert score(json.loads((p/"run.json").read_text()), json.loads((p/"assistant-review.json").read_text())) == json.loads((p/"assistant-scores.json").read_text())'
+```
+
+需要从公开记录重建空白复核页面时，调用 `evaluation_review.render(run)` 并将 HTML 写到 `.local/`；它从原始运行生成待定表，不预填 AI 判断。具体结果、口径及缺陷链接见[测试记录](testing.md#核心流程与固定模型对照issue-19)。

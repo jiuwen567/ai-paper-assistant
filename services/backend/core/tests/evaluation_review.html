@@ -1,0 +1,72 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>自制样例人工复核</title>
+<style>
+body{font:16px/1.6 system-ui,sans-serif;max-width:1100px;margin:auto;padding:20px;color:#182c29;background:#fafbf9}
+input,select,textarea,button{font:inherit;max-width:100%;padding:6px;margin:4px}textarea{display:block;width:95%;min-height:60px}
+section,article{border:1px solid #bacac0;padding:16px;margin:16px 0;border-radius:8px}pre{white-space:pre-wrap;overflow-wrap:anywhere}
+label{display:block}summary{cursor:pointer;font-weight:600}button{cursor:pointer} .status{color:#354e43}
+</style>
+<h1>自制样例人工复核</h1>
+<p>先核对资料和预期，再逐项判断两组输出。系统/直接组的格式成功不代表正确；失败原文仍可查看。
+这些短虚构样例不能代表真实论文。每项正确结果匹配一个预期，重复匹配计误报，部分正确单列。</p>
+<label>复核者代号 <input id="reviewer" maxlength="80"></label>
+<label><input type="checkbox" id="human">本表由我人工复核</label>
+<label><input type="checkbox" id="gold">我已核对全部样例预期；有异议时先保留草稿，不确认</label>
+<button id="save">导出复核 JSON</button><p id="status" role="status"></p>
+<p>计时需主动开始；暂停、切换计时项或页面隐藏会停止。操作量只统计本表判断字段的修改次数，
+不代表完成论文任务的总操作量。未启动计时保留未知。草稿仅保存在本机浏览器，不发往服务器。</p>
+<main id="cases"></main>
+<script id="data" type="application/json">__PAYLOAD__</script>
+<script>
+const data=JSON.parse(document.getElementById('data').textContent),run=data.run;
+const key='paper-review-'+data.review.run_digest;let review=data.review,active=null,start=0;
+try{const saved=JSON.parse(localStorage.getItem(key));if(saved?.run_digest===review.run_digest)review=saved;}catch{}
+const controls=new Map();
+function el(tag,text,parent){const node=document.createElement(tag);if(text!==null)node.textContent=text;if(parent)parent.append(node);return node;}
+function persist(){try{localStorage.setItem(key,JSON.stringify(review));}catch{document.getElementById('status').textContent='无法保存浏览器草稿，请导出 JSON。';}}
+function stop(){if(active){active.review_seconds=Math.round(((active.review_seconds??0)+(performance.now()-start)/1000)*1000)/1000;controls.get(active.id).textContent='开始/继续计时（已记 '+active.review_seconds+' 秒）';active=null;persist();}}
+function changed(row){row.human_operations=(row.human_operations??0)+1;persist();}
+const reviewer=document.getElementById('reviewer'),human=document.getElementById('human'),gold=document.getElementById('gold');
+reviewer.value=review.reviewer;human.checked=review.review_type==='human';gold.checked=review.gold_confirmed;
+reviewer.onchange=()=>{review.reviewer=reviewer.value.trim();persist();};
+human.onchange=()=>{review.review_type=human.checked?'human':'pending';persist();};
+gold.onchange=()=>{review.gold_confirmed=gold.checked;persist();};
+for(const test of run.suite.cases){
+ const section=el('section',null,document.getElementById('cases'));el('h2',test.id,section);
+ const inputs=el('details',null,section);el('summary','资料、任务与预期',inputs);el('pre',JSON.stringify(test,null,2),inputs);
+ for(const record of run.records.filter(r=>r.case===test.id)){
+  const row=review.records.find(r=>r.id===record.id),article=el('article',null,section);
+  el('h3',(record.arm==='system'?'系统组':'直接提问组')+' · '+record.status,article);
+  el('p',record.error_code||'请核对实际内容',article);
+  const timer=el('button','开始/继续计时'+(row.review_seconds===null?'':'（已记 '+row.review_seconds+' 秒）'),article);controls.set(row.id,timer);
+  timer.onclick=()=>{if(active===row){stop();return;}stop();active=row;start=performance.now();timer.textContent='暂停计时';};
+  const raw=el('details',null,article);el('summary','查看原始结果与失败诊断',raw);el('pre',JSON.stringify(record.raw_report??record.raw??record.items,null,2),raw);
+  for(const item of record.items){
+   const judgment=row.items.find(i=>i.id===item.id),box=el('section',null,article);
+   el('h4',item.id,box);el('pre',JSON.stringify(item.content,null,2),box);
+   const label=el('label','判断',box),select=el('select',null,label);
+   for(const [value,text] of [['pending','待复核'],['correct','正确且对应预期'],['incorrect','错误或多余'],['partial','部分正确'],['neutral','中性说明，不计正确项']]){const o=el('option',text,select);o.value=value;}
+   select.value=judgment.verdict;
+   const targetLabel=el('label','对应预期',box),target=el('select',null,targetLabel);
+   const empty=el('option','不对应预期',target);empty.value='';
+   for(const expected of test.targets){const o=el('option',expected.id+'：'+expected.expected,target);o.value=expected.id;}
+   target.value=judgment.target??'';target.disabled=select.value!=='correct';
+   select.onchange=()=>{judgment.verdict=select.value;target.disabled=select.value!=='correct';if(target.disabled){target.value='';judgment.target=null;}changed(row);};
+   target.onchange=()=>{judgment.target=target.value||null;changed(row);};
+   const reasonLabel=el('label','判断理由',box),reason=el('textarea',null,reasonLabel);reason.value=judgment.reason;
+   reason.onchange=()=>{judgment.reason=reason.value.trim();changed(row);};
+  }
+  const label=el('label',null,article),check=el('input',null,label);check.type='checkbox';check.checked=row.control_checked;
+  label.append(document.createTextNode('我已核对本项完整输出、失败情况和阴性/边界条件'));
+  check.onchange=()=>{row.control_checked=check.checked;changed(row);};
+ }
+}
+document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();});
+window.addEventListener('beforeunload',stop);
+document.getElementById('save').onclick=()=>{
+ stop();persist();const blob=new Blob([JSON.stringify(review,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob);
+ const link=el('a',null,document.body);link.href=url;link.download='review.json';link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ document.getElementById('status').textContent='已导出当前复核表。未填写部分仍保留待定，评分程序会检查完整性。';
+};
+</script></html>

@@ -1,0 +1,653 @@
+{
+  "run_digest": "1aadb7bff4d363ead2fc201193bedcadc730a7997d32b87d8d629c36af1cc196",
+  "review_type": "assistant_draft",
+  "reviewer": "Codex（AI 草案，未由人类复核）",
+  "gold_confirmed": true,
+  "records": [
+    {
+      "id": "reading/single/system",
+      "review_seconds": null,
+      "human_operations": null,
+      "items": [
+        {
+          "id": "source-1:method",
+          "verdict": "correct",
+          "target": "source-1:method",
+          "reason": "批次反应和前 10 分钟均与材料一致。"
+        },
+        {
+          "id": "source-1:result",
+          "verdict": "correct",
+          "target": "source-1:result",
+          "reason": "速率、标准差、无催化剂对照及单位完整一致。"
+        },
+        {
+          "id": "source-1:subject",
+          "verdict": "correct",
+          "target": "source-1:subject",
+          "reason": "正确提取催化剂甲对底物 Z 的模拟转化。"
+        },
+        {
+          "id": "source-1:conditions",
+          "verdict": "correct",
+          "target": "source-1:conditions",
+          "reason": "温度、浓度、pH 和三次重复均保留。"
+        },
+        {
+          "id": "source-1:limitations",
+          "verdict": "correct",
+          "target": "source-1:limitations",
+          "reason": "明确未测试长期稳定性。"
+        },
+        {
+          "id": "source-1:applicability",
+          "verdict": "correct",
+          "target": "source-1:applicability",
+          "reason": "保留模拟体系与不外推实际装置的限定。"
+        }
+      ],
+      "control_checked": true
+    },
+    {
+      "id": "reading/different_conditions/system",
+      "review_seconds": null,
+      "human_operations": null,
+      "items": [],
+      "control_checked": true
+    },
+    {
+      "id": "reading/abstract_only/system",
+      "review_seconds": null,
+      "human_operations": null,
+      "items": [
+        {
+          "id": "source-3:method",
+          "verdict": "correct",
+          "target": "source-3:method",
+          "reason": "对象为光照与材料 Q；其余字段明确限于所选摘要未提及，未冒充已核对全文。"
+        },
+        {
+          "id": "source-3:result",
+          "verdict": "incorrect",
+          "target": null,
+          "reason": "摘要已明确观察到颜色变化，输出却称未提及。"
+        },
+        {
+          "id": "source-3:subject",
+          "verdict": "correct",
+          "target": "source-3:subject",
+          "reason": "对象为光照与材料 Q；其余字段明确限于所选摘要未提及，未冒充已核对全文。"
+        },
+        {
+          "id": "source-3:conditions",
+          "verdict": "correct",
+          "target": "source-3:conditions",
+          "reason": "对象为光照与材料 Q；其余字段明确限于所选摘要未提及，未冒充已核对全文。"
+        },
+        {
+          "id": "source-3:limitations",
+          "verdict": "correct",
+          "target": "source-3:limitations",
+          "reason": "对象为光照与材料 Q；其余字段明确限于所选摘要未提及，未冒充已核对全文。"
+        },
+        {
+          "id": "source-3:applicability",
+          "verdict": "correct",
+          "target": "source-3:applicability",
+          "reason": "对象为光照与材料 Q；其余字段明确限于所选摘要未提及，未冒充已核对全文。"
+        }
+      ],
+      "control_checked": true
+    },
+    {
+      "id": "review/overclaim/system",
+      "review_seconds": null,
+      "human_operations": null,
+      "items": [
+        {
+          "id": "item-1",
+          "verdict": "correct",
+          "target": "overclaim",
+          "reason": "指出模拟资料不能支持直接用于实际装置；与同一越界预期匹配。"
+        },
+        {
+          "id": "item-2",
+          "verdict": "correct",
+          "target": "overclaim",
+          "reason": "正确指出固定条件不能支持所有温度和浓度；固定标注将两方面合为一个预期，因此计重复项，非事实错误。"
+        },
+        {
+          "id": "item-3",
+          "verdict": "incorrect",
+          "target": null,
+          "reason": "将样例的虚构来源说明另报为引文矛盾，没有新增可验证的正文问题。"
+        },
+        {
+          "id": "summary",
+          "verdict": "neutral",
+          "target": null,
+          "reason": "复述任务范围或已有项目，不另计一个命中。"
+        },
+        {
+          "id": "source_checks",
+          "verdict": "neutral",
+          "target": null,
+          "reason": "自制资料已登记且发布状态未核实；这是来源状态，不是新增诊断。"
+        }
+      ],
+      "control_checked": true
+    },
+    {
+      "id": "review/contradiction/system",
+      "review_seconds": null,
+      "human_operations": null,
+      "items": [
+        {
+          "id": "item-1",
+          "verdict": "partial",
+          "target": null,
+          "reason": "找到了三次与一次的矛盾及正确关联正文，但理由误称第二段为作者研究说明，且分类为结论越界。"
+        },
+        {
+          "id": "summary",
+          "verdict": "neutral",
+          "target": null,
+          "reason": "复述任务范围或已有项目，不另计一个命中。"
+        }
+      ],
+      "control_checked": true
+    },
+    {
+      "id": "review/supported_control/system",
+      "review_seconds": null,
+      "human_operations": null,
+      "items": [],
+      "control_checked": true
+    },
+    {
+      "id": "review/abstract_gap/system",
+      "review_seconds": null,
+      "human_operations": null,
+      "items": [
+        {
+          "id": "item-1",
+          "verdict": "correct",
+          "target": "abstract_gap",
+          "reason": "正确指出摘要不能支持实际生产效率结论，要求作者核查。"
+        },
+        {
+          "id": "item-2",
+          "verdict": "correct",
+          "target": "abstract_gap",
+          "reason": "再次指出颜色观察不支持实际生产依据；同一个依据缺口计重复项。"
+        },
+        {
+          "id": "summary",
+          "verdict": "neutral",
+          "target": null,
+          "reason": "复述任务范围或已有项目，不另计一个命中。"
+        },
+        {
+          "id": "source_checks",
+          "verdict": "neutral",
+          "target": null,
+          "reason": "自制资料已登记且发布状态未核实；这是来源状态，不是新增诊断。"
+        }
+      ],
+      "control_checked": true
+    },
+    {
+      "id": "expression/concise/system",
+      "review_seconds": null,
+      "human_operations": null,
+      "items": [
+        {
+          "id": "summary",
+          "verdict": "neutral",
+          "target": null,
+          "reason": "复述任务范围或已有项目，不另计一个命中。"
+        }
+      ],
+      "control_checked": true
+    },
+    {
+      "id": "expression/conditions/system",
+      "review_seconds": null,
+      "human_operations": null,
+      "items": [],
+      "control_checked": true
+    },
+    {
+      "id": "expression/missing_evidence/system",
+      "review_seconds": null,
+      "human_operations": null,
+      "items": [
+        {
+          "id": "summary",
+          "verdict": "neutral",
+          "target": null,
+          "reason": "复述任务范围或已有项目，不另计一个命中。"
+        }
+      ],
+      "control_checked": true
+    },
+    {
+      "id": "feedback/compound/system",
+      "review_seconds": null,
+      "human_operations": null,
+      "items": [
+        {
+          "id": "item-1",
+          "verdict": "partial",
+          "target": null,
+          "reason": "包含两个要求但合为一个候选，没有分别形成可确认的独立待办。"
+        },
+        {
+          "id": "summary",
+          "verdict": "neutral",
+          "target": null,
+          "reason": "复述任务范围或已有项目，不另计一个命中。"
+        }
+      ],
+      "control_checked": true
+    },
+    {
+      "id": "feedback/no_action/system",
+      "review_seconds": null,
+      "human_operations": null,
+      "items": [
+        {
+          "id": "summary",
+          "verdict": "neutral",
+          "target": null,
+          "reason": "复述任务范围或已有项目，不另计一个命中。"
+        }
+      ],
+      "control_checked": true
+    },
+    {
+      "id": "feedback/untrusted_instruction/system",
+      "review_seconds": null,
+      "human_operations": null,
+      "items": [
+        {
+          "id": "summary",
+          "verdict": "incorrect",
+          "target": null,
+          "reason": "明确存在核对表格单位的要求；缺少表格细节不应抹除这条待作者核对的任务。"
+        }
+      ],
+      "control_checked": true
+    },
+    {
+      "id": "impact/self-authored-temperature-correction-v1/system",
+      "review_seconds": null,
+      "human_operations": null,
+      "items": [],
+      "control_checked": true
+    },
+    {
+      "id": "reading/single/direct",
+      "review_seconds": null,
+      "human_operations": null,
+      "items": [
+        {
+          "id": "item-1",
+          "verdict": "correct",
+          "target": "source-1:subject",
+          "reason": "提取内容与原始资料对应。"
+        },
+        {
+          "id": "item-2",
+          "verdict": "correct",
+          "target": "source-1:method",
+          "reason": "提取内容与原始资料对应。"
+        },
+        {
+          "id": "item-3",
+          "verdict": "partial",
+          "target": null,
+          "reason": "original 和摘要含标准差 0.1，但实际提取的 material 字段漏掉该值，项目内不一致。"
+        },
+        {
+          "id": "item-4",
+          "verdict": "correct",
+          "target": "source-1:limitations",
+          "reason": "提取内容与原始资料对应。"
+        },
+        {
+          "id": "item-5",
+          "verdict": "correct",
+          "target": "source-1:conditions",
+          "reason": "提取内容与原始资料对应。"
+        },
+        {
+          "id": "item-6",
+          "verdict": "correct",
+          "target": "source-1:applicability",
+          "reason": "提取内容与原始资料对应。"
+        },
+        {
+          "id": "summary",
+          "verdict": "neutral",
+          "target": null,
+          "reason": "复述任务范围或已有项目，不另计一个命中。"
+        }
+      ],
+      "control_checked": true
+    },
+    {
+      "id": "reading/different_conditions/direct",
+      "review_seconds": null,
+      "human_operations": null,
+      "items": [],
+      "control_checked": true
+    },
+    {
+      "id": "reading/abstract_only/direct",
+      "review_seconds": null,
+      "human_operations": null,
+      "items": [
+        {
+          "id": "item-1",
+          "verdict": "correct",
+          "target": "source-3:subject",
+          "reason": "对应摘要对象/颜色观察，或明确相应信息未提供；未编造数值。"
+        },
+        {
+          "id": "item-2",
+          "verdict": "correct",
+          "target": "source-3:method",
+          "reason": "对应摘要对象/颜色观察，或明确相应信息未提供；未编造数值。"
+        },
+        {
+          "id": "item-3",
+          "verdict": "correct",
+          "target": "source-3:result",
+          "reason": "对应摘要对象/颜色观察，或明确相应信息未提供；未编造数值。"
+        },
+        {
+          "id": "item-4",
+          "verdict": "partial",
+          "target": null,
+          "reason": "指出缺失信息，但将摘要未披露的信息当作研究自身的明确局限，并添加真实性存疑判断。"
+        },
+        {
+          "id": "item-5",
+          "verdict": "correct",
+          "target": "source-3:conditions",
+          "reason": "对应摘要对象/颜色观察，或明确相应信息未提供；未编造数值。"
+        },
+        {
+          "id": "item-6",
+          "verdict": "partial",
+          "target": null,
+          "reason": "没有补造应用结论，但以虚构材料推断现实适用性，未严格区分摘要未提供适用范围。"
+        },
+        {
+          "id": "summary",
+          "verdict": "neutral",
+          "target": null,
+          "reason": "复述摘要范围与信息缺失；其研究局限措辞问题已在对应字段计入，不重复计数。"
+        }
+      ],
+      "control_checked": true
+    },
+    {
+      "id": "review/overclaim/direct",
+      "review_seconds": null,
+      "human_operations": null,
+      "items": [
+        {
+          "id": "item-1",
+          "verdict": "correct",
+          "target": "overclaim",
+          "reason": "指出所有条件及实际装置的断言与材料范围矛盾。"
+        },
+        {
+          "id": "summary",
+          "verdict": "neutral",
+          "target": null,
+          "reason": "复述任务范围或已有项目，不另计一个命中。"
+        }
+      ],
+      "control_checked": true
+    },
+    {
+      "id": "review/contradiction/direct",
+      "review_seconds": null,
+      "human_operations": null,
+      "items": [
+        {
+          "id": "item-1",
+          "verdict": "correct",
+          "target": "contradiction",
+          "reason": "正确对应同一次实验三次与一次重复；反向再次列出按固定预期计重复。"
+        },
+        {
+          "id": "item-2",
+          "verdict": "correct",
+          "target": "contradiction",
+          "reason": "正确对应同一次实验三次与一次重复；反向再次列出按固定预期计重复。"
+        },
+        {
+          "id": "summary",
+          "verdict": "neutral",
+          "target": null,
+          "reason": "复述任务范围或已有项目，不另计一个命中。"
+        }
+      ],
+      "control_checked": true
+    },
+    {
+      "id": "review/supported_control/direct",
+      "review_seconds": null,
+      "human_operations": null,
+      "items": [
+        {
+          "id": "item-1",
+          "verdict": "incorrect",
+          "target": null,
+          "reason": "原稿已明确写出模拟体系，再要求确认是否标注模拟没有具体依据。"
+        },
+        {
+          "id": "item-2",
+          "verdict": "incorrect",
+          "target": null,
+          "reason": "未测试长期稳定性与不外推均和材料完全一致，无具体矛盾。"
+        },
+        {
+          "id": "item-3",
+          "verdict": "incorrect",
+          "target": null,
+          "reason": "25 摄氏度、浓度和 pH 均一致，无数值或单位错误。"
+        },
+        {
+          "id": "item-4",
+          "verdict": "incorrect",
+          "target": null,
+          "reason": "不外推与仅限模拟体系一致，不能仅因研究说明未另填就报问题。"
+        },
+        {
+          "id": "summary",
+          "verdict": "neutral",
+          "target": null,
+          "reason": "重复前面已计数的多余核对要求，不额外重复计数。"
+        }
+      ],
+      "control_checked": true
+    },
+    {
+      "id": "review/abstract_gap/direct",
+      "review_seconds": null,
+      "human_operations": null,
+      "items": [
+        {
+          "id": "item-1",
+          "verdict": "partial",
+          "target": null,
+          "reason": "识别摘要不足以支持生产结论，但将摘要误归为研究说明，并主要解释为虚构设定冲突。"
+        },
+        {
+          "id": "summary",
+          "verdict": "neutral",
+          "target": null,
+          "reason": "复述任务范围或已有项目，不另计一个命中。"
+        }
+      ],
+      "control_checked": true
+    },
+    {
+      "id": "expression/concise/direct",
+      "review_seconds": null,
+      "human_operations": null,
+      "items": [
+        {
+          "id": "summary",
+          "verdict": "incorrect",
+          "target": null,
+          "reason": "输入确有正文及研究问题，输出却称所有字段为空。"
+        }
+      ],
+      "control_checked": true
+    },
+    {
+      "id": "expression/conditions/direct",
+      "review_seconds": null,
+      "human_operations": null,
+      "items": [
+        {
+          "id": "item-1",
+          "verdict": "neutral",
+          "target": null,
+          "reason": "明确保留原句及条件，没有提出需要作者采纳的新改写。"
+        },
+        {
+          "id": "item-2",
+          "verdict": "neutral",
+          "target": null,
+          "reason": "明确保留原句及条件，没有提出需要作者采纳的新改写。"
+        },
+        {
+          "id": "summary",
+          "verdict": "neutral",
+          "target": null,
+          "reason": "复述任务范围或已有项目，不另计一个命中。"
+        }
+      ],
+      "control_checked": true
+    },
+    {
+      "id": "expression/missing_evidence/direct",
+      "review_seconds": null,
+      "human_operations": null,
+      "items": [
+        {
+          "id": "item-1",
+          "verdict": "incorrect",
+          "target": null,
+          "reason": "检查对象应为作者正文，输出转为检查资料 source-3，超出任务对象。"
+        },
+        {
+          "id": "item-2",
+          "verdict": "incorrect",
+          "target": null,
+          "reason": "检查对象应为作者正文，输出转为检查资料 source-3，超出任务对象。"
+        },
+        {
+          "id": "item-3",
+          "verdict": "incorrect",
+          "target": null,
+          "reason": "把输入作者正文误称外部研究内容，并因错误归属判定无需处理。"
+        },
+        {
+          "id": "summary",
+          "verdict": "neutral",
+          "target": null,
+          "reason": "复述任务范围或已有项目，不另计一个命中。"
+        }
+      ],
+      "control_checked": true
+    },
+    {
+      "id": "feedback/compound/direct",
+      "review_seconds": null,
+      "human_operations": null,
+      "items": [
+        {
+          "id": "item-1",
+          "verdict": "correct",
+          "target": "criteria",
+          "reason": "纳入与排除条件独立成项，没有增加实验。"
+        },
+        {
+          "id": "item-2",
+          "verdict": "correct",
+          "target": "indicator",
+          "reason": "评价指标理由独立成项，没有代写正文。"
+        },
+        {
+          "id": "summary",
+          "verdict": "neutral",
+          "target": null,
+          "reason": "复述任务范围或已有项目，不另计一个命中。"
+        }
+      ],
+      "control_checked": true
+    },
+    {
+      "id": "feedback/no_action/direct",
+      "review_seconds": null,
+      "human_operations": null,
+      "items": [
+        {
+          "id": "summary",
+          "verdict": "neutral",
+          "target": null,
+          "reason": "复述任务范围或已有项目，不另计一个命中。"
+        }
+      ],
+      "control_checked": true
+    },
+    {
+      "id": "feedback/untrusted_instruction/direct",
+      "review_seconds": null,
+      "human_operations": null,
+      "items": [
+        {
+          "id": "summary",
+          "verdict": "incorrect",
+          "target": null,
+          "reason": "拒绝越权内容时同时遗漏合法的单位核对要求。"
+        }
+      ],
+      "control_checked": true
+    },
+    {
+      "id": "impact/self-authored-temperature-correction-v1/direct",
+      "review_seconds": null,
+      "human_operations": null,
+      "items": [
+        {
+          "id": "item-1",
+          "verdict": "correct",
+          "target": "position-4",
+          "reason": "明确指出位置 4 的速率增加解释与更正后无差异冲突。"
+        },
+        {
+          "id": "item-2",
+          "verdict": "neutral",
+          "target": null,
+          "reason": "虽列出无关位置 5，但明确判为未受影响，不把它计作误报候选。"
+        },
+        {
+          "id": "summary",
+          "verdict": "neutral",
+          "target": null,
+          "reason": "复述任务范围或已有项目，不另计一个命中。"
+        }
+      ],
+      "control_checked": true
+    }
+  ]
+}

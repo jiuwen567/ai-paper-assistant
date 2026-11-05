@@ -46,8 +46,9 @@ def node_executable():
         raise ParseFailure("runner_missing", "Pi 执行需要 Node.js 24 或更高版本。") from error
 
 
-def run_pi(config, handle, checkpoint):
+def run_pi(config, handle, checkpoint, *, timeout_seconds=None):
     executable = node_executable()
+    timeout_seconds = timeout_seconds or RUN_SECONDS
     if not settings.PI_RUNNER.is_file():
         raise ParseFailure("runner_missing", "Pi 执行环境不可用，请检查部署。")
     with tempfile.TemporaryDirectory(prefix="paper-pi-") as directory:
@@ -79,7 +80,7 @@ def run_pi(config, handle, checkpoint):
                 selector.register(process.stdout, selectors.EVENT_READ)
                 while True:
                     now = time.monotonic()
-                    if now - started >= RUN_SECONDS:
+                    if now - started >= timeout_seconds:
                         raise ParseFailure(
                             "model_timeout", "模型任务超时，可重试。", retryable=True
                         )
@@ -87,7 +88,7 @@ def run_pi(config, handle, checkpoint):
                         if not checkpoint():
                             return
                         checked = now
-                    if not selector.select(timeout=min(0.5, RUN_SECONDS - (now - started))):
+                    if not selector.select(timeout=min(0.5, timeout_seconds - (now - started))):
                         continue
                     block = os.read(process.stdout.fileno(), 16384)
                     if not block:

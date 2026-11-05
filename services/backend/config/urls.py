@@ -26,6 +26,12 @@ from core.projects import (
     ProjectDetailView,
     ProjectListView,
 )
+from core.reading_views import (
+    ReadingDetailView,
+    ReadingListView,
+    ReadingSourceView,
+    ReadingTaskView,
+)
 from core.search_views import IndexListView, SearchView
 from core.views import LiveView, ReadyView
 from core.wechat_views import (
@@ -50,6 +56,12 @@ urlpatterns = [
     path("api/v1/projects/<uuid:project_id>/ai-permissions/", AIPermissionView.as_view()),
     path("api/v1/projects/<uuid:project_id>/jobs/", JobListView.as_view()),
     path("api/v1/projects/<uuid:project_id>/ai-tasks/", AITaskView.as_view()),
+    path("api/v1/projects/<uuid:project_id>/reading/", ReadingListView.as_view()),
+    path("api/v1/projects/<uuid:project_id>/reading/tasks/", ReadingTaskView.as_view()),
+    path("api/v1/projects/<uuid:project_id>/reading/sources/", ReadingSourceView.as_view()),
+    path(
+        "api/v1/projects/<uuid:project_id>/reading/<uuid:record_id>/", ReadingDetailView.as_view()
+    ),
     path("api/v1/projects/<uuid:project_id>/ai-tasks/<uuid:job_id>/trace/", AITraceView.as_view()),
     path("api/v1/projects/<uuid:project_id>/jobs/<uuid:job_id>/", JobDetailView.as_view()),
     path(

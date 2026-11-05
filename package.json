@@ -1,0 +1,13 @@
+{
+  "name": "ai-paper-assistant",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.32.1",
+  "engines": { "node": ">=22.12.0", "pnpm": ">=10 <11" },
+  "scripts": {
+    "dev": "pnpm --filter @paper/web dev",
+    "build": "pnpm --filter @paper/web build",
+    "check": "pnpm -r check",
+    "test": "pnpm --filter @paper/web test"
+  }
+}

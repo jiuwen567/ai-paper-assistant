@@ -1,0 +1,52 @@
+name: Engineering checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.9.26'
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.13.0'
+          cache: pnpm
+      - run: make init install check test build
+      - name: 从空库启动完整开发环境
+        run: |
+          docker compose --profile app config --quiet
+          make up
+          uv run python services/backend/manage.py makemigrations --check --dry-run
+      - run: make integration
+      - run: pnpm --filter @paper/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @paper/web test:e2e
+        env:
+          E2E_USE_COMPOSE: '1'
+      - name: 故障诊断
+        if: failure()
+        run: |
+          docker compose --profile app ps
+          docker compose --profile app logs --tail=80
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: browser-test-results
+          path: apps/web/test-results
+          if-no-files-found: ignore
+      - name: 清理隔离的 CI 数据卷
+        if: always()
+        run: docker compose --profile app down -v

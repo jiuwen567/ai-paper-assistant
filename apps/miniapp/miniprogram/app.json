@@ -1,0 +1,14 @@
+{
+  "pages": ["pages/index/index"],
+  "window": {
+    "navigationBarTitleText": "Paper Assistant",
+    "navigationStyle": "custom",
+    "backgroundColor": "#f5f6f2"
+  },
+  "renderer": "skyline",
+  "componentFramework": "glass-easel",
+  "rendererOptions": { "skyline": { "defaultDisplayBlock": true, "disableABTest": true } },
+  "style": "v2",
+  "lazyCodeLoading": "requiredComponents",
+  "sitemapLocation": "sitemap.json"
+}

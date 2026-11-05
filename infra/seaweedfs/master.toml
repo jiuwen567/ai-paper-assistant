@@ -1,0 +1,6 @@
+# 本地单节点按需逐个分配 Volume，避免默认每批 7 个耗尽开发容量。
+[master.volume_growth]
+copy_1 = 1
+copy_2 = 1
+copy_3 = 1
+copy_other = 1

@@ -1,0 +1,12 @@
+<scroll-view scroll-y type="list" class="page-scroll">
+  <view class="page">
+    <view class="title">API 连接检查</view>
+    <view class="card">
+      <view class="status">{{status}}</view>
+      <view class="detail">{{detail}}</view>
+      <button bindtap="checkConnection" loading="{{loading}}" disabled="{{loading}}">{{loading ? '检查中' : '检查 API 连接'}}</button>
+      <view class="endpoint">{{apiBaseUrl}}</view>
+    </view>
+    <view class="note">账号绑定、资料收集、证据查看与待办尚未接入。</view>
+  </view>
+</scroll-view>

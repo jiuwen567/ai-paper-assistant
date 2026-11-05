@@ -1,0 +1,17 @@
+{
+  "description": "AI Paper Assistant 微信小程序本地工程",
+  "projectname": "ai-paper-assistant",
+  "appid": "touristappid",
+  "compileType": "miniprogram",
+  "miniprogramRoot": "miniprogram/",
+  "libVersion": "3.17.6",
+  "setting": {
+    "es6": true,
+    "minified": true,
+    "urlCheck": true,
+    "compileHotReLoad": true,
+    "skylineRenderEnable": true,
+    "compileWorklet": true,
+    "useCompilerPlugins": ["typescript"]
+  }
+}

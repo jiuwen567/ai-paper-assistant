@@ -35,6 +35,10 @@ __pycache__/
 /local/
 /scratch/
 /logs/
+/.local/
+.coverage
+playwright-report/
+test-results/
 *.log
 *.sqlite
 *.sqlite3

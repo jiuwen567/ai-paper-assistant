@@ -9,6 +9,15 @@ from core.library_views import (
     EvidenceListView,
     MaterialStateView,
 )
+from core.manuscript_views import (
+    ManuscriptDiffView,
+    ManuscriptHistoryView,
+    ManuscriptImportPreviewView,
+    ManuscriptImportsView,
+    ManuscriptRestoreView,
+    ManuscriptRevisionView,
+    ManuscriptView,
+)
 from core.material_views import (
     MaterialDownloadView,
     MaterialListView,
@@ -55,6 +64,19 @@ urlpatterns = [
     path("api/v1/projects/<uuid:project_id>/members/<int:user_id>/", MemberDetailView.as_view()),
     path("api/v1/projects/<uuid:project_id>/ai-permissions/", AIPermissionView.as_view()),
     path("api/v1/projects/<uuid:project_id>/jobs/", JobListView.as_view()),
+    path("api/v1/projects/<uuid:project_id>/manuscript/", ManuscriptView.as_view()),
+    path("api/v1/projects/<uuid:project_id>/manuscript/history/", ManuscriptHistoryView.as_view()),
+    path(
+        "api/v1/projects/<uuid:project_id>/manuscript/history/<int:number>/",
+        ManuscriptRevisionView.as_view(),
+    ),
+    path("api/v1/projects/<uuid:project_id>/manuscript/diff/", ManuscriptDiffView.as_view()),
+    path("api/v1/projects/<uuid:project_id>/manuscript/restore/", ManuscriptRestoreView.as_view()),
+    path("api/v1/projects/<uuid:project_id>/manuscript/imports/", ManuscriptImportsView.as_view()),
+    path(
+        "api/v1/projects/<uuid:project_id>/manuscript/imports/<uuid:parse_id>/",
+        ManuscriptImportPreviewView.as_view(),
+    ),
     path("api/v1/projects/<uuid:project_id>/ai-tasks/", AITaskView.as_view()),
     path("api/v1/projects/<uuid:project_id>/reading/", ReadingListView.as_view()),
     path("api/v1/projects/<uuid:project_id>/reading/tasks/", ReadingTaskView.as_view()),

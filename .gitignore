@@ -45,3 +45,6 @@ test-results/
 
 # Mini Program local settings
 project.private.config.json
+
+# PDF.js 随构建复制的锁定版本资源
+apps/web/public/pdfjs/

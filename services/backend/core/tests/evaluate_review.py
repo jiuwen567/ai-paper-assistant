@@ -29,7 +29,7 @@ from core.models import (  # noqa: E402
     ReviewRecord,
 )
 from core.reviews import REVIEW_PROMPT  # noqa: E402
-from core.tests.evaluation_cases import EXPRESSION_CASES  # noqa: E402
+from core.tests.evaluation_cases import EXPRESSION_CASES, EXPRESSION_EXTRA_CASES  # noqa: E402
 from core.tests.evaluation_cases import REVIEW_CASES as CASES  # noqa: E402
 from core.tests.evaluation_cleanup import remove_project  # noqa: E402
 from core.tests.reading_samples import SAMPLES  # noqa: E402
@@ -45,7 +45,15 @@ def main():
     parser.add_argument("--base-url", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--purpose", choices=["review", "expression"], default="review")
+    parser.add_argument(
+        "--expanded", action="store_true", help="表达任务额外检查动作保留和无需修改的样例"
+    )
     args = parser.parse_args()
+    if args.expanded and args.purpose != "expression":
+        parser.error("--expanded 仅用于表达任务。")
+    cases = CASES if args.purpose == "review" else EXPRESSION_CASES
+    if args.expanded:
+        cases = [*cases, *EXPRESSION_EXTRA_CASES]
     if not settings.DEBUG:
         raise SystemExit("仅允许在 DEBUG 开发环境运行自制评测。")
     prefix = args.purpose + "-eval-" + uuid4().hex
@@ -90,9 +98,7 @@ def main():
                 execute_job(str(run.job_id))
                 assert Job.objects.get(pk=run.job_id).status == "succeeded"
                 versions.append(str(version.pk))
-            for number, (name, texts, source_index, expected) in enumerate(
-                CASES if args.purpose == "review" else EXPRESSION_CASES
-            ):
+            for number, (name, texts, source_index, expected) in enumerate(cases):
                 manuscript = save(
                     context,
                     payload(

@@ -24,6 +24,7 @@ from core.models import (
     ProjectPolicy,
     WechatIdentity,
 )
+from core.reviews import read_manuscript
 from core.tests.test_ai_jobs import provider
 from core.tests.test_library import context as library_context
 from core.tests.test_library import source as library_source
@@ -52,7 +53,6 @@ def output_for(manuscript, source=None):
         chunk = source[1].chunks.order_by("ordinal").first()
         citations = [{"chunk_id": str(chunk.pk), "quote": chunk.text}]
     return {
-        "summary": "仅改善所选原句的表达，待作者核对。",
         "suggestions": [
             {
                 "block_version_id": manuscript["blocks"][1]["version_id"],
@@ -250,14 +250,21 @@ def test_two_concurrent_identical_decisions_only_publish_once(context, manuscrip
         "本研究未对样本进行观察。",
         "本研究证明样本全部有效。",
         "此外，样本在实际生产中显著提高了加工效率。",
+        "本研究观察了样本。”, ",
     ],
 )
 def test_content_changes_are_not_plain_polish(context, manuscript, replacement):
     output = output_for(manuscript)
     output["suggestions"][0]["replacement"] = replacement
-    suggestion = run(context, manuscript, output=output)
-    assert suggestion.model_output["guard_reasons"]
-    assert decide(context, suggestion).status_code == 400
+    with provider(respond_with(output)) as requests:
+        job = create(context, manuscript)
+        execute_job(str(job.pk))
+        job.refresh_from_db()
+        assert job.status == "failed" and job.error_code == "model_call_limit"
+        assert len(requests) == 4 and not ExpressionSuggestion.objects.exists()
+        assert job.ai_events.filter(details__code="expression_content_changed").exists()
+    # 生成时拒绝也不能代替作者编辑后采纳时的再次检查。
+    suggestion = run(context, manuscript)
     assert (
         decide(
             context, suggestion, decision_body(suggestion, action="edited", text=replacement)
@@ -266,6 +273,30 @@ def test_content_changes_are_not_plain_polish(context, manuscript, replacement):
     )
     assert not ExpressionDecision.objects.exists()
     assert Manuscript.objects.get(project=context[1]).current_revision.number == 1
+
+
+def test_content_change_can_be_repaired_without_publishing_unsafe_draft(context, manuscript):
+    valid = output_for(manuscript)
+    invalid = output_for(manuscript)
+    invalid["suggestions"][0]["replacement"] = "本研究观察了 100 个样本。"
+
+    def respond(number, body):
+        if number == 1:
+            return [("read_manuscript", {})]
+        if number == 3:
+            assert "expression_content_changed" in str(body)
+            assert not ExpressionSuggestion.objects.exists()
+        return [("submit_expression", invalid if number == 2 else valid)]
+
+    with provider(respond) as requests:
+        job = create(context, manuscript)
+        execute_job(str(job.pk))
+        job.refresh_from_db()
+        assert job.status == "succeeded", job.error_code
+        suggestion = ExpressionSuggestion.objects.get(job=job)
+        assert suggestion.model_output["replacement"] == "本研究观察了样本。"
+        assert len(requests) == 3 and not ExpressionDecision.objects.exists()
+        assert Manuscript.objects.get(project=context[1]).current_revision.number == 1
 
 
 def test_substantive_output_not_saved_as_replacement_and_no_automatic_confirmation(
@@ -391,7 +422,7 @@ def test_reviewer_cannot_generate_or_decide_and_revoked_cannot_preview(context, 
 def test_empty_proposal_is_not_an_edit_and_unread_citations_never_publish(
     context, manuscript, source
 ):
-    with provider(respond_with({"summary": "所选范围没有表达建议。", "suggestions": []})):
+    with provider(respond_with({"suggestions": []})):
         job = create(context, manuscript)
         execute_job(str(job.pk))
         job.refresh_from_db()
@@ -406,3 +437,105 @@ def test_empty_proposal_is_not_an_edit_and_unread_citations_never_publish(
         assert job.ai_events.filter(details__code="expression_citation_invalid").exists()
     assert not ExpressionSuggestion.objects.exists()
     assert Manuscript.objects.get(project=context[1]).current_revision.number == 1
+
+
+def test_expression_reads_only_selected_body_not_research_or_source_metadata(context, manuscript):
+    with provider(lambda *_: []):
+        job = create(context, manuscript, block_ids=[manuscript["blocks"][1]["id"]])
+        content = read_manuscript(job)
+        assert content == {
+            "version": manuscript["version"],
+            "blocks": [
+                {
+                    "block_version_id": manuscript["blocks"][1]["version_id"],
+                    "text": manuscript["blocks"][1]["text"],
+                }
+            ],
+        }
+        assert job.input_snapshot["manuscript"]["research"]  # 业务快照仍保留作者登记信息。
+
+
+def test_source_text_cannot_be_edited_as_manuscript_and_can_be_repaired(
+    context, manuscript, source
+):
+    valid = output_for(manuscript, source)
+    invalid = output_for(manuscript, source)
+    invalid["suggestions"][0]["quote"] = source[1].chunks.order_by("ordinal").first().text
+    reads = respond_with(valid, source)
+
+    def respond(number, body):
+        if number < 3:
+            return reads(number, body)
+        if number == 4:
+            assert "review_quote_invalid" in str(body) and "不必重读" in str(body)
+            assert not ExpressionSuggestion.objects.exists()
+        return [("submit_expression", invalid if number == 3 else valid)]
+
+    with provider(respond) as requests:
+        job = create(context, manuscript, source)
+        execute_job(str(job.pk))
+        job.refresh_from_db()
+        assert job.status == "succeeded", job.error_code
+        suggestion = ExpressionSuggestion.objects.get(job=job)
+        assert suggestion.model_output["quote"] == manuscript["blocks"][1]["text"]
+        assert len(requests) == 4 and "1 条" in job.output["summary"]
+        assert not ExpressionDecision.objects.exists()
+        assert Manuscript.objects.get(project=context[1]).current_revision.number == 1
+
+
+@pytest.mark.parametrize("revoke", [False, True])
+def test_unsubmitted_expression_repairs_once_and_honors_revocation(context, manuscript, revoke):
+    output = output_for(manuscript)
+
+    def respond(number, _):
+        if number == 1:
+            return [("read_manuscript", {})]
+        if number == 2:
+            if revoke:
+                ProjectPolicy.objects.filter(project=context[1]).update(
+                    verified=False, allowed_actions=[]
+                )
+            return []
+        return [("submit_expression", output)]
+
+    with provider(respond) as requests:
+        job = create(context, manuscript)
+        execute_job(str(job.pk))
+        job.refresh_from_db()
+        assert job.status == ("cancelled" if revoke else "succeeded"), job.error_code
+        assert len(requests) == (2 if revoke else 3)
+        assert ExpressionSuggestion.objects.filter(job=job).count() == (0 if revoke else 1)
+        assert not ExpressionDecision.objects.exists()
+
+
+def test_old_expression_prompt_is_cancelled_without_model_request(context, manuscript):
+    with provider(lambda *_: []) as requests:
+        job = create(context, manuscript)
+        job.input_snapshot["model"]["prompt_version"] = "expression-v1"
+        job.save(update_fields=["input_snapshot"])
+        execute_job(str(job.pk))
+        job.refresh_from_db()
+        assert job.status == "cancelled", job.error_code
+        assert not requests and not ExpressionSuggestion.objects.exists()
+
+
+def test_unchanged_suggestion_requires_explicit_empty_resubmission(context, manuscript):
+    unchanged = output_for(manuscript)
+    unchanged["suggestions"][0]["replacement"] = unchanged["suggestions"][0]["quote"]
+
+    def respond(number, body):
+        if number == 1:
+            return [("read_manuscript", {})]
+        if number == 3:
+            assert "全部无需修改时提交空数组" in str(body)
+            assert not ExpressionSuggestion.objects.exists()
+        return [("submit_expression", unchanged if number == 2 else {"suggestions": []})]
+
+    with provider(respond) as requests:
+        job = create(context, manuscript)
+        execute_job(str(job.pk))
+        job.refresh_from_db()
+        assert job.status == "succeeded", job.error_code
+        assert len(requests) == 3 and job.output["suggestion_ids"] == []
+        assert "0 条" in job.output["summary"]
+        assert not ExpressionSuggestion.objects.exists() and not ExpressionDecision.objects.exists()

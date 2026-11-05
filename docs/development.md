@@ -539,7 +539,7 @@ DOCX 原件先通过材料模块上传并解析。导入复用 #6 的固定解�
 
 作者可接受、编辑后查看差异再接受，或拒绝并记录原因。采纳前须核对原意、数值、条件与依据；服务器再次检查当前作者身份、规则、固定稿件及资料快照。拒绝不改稿；过期建议可拒绝，但不能覆盖新稿。请求超时后重试同一决定不会生成第二版，另一个窗口已处理的建议返回 409，界面保留尚未提交的编辑。
 
-- `POST projects/{id}/expressions/tasks/`：`idempotency_key`、`policy_version`、`manuscript_version`、`block_ids`、`version_ids`，可选 `question`。复用固定稿件范围、资料读取和 Pi 预算；任务记录使用 `expression-v1`。
+- `POST projects/{id}/expressions/tasks/`：`idempotency_key`、`policy_version`、`manuscript_version`、`block_ids`、`version_ids`，可选 `question`。复用固定稿件范围、资料读取和 Pi 预算；任务记录使用 `expression-v2`。
 - `GET projects/{id}/suggestions/?state=`、`suggestions/{suggestion_id}/`：分页建议、差异、作者决定及输入是否变化。状态为 pending/accepted/edited/rejected，未传表示全部。
 - `POST suggestions/{suggestion_id}/preview/`：提交作者编辑的 `text`，返回差异及内容变化提示，不修改稿件。
 - `POST suggestions/{suggestion_id}/decision/`：`request_key`、`manuscript_version`、`policy_version`、`action`（accepted/edited/rejected）、`meaning_confirmed`，可选 `reason`；只有 edited 可提交 `text`。Web 与微信会话共用相同事务和权限逻辑。
@@ -547,6 +547,10 @@ DOCX 原件先通过材料模块上传并解析。导入复用 #6 的固定解�
 采纳在项目锁与单一 PostgreSQL 事务中建立正文新版本、关联引用和作者决定。未改块继续复用旧版本，原句之外的文字不变；被改块保留原有仍有效的引用，并附加作者此次核对的建议依据。引用保存固定片段、题录修订及状态快照；尚未登记题录时保留空题录，不虚构文献信息。该关联不证明原文在语义上支持论断。之后作者普通编辑产生新块版本时，旧引用仍保留在历史块上，不自动认定支持新表述。
 
 模型标为实质修改的建议不保存其扩写正文，只展示需作者处理的说明，不能走表达采纳。程序保守拦截数值、字母术语、常见运算/温度符号、否定、方向和结论强度变化，以及大幅扩写；编辑后的文字再次检查。这些规则无法完整判断语义，也可能拒绝合理改写，不能替代作者判断。涉及核心观点、数据或结果解释时，应由作者回到原稿编辑区处理。
+
+`expression-v2` 的原稿读取只向模型提供所选正文及固定版本编号，研究登记、题录状态与文献正文均不作为待编辑文字。模型只提交 `suggestions`，范围说明由已保存的建议数量生成。新生成的表达建议若触发内容保护或引入不配对引号/括号，在发布前反馈修正；没有文字变化时要求显式移除此项再提交，不能由后端静默当成空结果。明确标为实质问题的条目仍只保留原句和待作者处理的说明。
+
+同轮两个只读调用仍由 Pi 依次执行；普通文字未形成提交时最多补一次提示。错误修正仍在原四次调用、180 秒总预算内，权限、旧版本与材料变化立即终止；无法形成有效结果时不发布部分建议。旧 `expression-v1` 排队任务取消后须重新创建，历史建议及作者决定保留。内容保护不能完整识别语义变化，作者确认仍必需。复测中的漏改、偏义与协议失败见 [Issue #43 记录](testing.md#表达缺陷复测issue-43)。
 
 ### Issue #12 实际验证与待办
 

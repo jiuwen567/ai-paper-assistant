@@ -1,5 +1,8 @@
 {
-  "pages": ["pages/index/index"],
+  "pages": [
+    "pages/index/index",
+    "pages/projects/projects"
+  ],
   "window": {
     "navigationBarTitleText": "Paper Assistant",
     "navigationStyle": "custom",
@@ -7,7 +10,12 @@
   },
   "renderer": "skyline",
   "componentFramework": "glass-easel",
-  "rendererOptions": { "skyline": { "defaultDisplayBlock": true, "disableABTest": true } },
+  "rendererOptions": {
+    "skyline": {
+      "defaultDisplayBlock": true,
+      "disableABTest": true
+    }
+  },
   "style": "v2",
   "lazyCodeLoading": "requiredComponents",
   "sitemapLocation": "sitemap.json"

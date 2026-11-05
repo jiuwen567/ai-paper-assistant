@@ -16,7 +16,7 @@ from django.conf import settings  # noqa: E402
 from django.contrib.auth import get_user_model  # noqa: E402
 from django.db import transaction  # noqa: E402
 
-from core.models import Project, ProjectPolicy  # noqa: E402
+from core.models import Project, ProjectPolicy, WechatIdentity  # noqa: E402
 
 
 def main():
@@ -45,7 +45,12 @@ def main():
                     }
                 )
             )
+        elif data["action"] == "binding":
+            # 自制身份绕过微信服务，仅验证 Web 绑定交互，不冒充真实微信登录。
+            from core.wechat import login_wechat
+            print(json.dumps(login_wechat(prefix), default=str))
         elif data["action"] == "cleanup":
+            WechatIdentity.objects.filter(open_id=prefix).delete()
             Project.objects.filter(owner__username__in=usernames).delete()
             users.objects.filter(username__in=usernames).delete()
         else:

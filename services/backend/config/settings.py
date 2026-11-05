@@ -50,7 +50,10 @@ USE_TZ = True
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
-    "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.SessionAuthentication"],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+        "core.wechat_auth.WechatAuthentication",
+    ],
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
 }
 NEO4J_URI = env("NEO4J_URI", default="bolt://127.0.0.1:7687")
@@ -79,3 +82,6 @@ CSRF_COOKIE_SECURE = not DEBUG
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
 CELERY_BEAT_SCHEDULE = {"recover-jobs": {"task": "jobs.recover", "schedule": 15.0}}
+
+WECHAT_APP_ID = env("WECHAT_APP_ID", default="")
+WECHAT_APP_SECRET = env("WECHAT_APP_SECRET", default="")

@@ -40,13 +40,13 @@ test("Web 代理请求真实 Django API，并能从连接失败恢复", async ({
   );
 });
 
-test("公众号说明页可直接打开并标明未接入能力", async ({ page }) => {
+test("公众号说明页可直接打开并说明入口验证条件", async ({ page }) => {
   await page.goto("/wechat");
   await expect(
     page.getByRole("heading", { name: "微信接入" }),
   ).toBeVisible();
   await expect(
-    page.getByText("消息回调尚未接入。", { exact: false }),
+    page.getByText("入口须在具备相应权限、已关联小程序的账号中验证。", { exact: false }),
   ).toBeVisible();
   expect(
     await page.evaluate(

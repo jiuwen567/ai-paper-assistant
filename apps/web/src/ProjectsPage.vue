@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
 import JobsPanel from "./JobsPanel.vue";
+import WechatBindingPanel from "./WechatBindingPanel.vue";
 import {
   aiActions, ApiError, logout, request, session,
   type AIAction, type Member, type Page, type Policy, type Project, type ProjectFields, type User,
@@ -166,6 +167,7 @@ onMounted(() => perform(initialize));
           <button :disabled="busy" @click="perform(signOut)">退出</button>
         </div>
       </header>
+      <WechatBindingPanel v-if="user" :key="user.id" @access-lost="cause => perform(async () => { throw cause; })" />
       <p v-if="error" class="error" role="alert">{{ error }}</p>
       <p v-if="message" role="status">{{ message }}</p>
       <p v-if="busy" role="status">处理中…</p>

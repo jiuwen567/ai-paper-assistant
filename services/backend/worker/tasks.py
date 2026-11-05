@@ -77,3 +77,10 @@ def recover_jobs():
     from core.jobs import recover_jobs as recover
 
     return recover()
+
+
+@app.task(name="graph.sync", acks_late=True, reject_on_worker_lost=True, time_limit=180)
+def sync_graph_events():
+    from core.graph import recover_events
+
+    return recover_events()

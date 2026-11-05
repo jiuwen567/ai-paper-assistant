@@ -184,7 +184,18 @@ def main():
                     material__project__owner__username__in=usernames
                 ):
                     storage.delete_object(Bucket=version.bucket, Key=version.object_key)
-            Project.objects.filter(owner__username__in=usernames).delete()
+            from core.graph import purge_projection
+            from core.models import GraphTombstone
+
+            project_ids = list(
+                Project.objects.select_for_update()
+                .filter(owner__username__in=usernames)
+                .values_list("pk", flat=True)
+            )
+            Project.objects.filter(pk__in=project_ids).delete()
+            for project_id in project_ids:
+                purge_projection(project_id)
+            GraphTombstone.objects.filter(project_id__in=project_ids).delete()
             users.objects.filter(username__in=usernames).delete()
         else:
             raise ValueError("未知操作。")

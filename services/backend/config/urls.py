@@ -9,6 +9,7 @@ from core.disclosure_views import (
     UsageDetailView,
     UsageListView,
 )
+from core.evidence_links import EvidenceLinkHistoryView, EvidenceLinksView, EvidenceLinkView
 from core.expression_views import (
     ExpressionTaskView,
     SuggestionDecisionView,
@@ -28,6 +29,7 @@ from core.feedback_views import (
     FeedbackTaskView,
     MentorReportsView,
 )
+from core.graph_views import GraphPathsView, GraphRebuildView
 from core.job_views import JobControlView, JobDetailView, JobListView
 from core.library_views import (
     BibliographyView,
@@ -84,6 +86,17 @@ from core.wechat_views import (
 )
 
 urlpatterns = [
+    path("api/v1/projects/<uuid:project_id>/evidence-links/", EvidenceLinksView.as_view()),
+    path(
+        "api/v1/projects/<uuid:project_id>/evidence-links/<uuid:link_id>/",
+        EvidenceLinkView.as_view(),
+    ),
+    path(
+        "api/v1/projects/<uuid:project_id>/evidence-links/<uuid:link_id>/history/",
+        EvidenceLinkHistoryView.as_view(),
+    ),
+    path("api/v1/projects/<uuid:project_id>/graph/paths/", GraphPathsView.as_view()),
+    path("api/v1/projects/<uuid:project_id>/graph/rebuild/", GraphRebuildView.as_view()),
     path("api/v1/auth/wechat/login/", WechatLoginView.as_view()),
     path("api/v1/auth/wechat/binding/", WechatBindingView.as_view()),
     path("api/v1/auth/wechat/logout/", WechatLogoutView.as_view()),

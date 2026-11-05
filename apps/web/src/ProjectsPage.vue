@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
+import JobsPanel from "./JobsPanel.vue";
 import {
   aiActions, ApiError, logout, request, session,
   type AIAction, type Member, type Page, type Policy, type Project, type ProjectFields, type User,
@@ -211,6 +212,7 @@ onMounted(() => perform(initialize));
           </fieldset>
         </form>
         <template v-if="selected">
+          <JobsPanel :key="selected.id" :project="selected" @access-lost="cause => perform(async () => { throw cause; })" />
           <form class="editor" @submit.prevent="perform(savePolicy)">
             <h2>AI 辅助规则 · v{{ selected.policy.version }}</h2>
             <fieldset :disabled="busy || !canEdit">

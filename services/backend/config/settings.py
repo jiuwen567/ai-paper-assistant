@@ -77,3 +77,5 @@ SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 SECURE_CONTENT_TYPE_NOSNIFF = True
+
+CELERY_BEAT_SCHEDULE = {"recover-jobs": {"task": "jobs.recover", "schedule": 15.0}}

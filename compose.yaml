@@ -121,6 +121,14 @@ services:
       retries: 10
       start_period: 15s
 
+  scheduler:
+    <<: *backend
+    profiles: [app]
+    command: ["celery", "-A", "worker.app", "beat", "--loglevel=info", "--schedule=/tmp/celerybeat-schedule"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+
   web:
     profiles: [app]
     build:

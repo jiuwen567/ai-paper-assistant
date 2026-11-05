@@ -32,6 +32,11 @@ def execute_job(job_id):
 
             execute_index(job)
             return
+        if job.kind == "export":
+            from core.export_jobs import execute_export
+
+            execute_export(job)
+            return
         if job.kind == "parse":
             from core.parse_jobs import execute_parse
 

@@ -10,6 +10,13 @@ from core.disclosure_views import (
     UsageListView,
 )
 from core.evidence_links import EvidenceLinkHistoryView, EvidenceLinksView, EvidenceLinkView
+from core.export_views import (
+    ExportDetailView,
+    ExportDownloadView,
+    ExportPreviewView,
+    ExportsView,
+    ExportTemplatesView,
+)
 from core.expression_views import (
     ExpressionTaskView,
     SuggestionDecisionView,
@@ -96,6 +103,16 @@ from core.wechat_views import (
 )
 
 urlpatterns = [
+    path("api/v1/projects/<uuid:project_id>/export-templates/", ExportTemplatesView.as_view()),
+    path("api/v1/projects/<uuid:project_id>/exports/preview/", ExportPreviewView.as_view()),
+    path("api/v1/projects/<uuid:project_id>/exports/", ExportsView.as_view()),
+    path(
+        "api/v1/projects/<uuid:project_id>/exports/<uuid:snapshot_id>/", ExportDetailView.as_view()
+    ),
+    path(
+        "api/v1/projects/<uuid:project_id>/exports/<uuid:snapshot_id>/download/",
+        ExportDownloadView.as_view(),
+    ),
     path("api/v1/projects/<uuid:project_id>/material-changes/", ChangesView.as_view()),
     path(
         "api/v1/projects/<uuid:project_id>/material-changes/<uuid:change_id>/", ChangeView.as_view()

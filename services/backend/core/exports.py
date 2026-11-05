@@ -3,7 +3,7 @@
 import re
 
 import docx
-from django.db.models import F, OuterRef, Subquery
+from django.db.models import F
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -15,10 +15,10 @@ from core.library import default_bibliography, searchable_chunks
 from core.manuscripts import manuscript_for, revision_data
 from core.models import (
     BibliographyRevision,
+    ContentBlock,
     ExportTemplateVersion,
     ManuscriptCitation,
     MaterialVersion,
-    RevisionBlock,
 )
 from core.reading import StrictSerializer
 
@@ -117,21 +117,11 @@ def create_content(project, data):
     if len(source_ids) > MAX_REFERENCES:
         raise ValidationError("单次导出最多支持 1000 个引用来源，请缩小交付范围。")
     # 保留当前稳定正文块的导入来源，后续撤回/删除可定位到派生导出。
-    first_revision = (
-        RevisionBlock.objects.filter(block_id=OuterRef("block_id"))
-        .order_by("revision__number")
-        .values("revision_id")[:1]
+    source_ids.update(
+        ContentBlock.objects.filter(
+            pk__in=[b["id"] for b in body], imported_from__isnull=False
+        ).values_list("imported_from_id", flat=True)
     )
-    imported = (
-        RevisionBlock.objects.filter(block_id__in=[b["id"] for b in body])
-        .annotate(first_revision=Subquery(first_revision))
-        .filter(revision_id=F("first_revision"), revision__origin="import")
-        .values_list("revision__source", flat=True)
-        .distinct()
-    )
-    source_ids |= {
-        source["source_version_id"] for source in imported if source.get("source_version_id")
-    }
     sources = list(
         MaterialVersion.objects.filter(pk__in=source_ids, material__project=project)
         .select_related("material")

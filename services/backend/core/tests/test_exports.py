@@ -209,7 +209,7 @@ def cited(context, draft):
     ManuscriptCitation.objects.create(
         block_version_id=current["blocks"][1]["version_id"],
         chunk=chunk,
-        snapshot=source,
+        snapshot={**source, "quote": chunk.text},
         fingerprint="a" * 64,
         created_by=context[2],
     )

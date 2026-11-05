@@ -59,6 +59,8 @@ def execute_job(job_id):
                 "source_version": job.input_snapshot["source_version"],
             },
         )
+    except Job.DoesNotExist:
+        return  # 已删除任务的迟到 Worker 不再发布或重建数据。
     except ParseFailure as error:
         fail(
             job.pk,
@@ -89,3 +91,17 @@ def sync_graph_events():
     from core.graph import recover_events
 
     return recover_events()
+
+
+@app.task(name="cleanup.execute", acks_late=True, reject_on_worker_lost=True, time_limit=300)
+def execute_cleanup(request_id):
+    from core.cleanup import execute
+
+    execute(request_id)
+
+
+@app.task(name="cleanup.recover")
+def recover_cleanup():
+    from core.cleanup import recover
+
+    recover()

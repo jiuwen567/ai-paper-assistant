@@ -201,7 +201,7 @@ def main():
                 ):
                     storage.delete_object(Bucket=artifact.bucket, Key=artifact.object_key)
             from core.graph import purge_projection
-            from core.models import GraphTombstone
+            from core.models import CleanupRequest, GraphTombstone
 
             project_ids = list(
                 Project.objects.select_for_update()
@@ -209,9 +209,20 @@ def main():
                 .values_list("pk", flat=True)
             )
             Project.objects.filter(pk__in=project_ids).delete()
+            cleanups = CleanupRequest.objects.filter(created_by__username__in=usernames)
+            project_ids = list(
+                set(project_ids) | set(cleanups.values_list("project_id", flat=True))
+            )
             for project_id in project_ids:
                 purge_projection(project_id)
             GraphTombstone.objects.filter(project_id__in=project_ids).delete()
+            with closing(s3_client()) as storage:
+                for cleanup in cleanups:
+                    for item in cleanup.items.filter(kind="object"):
+                        storage.delete_object(
+                            Bucket=item.target["bucket"], Key=item.target["object_key"]
+                        )
+            cleanups.delete()
             users.objects.filter(username__in=usernames).delete()
         else:
             raise ValueError("未知操作。")

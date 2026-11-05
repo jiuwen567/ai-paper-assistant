@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, nextTick, onMounted, reactive, ref } from "vue";
 import LibraryPanel from "./LibraryPanel.vue";
 import ReadingPanel from "./ReadingPanel.vue";
 import ReviewPanel from "./ReviewPanel.vue";
 import ExpressionPanel from "./ExpressionPanel.vue";
 import DisclosurePanel from "./DisclosurePanel.vue";
 import ExportPanel from "./ExportPanel.vue";
+import CleanupPanel from "./CleanupPanel.vue";
 import FeedbackPanel from "./FeedbackPanel.vue";
 import ImpactPanel from "./ImpactPanel.vue";
 import GraphPanel from "./GraphPanel.vue";
@@ -34,6 +35,7 @@ const feedbackDirty = ref(false);
 const graphDirty = ref(false);
 const impactDirty = ref(false);
 const exportDirty = ref(false);
+const cleanupBusy = ref(false);
 const creating = ref(false);
 const members = ref<Page<Member> | null>(null);
 const memberPage = ref(1);
@@ -164,6 +166,13 @@ async function signOut() {
   history.value = null;
   creating.value = false;
 }
+async function afterCleanup(scope: string, id: string) {
+  if (selected.value?.id !== id) { await loadProjects(); return; }
+  selected.value = null; members.value = null; history.value = null;
+  await nextTick();
+  await loadProjects();
+  if (scope === "material" && id) await openProject(id);
+}
 async function returnToList() {
   if ((manuscriptDirty.value || disclosureDirty.value || feedbackDirty.value || graphDirty.value || impactDirty.value || exportDirty.value) && !window.confirm("放弃当前未保存修改并返回列表？")) return;
   selected.value = null; creating.value = false;
@@ -187,29 +196,29 @@ onMounted(() => perform(initialize));
         <h1>我的论文</h1>
         <div v-if="user" class="actions">
           <span>{{ user.username }}</span>
-          <button :disabled="busy" @click="perform(signOut)">退出</button>
+          <button :disabled="busy || cleanupBusy" @click="perform(signOut)">退出</button>
         </div>
       </header>
       <WechatBindingPanel v-if="user" :key="user.id" @access-lost="cause => perform(async () => { throw cause; })" />
       <p v-if="error" class="error" role="alert">{{ error }}</p>
       <p v-if="message" role="status">{{ message }}</p>
       <p v-if="busy" role="status">处理中…</p>
-      <button v-if="!initialized" :disabled="busy" @click="perform(initialize)">重新连接</button>
+      <button v-if="!initialized" :disabled="busy || cleanupBusy" @click="perform(initialize)">重新连接</button>
       <form v-else-if="!user" class="editor login-form" @submit.prevent="perform(signIn)">
         <h2>登录</h2>
         <label>用户名<input v-model="username" autocomplete="username" required maxlength="150" /></label>
         <label>密码<input v-model="password" type="password" autocomplete="current-password" required maxlength="1024" /></label>
-        <button :disabled="busy" type="submit">登录</button>
+        <button :disabled="busy || cleanupBusy" type="submit">登录</button>
       </form>
       <template v-else-if="!selected && !creating">
         <div class="actions">
-          <button :disabled="busy" @click="startCreate">创建项目</button>
-          <button :disabled="busy" @click="perform(() => loadProjects())">刷新列表</button>
+          <button :disabled="busy || cleanupBusy" @click="startCreate">创建项目</button>
+          <button :disabled="busy || cleanupBusy" @click="perform(() => loadProjects())">刷新列表</button>
         </div>
         <p v-if="projects?.count === 0">还没有论文项目。</p>
         <ul class="project-list">
           <li v-for="project in projects?.results" :key="project.id">
-            <button :disabled="busy" @click="perform(() => openProject(project.id))">
+            <button :disabled="busy || cleanupBusy" @click="perform(() => openProject(project.id))">
               <strong>{{ project.name }}</strong><span>{{ roleName(project.role) }}</span>
             </button>
           </li>
@@ -222,13 +231,13 @@ onMounted(() => perform(initialize));
       </template>
       <template v-else>
         <div class="actions">
-          <button :disabled="busy" @click="perform(returnToList)">返回列表</button>
-          <button v-if="selected" :disabled="busy" @click="perform(() => openProject(selected!.id))">重新加载</button>
+          <button :disabled="busy || cleanupBusy" @click="perform(returnToList)">返回列表</button>
+          <button v-if="selected" :disabled="busy || cleanupBusy" @click="perform(() => openProject(selected!.id))">重新加载</button>
           <span v-if="selected">{{ roleName(selected.role) }}</span>
         </div>
         <form class="editor" @submit.prevent="perform(saveProject)">
           <h2>{{ creating ? "创建项目" : "项目设置" }}</h2>
-          <fieldset :disabled="busy || !canEdit">
+          <fieldset :disabled="busy || cleanupBusy || !canEdit">
             <label>项目名称<input v-model="fields.name" required maxlength="120" /></label>
             <label>论文类型<input v-model="fields.paper_type" maxlength="80" /></label>
             <label>写作要求<textarea v-model="fields.requirements" rows="4" maxlength="20000" /></label>
@@ -236,7 +245,7 @@ onMounted(() => perform(initialize));
             <button v-if="canEdit" type="submit">{{ creating ? "创建" : "保存项目" }}</button>
           </fieldset>
         </form>
-        <template v-if="selected">
+        <div v-if="selected" :inert="cleanupBusy">
           <MaterialsPanel :key="selected.id" :project="selected" :user-id="user!.id" @access-lost="cause => perform(async () => { throw cause; })" />
           <LibraryPanel :key="selected.id" :project="selected" @access-lost="cause => perform(async () => { throw cause; })" />
           <ReadingPanel :key="selected.id" :project="selected" @access-lost="cause => perform(async () => { throw cause; })" />
@@ -251,7 +260,7 @@ onMounted(() => perform(initialize));
           <JobsPanel :key="selected.id" :project="selected" @access-lost="cause => perform(async () => { throw cause; })" />
           <form class="editor" @submit.prevent="perform(savePolicy)">
             <h2>AI 辅助规则 · v{{ selected.policy.version }}</h2>
-            <fieldset :disabled="busy || !canEdit">
+            <fieldset :disabled="busy || cleanupBusy || !canEdit">
               <label>规则来源<input v-model="policy.source" maxlength="500" :required="policy.verified" /></label>
               <label>来源版本<input v-model="policy.source_version" maxlength="120" :required="policy.verified" /></label>
               <label>使用要求<textarea v-model="policy.notes" rows="3" maxlength="20000" /></label>
@@ -284,7 +293,7 @@ onMounted(() => perform(initialize));
             <ul class="member-list">
               <li v-for="member in members?.results" :key="member.user_id">
                 <span>{{ member.username }} · {{ roleName(member.role) }}</span>
-                <button v-if="selected.is_owner" :disabled="busy" :aria-label="`移除 ${member.username}`" @click="perform(() => removeMember(member))">移除</button>
+                <button v-if="selected.is_owner" :disabled="busy || cleanupBusy" :aria-label="`移除 ${member.username}`" @click="perform(() => removeMember(member))">移除</button>
               </li>
             </ul>
             <div v-if="members && (members.next || members.previous)" class="actions" aria-label="成员分页">
@@ -292,15 +301,16 @@ onMounted(() => perform(initialize));
               <button :disabled="busy || !members.next" @click="perform(() => loadMembers(memberPage + 1))">下一页成员</button>
             </div>
             <form v-if="selected.is_owner" class="editor" @submit.prevent="perform(saveMember)">
-              <fieldset :disabled="busy">
+              <fieldset :disabled="busy || cleanupBusy">
                 <label>成员用户名<input v-model="memberName" required maxlength="150" /></label>
                 <label>成员角色<select v-model="memberRole"><option value="reviewer">审阅者（只读）</option><option value="author">作者（可编辑项目与规则）</option></select></label>
                 <button type="submit">添加或更新成员</button>
               </fieldset>
             </form>
           </section>
-        </template>
+        </div>
       </template>
+      <CleanupPanel v-if="user && !creating" :key="user.id" :project="selected" :disabled="busy" :has-draft="manuscriptDirty || disclosureDirty || feedbackDirty || graphDirty || impactDirty || exportDirty" @deleting="cleanupBusy = $event" @deleted="(scope, id) => perform(() => afterCleanup(scope, id))" @access-lost="cause => perform(async () => { throw cause; })" />
     </main>
   </div>
 </template>

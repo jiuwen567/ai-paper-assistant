@@ -102,4 +102,5 @@ EMBEDDING_CACHE_DIR = env("EMBEDDING_CACHE_DIR", default=str(ROOT_DIR / ".local"
 AI_MODEL = env("AI_MODEL", default="")
 AI_BASE_URL = env("AI_BASE_URL", default="")
 AI_API_KEY = env("AI_API_KEY", default="")
+AI_MAX_TOKENS_FIELD = env("AI_MAX_TOKENS_FIELD", default="max_tokens")
 PI_RUNNER = ROOT_DIR / "services" / "pi-runner" / "src" / "runner.ts"

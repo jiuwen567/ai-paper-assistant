@@ -1,0 +1,28 @@
+{
+  "purpose": "仅验证真实 Pi SDK 请求的输出限额，不是业务任务成功或内容质量验收。",
+  "max_tokens_field": "max_tokens",
+  "max_tokens": 8,
+  "events": [
+    {
+      "id": 1,
+      "type": "model_start"
+    },
+    {
+      "id": 2,
+      "type": "model_end",
+      "ok": true,
+      "usage": {
+        "input": 460,
+        "output": 8,
+        "cache_read": 1,
+        "cache_write": 0
+      }
+    },
+    {
+      "id": 3,
+      "type": "done",
+      "success": true
+    }
+  ],
+  "error_code": null
+}

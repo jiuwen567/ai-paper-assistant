@@ -7,6 +7,23 @@ import test from "node:test";
 
 const chunk = "00000000-0000-4000-8000-000000000001";
 
+for (const field of [undefined, "max_tokens", "max_completion_tokens"]) {
+  test(`真实 Pi SDK 使用指定 token 限额字段：${field ?? "默认"}`, async t => {
+    const result = await exercise(t, [
+      [["save_note", { text: "自制摘记", chunk_ids: [chunk] }]],
+    ], 200, { max_tokens: 8, ...(field ? { max_tokens_field: field } : {}) });
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.payloads[0][field ?? "max_tokens"], 8);
+    assert.equal(result.payloads[0][field === "max_completion_tokens" ? "max_tokens" : "max_completion_tokens"], undefined);
+  });
+}
+
+test("不支持的 token 字段在调用供应商前拒绝", async t => {
+  const result = await exercise(t, [], 200, { max_tokens_field: "unknown" });
+  assert.notEqual(result.code, 0);
+  assert.equal(result.requests, 0);
+});
+
 async function exercise(t, turns, responseStatus = 200, config = {}) {
   let requests = 0;
   const payloads = [], events = [];

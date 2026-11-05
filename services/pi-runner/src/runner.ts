@@ -32,6 +32,8 @@ try {
   const config = await read();
   const maxTokensField = config.max_tokens_field ?? "max_tokens";
   if (!["max_tokens", "max_completion_tokens"].includes(maxTokensField)) throw new Error("config");
+  const reasoningEffort = config.reasoning_effort ?? "";
+  if (!["", "none", "low", "medium", "high"].includes(reasoningEffort)) throw new Error("config");
   const endpoint = new URL(config.base_url.replace(/\/$/, "") + "/chat/completions");
   const model: Model<"openai-completions"> = {
     id: config.model, name: config.model, provider: "paper", api: "openai-completions",
@@ -74,6 +76,10 @@ try {
     : config.purpose === "expression" ? "submit_expression" : undefined;
   let submitted = false;
   let usageKnown = false;
+  // 元信息中的 reasoning 不控制兼容服务默认值；只转发管理员显式选择的请求字段。
+  const payloadOverrides: Record<string, unknown> = reasoningEffort ? { reasoning_effort: reasoningEffort } : {};
+  if (submissionTool) payloadOverrides.tool_choice = "required";
+  else if (["reading", "comparison"].includes(config.purpose)) payloadOverrides.parallel_tool_calls = false;
   const tools: AgentTool[] = definitions.map(([name, description, parameters]) => ({
     name, label: name, description, parameters, executionMode: "sequential", replay: "never",
     async execute(_id, args) {
@@ -95,11 +101,8 @@ try {
         ...options, apiKey: config.api_key || "local", maxRetries: 0,
         timeoutMs: config.request_timeout_ms ?? 30_000,
         maxTokens: config.max_tokens ?? 2048, temperature: 0,
-        // 阅读一次提交全部资料；避免供应商在同一响应中反复生成完整提交。
-        onPayload: submissionTool
-          ? payload => ({ ...(payload as Record<string, unknown>), tool_choice: "required" })
-          : ["reading", "comparison"].includes(config.purpose)
-          ? payload => ({ ...(payload as Record<string, unknown>), parallel_tool_calls: false })
+        onPayload: Object.keys(payloadOverrides).length
+          ? payload => ({ ...(payload as Record<string, unknown>), ...payloadOverrides })
           : options?.onPayload,
         // 重定向及非配置端点均拒绝；模型不能选择 URL、文件或调用服务器命令。
         fetch: async (input, init) => {

@@ -1,0 +1,54 @@
+{
+  "purpose": "显式推理模式配置验证；固定自制案例保留全部失败，不是独立人工标注或普遍质量结论。",
+  "base_commit": "b1c33b7f45862005b7cd7083325fce69b270d2d4",
+  "model": {
+    "name": "qwen3.5:4b",
+    "digest": "d8b0f5e9760cd1682034f292d7ef72ec46f432149be0df7574bf2d6e92e38c04",
+    "details": {
+      "parent_model": "model.gguf",
+      "format": "gguf",
+      "family": "qwen35",
+      "families": [
+        "qwen35"
+      ],
+      "parameter_size": "4.2B",
+      "quantization_level": "Q4_K_M",
+      "context_length": 262144,
+      "embedding_length": 2560,
+      "runner": "llamacpp"
+    },
+    "server_version": "0.40.14"
+  },
+  "runtime": [
+    {
+      "name": "qwen3.5:4b",
+      "digest": "d8b0f5e9760cd1682034f292d7ef72ec46f432149be0df7574bf2d6e92e38c04",
+      "context_length": 16384,
+      "size_vram": 3650124512
+    }
+  ],
+  "temperature": 0,
+  "token_field": "max_tokens",
+  "reasoning_effort": "none",
+  "source_manifest": "core-none.json 中 sources；已与归档时源码逐项核对。",
+  "api_probe": "请求及选定响应字段；推理文本未公开，完整响应保留本机。先默认后 none，缓存不同，不作因果延时比较。",
+  "pi_probe": "实际 Pi 经本机记录代理到同一 Ollama；仅验证线上字段与响应，非业务验收。请求正文及原始 SSE 完整保留。",
+  "core_result": {
+    "system": {
+      "succeeded": 11,
+      "failed": 3
+    },
+    "direct": {
+      "succeeded": 13,
+      "failed": 1
+    }
+  },
+  "remaining": "系统单篇/摘要阅读及过度推断诊断耗尽调用，直接比较超时；诊断阴性误报、表达不必要建议、反馈空任务误报和单位漏项、影响分析位置5误报仍存在。",
+  "artifact_sha256": {
+    "api-probe.json": "ed9b090c160455db3a8347a7dc17758cb2e41d88a6248fd0fc0bc1e277673f07",
+    "core-none.json": "2fe1b45401de66413a402672fa9bef04c878b032be7b7df20ad7afb17a08ecdc",
+    "pi-probe.json": "46837840482741f842a2ca0c3579896aca00cd02a6a713af18a072519831d9e6",
+    "pi-request.json": "5654c487d4bc5264a4ebb2a425941545290388e6aaddf7366ea16a8dec34b7d4",
+    "pi-response.sse": "0b3b3477411b1f6ff15c239253839c05a9f9e880709550d909557f007e79e5eb"
+  }
+}

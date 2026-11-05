@@ -35,6 +35,8 @@ def digest(value):
 def model_configuration(purpose="note"):
     if settings.AI_MAX_TOKENS_FIELD not in {"max_tokens", "max_completion_tokens"}:
         raise ParseFailure("model_unconfigured", "模型 token 限额字段配置无效，请由管理员核对。")
+    if settings.AI_REASONING_EFFORT not in {"", "none", "low", "medium", "high"}:
+        raise ParseFailure("model_unconfigured", "模型推理模式配置无效，请由管理员核对。")
     try:
         url = urlsplit(settings.AI_BASE_URL)
         url.port  # 端口同样由标准 URL 解析器校验。
@@ -65,6 +67,7 @@ def model_configuration(purpose="note"):
         }.get(purpose, PROMPT_VERSION),
         "runtime": "pi-1.5.0",
         "max_tokens_field": settings.AI_MAX_TOKENS_FIELD,
+        "reasoning_effort": settings.AI_REASONING_EFFORT,
     }
 
 
@@ -589,6 +592,7 @@ def execute_ai(job):
         "model": settings.AI_MODEL,
         "api_key": settings.AI_API_KEY,
         "max_tokens_field": job.input_snapshot["model"]["max_tokens_field"],
+        "reasoning_effort": job.input_snapshot["model"]["reasoning_effort"],
         "system_prompt": SYSTEM_PROMPT,
         "prompt": "请阅读以下片段并整理一条有出处的待核对摘记。片段编号："
         + ", ".join(item["chunk_id"] for item in job.input_snapshot["sources"][:5]),

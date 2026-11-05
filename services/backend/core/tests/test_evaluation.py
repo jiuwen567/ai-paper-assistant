@@ -120,6 +120,27 @@ def test_direct_retains_raw_protocol_failure_without_counting_it_as_output():
     assert result["usage"]["cache_read"] is None
 
 
+@pytest.mark.parametrize("effort", ["", "none", "high"])
+def test_direct_uses_explicit_reasoning_mode_without_changing_token_limit(effort):
+    response = {
+        "choices": [
+            {"message": {"content": '{"items": [], "summary": ""}'}, "finish_reason": "stop"}
+        ],
+        "usage": {"prompt_tokens": 10, "completion_tokens": 5},
+    }
+    with patch("core.tests.evaluation_direct.fetch_json", return_value=response) as fetch:
+        result = execute(
+            catalog()["cases"][0], "http://127.0.0.1:11434/v1", "fixture", reasoning_effort=effort
+        )
+    request = fetch.call_args.args[1]
+    assert result["status"] == "succeeded" and request == result["request"]
+    assert request["max_tokens"] == 8192
+    if effort:
+        assert request["reasoning_effort"] == effort
+    else:
+        assert "reasoning_effort" not in request
+
+
 def test_system_reading_normalization_uses_fixed_source_mapping():
     from core.tests.evaluate_core import normalize
 

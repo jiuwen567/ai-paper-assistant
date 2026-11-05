@@ -1,0 +1,63 @@
+[
+  {
+    "request": {
+      "model": "qwen3.5:4b",
+      "messages": [
+        {
+          "role": "user",
+          "content": "只回答 2，不要解释。"
+        }
+      ],
+      "temperature": 0,
+      "max_tokens": 128,
+      "stream": false
+    },
+    "elapsed_seconds": 2.559,
+    "response_fields": {
+      "model": "qwen3.5:4b",
+      "content": "",
+      "reasoning_characters": 418,
+      "finish_reason": "length",
+      "usage": {
+        "prompt_tokens": 18,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "completion_tokens": 128,
+        "total_tokens": 146
+      }
+    },
+    "note": "公开请求及响应统计，不公开推理文本；完整响应保留在本机。"
+  },
+  {
+    "request": {
+      "model": "qwen3.5:4b",
+      "messages": [
+        {
+          "role": "user",
+          "content": "只回答 2，不要解释。"
+        }
+      ],
+      "temperature": 0,
+      "max_tokens": 128,
+      "stream": false,
+      "reasoning_effort": "none"
+    },
+    "elapsed_seconds": 0.353,
+    "response_fields": {
+      "model": "qwen3.5:4b",
+      "content": "2",
+      "reasoning_characters": 0,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 20,
+        "prompt_tokens_details": {
+          "cached_tokens": 14
+        },
+        "completion_tokens": 2,
+        "total_tokens": 22
+      }
+    },
+    "note": "公开请求及响应统计，不公开推理文本；完整响应保留在本机。"
+  }
+]

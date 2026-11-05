@@ -75,6 +75,7 @@ def normalize(case, report):
         "calls": calls,
         "usage": usage,
         "model": report["model"],
+        "reasoning_effort": report.get("reasoning_effort", ""),
         "raw_report": report,
     }
 
@@ -85,6 +86,7 @@ def metadata(args):
         "model": model_metadata(args.base_url, args.model),
         "sources": source_manifest(),
         "temperature": 0,
+        "reasoning_effort": args.reasoning_effort,
         "limits": {
             "system_max_calls": 4,
             "direct_max_calls": 1,
@@ -127,7 +129,12 @@ def run_system(group, args, directory, run):
         ]
         if group in {"review", "expression"}:
             command += ["--purpose", group]
-        env = {**os.environ, "AI_API_KEY": "", "PYTHONPATH": str(ROOT / "services/backend")}
+        env = {
+            **os.environ,
+            "AI_API_KEY": "",
+            "AI_REASONING_EFFORT": args.reasoning_effort,
+            "PYTHONPATH": str(ROOT / "services/backend"),
+        }
         with (directory / f"system-{group}.log").open("w") as log:
             completed = subprocess.run(
                 command,
@@ -151,6 +158,8 @@ def run_system(group, args, directory, run):
         record = normalize(case, reports[case["id"].split("/", 1)[1]])
         if record["model"] != args.model:
             raise ValueError("系统模型不匹配。")
+        if record["reasoning_effort"] != args.reasoning_effort:
+            raise ValueError("系统推理模式与直接组不匹配。")
         run["records"] = [row for row in run["records"] if row["id"] != record["id"]] + [record]
         print(
             json.dumps({key: record[key] for key in ["id", "status", "elapsed_seconds"]}),
@@ -162,6 +171,9 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model")
     parser.add_argument("--base-url")
+    parser.add_argument(
+        "--reasoning-effort", choices=["", "none", "low", "medium", "high"], default=""
+    )
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--review", type=Path)
@@ -208,7 +220,9 @@ def main():
             key = case["id"] + "/direct"
             if any(row["id"] == key for row in run["records"]):
                 continue
-            result = execute(case, args.base_url, args.model)
+            result = execute(
+                case, args.base_url, args.model, reasoning_effort=args.reasoning_effort
+            )
             record = {
                 **result,
                 "id": key,
@@ -216,6 +230,7 @@ def main():
                 "arm": "direct",
                 "calls": [{"usage": result["usage"]}],
                 "model": args.model,
+                "reasoning_effort": args.reasoning_effort,
             }
             run["records"].append(record)
             write(path, run)

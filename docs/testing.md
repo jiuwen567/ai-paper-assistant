@@ -410,3 +410,23 @@ PYTHONPATH=services/backend uv run python services/backend/core/tests/evaluate_f
 | 清楚的阴性句 | 空建议 | 空建议 |
 
 [配置与源码摘要](evaluation/2026-11-06/expression-scope-fix/configuration.json)及两组完整输出记录模型摘要、默认参数与实际用量。两组冷启动、缓存及模型默认采样参数不相同，不作因果效率或一般准确率比较；这是 AI 内容检查，独立人工标注、操作量和时间仍未测。范围词检查只能拦截这类明显变化，不能证明所有语义等价，作者核对仍不可省略。用户 `.env` 未改变，备用模型不自动替换项目配置。
+
+## 显式推理模式配置（Issue #57）
+
+管理员可用 `AI_REASONING_EFFORT` 显式选择兼容服务支持的 `none/low/medium/high`；默认空值省略请求字段，沿用服务默认值。模式写入任务快照，配置变化取消旧任务，无效值在请求前拒绝。Pi 的模型元信息 `reasoning: false` 不代表服务已关闭推理；实际模式以请求字段和服务实现为准。未改变用户 `.env`、调用预算、输出限额、权限及作者决定流程。
+
+本机 Ollama 0.40.14 / Qwen3.5 4B Q4_K_M、实际上下文 16384，简单探针同用 temperature 0、`max_tokens=128`：省略模式时输出 128 token、没有最终文字，结束原因为 length；显式 none 时输出 2 token、最终文字为“2”。[探针记录](evaluation/2026-11-06/reasoning-mode/api-probe.json)只公开请求与响应统计，完整响应留在本机。真实 Pi 链路的[请求](evaluation/2026-11-06/reasoning-mode/pi-request.json)和[原始 SSE](evaluation/2026-11-06/reasoning-mode/pi-response.sse)也验证 none 与 128 上限同时发送、响应为“2”；这不是业务任务验收。
+
+同一配置完整运行 14 个固定案例的系统与直接两组，[原始结果](evaluation/2026-11-06/reasoning-mode/core-none.json)包含全部输出、失败、用量及源码摘要；[配置与文件摘要](evaluation/2026-11-06/reasoning-mode/configuration.json)已核对。系统组 **11/14 协议成功**，单篇与摘要阅读、过度推断诊断耗尽四次调用；直接组 **13/14 协议成功**，多篇比较达到 60 秒时限。
+
+内容仍未全部合格：系统诊断阴性例误报两项；表达条件例有不必要的实质问题卡，依据不足例虽最终保留原句，耗时 126.84 秒；反馈将“无需修改”建卡，并漏掉混合意见中的单位核对；影响分析误报无关位置 5。直接组也有诊断误报、表达建议引入“数据采集/实地调研”等原文没有的方法。未关闭 #42–#44，也未把更换模型后的退化解释为旧模型固定案例的成功。独立人工标注与操作计时仍待进行，默认模式与 none 的历史运行没有平衡缓存、冷启动及代码版本，不能推出关闭推理普遍更好。
+
+AI 任务 **22 项测试通过**，覆盖默认省略、显式模式、变更取消、无效值及客户端越权设置；评测工具 **24 项通过**。Pi 类型检查及 **14 项协议测试**、`make check test build`（后端轻量单元 **42 项**，其余集成测试未在此重复）通过；真实评测的全部源码摘要与当前文件一致。常规 CI 未增加模型或全服务检查。
+
+重跑（只在 DEBUG 开发环境创建专用自制数据；不要在同一 GPU 上并行跑其他模型任务）：
+
+```bash
+PYTHONPATH=services/backend uv run python services/backend/core/tests/evaluate_core.py \
+  --model qwen3.5:4b --base-url http://127.0.0.1:11434/v1 \
+  --reasoning-effort none --output-dir .local/core-none
+```

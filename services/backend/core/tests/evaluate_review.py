@@ -160,6 +160,7 @@ def main():
                     "tools": tool_calls,
                     "expected": expected,
                     "model": args.model,
+                    "reasoning_effort": job.input_snapshot["model"]["reasoning_effort"],
                     "prompt_version": job.input_snapshot["model"]["prompt_version"],
                     "prompt_characters": len(
                         REVIEW_PROMPT if args.purpose == "review" else EXPRESSION_PROMPT

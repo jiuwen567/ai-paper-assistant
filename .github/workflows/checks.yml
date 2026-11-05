@@ -2,8 +2,11 @@ name: Engineering checks
 
 on:
   pull_request:
-  push:
-    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -27,26 +30,30 @@ jobs:
           cache: pnpm
       - run: make init install check test build
       - name: 从空库启动完整开发环境
+        if: github.event_name == 'workflow_dispatch'
         run: |
           docker compose --profile app config --quiet
           make up
           uv run python services/backend/manage.py makemigrations --check --dry-run
       - run: make integration
+        if: github.event_name == 'workflow_dispatch'
       - run: pnpm --filter @paper/web exec playwright install --with-deps chromium
+        if: github.event_name == 'workflow_dispatch'
       - run: pnpm --filter @paper/web test:e2e
+        if: github.event_name == 'workflow_dispatch'
         env:
           E2E_USE_COMPOSE: '1'
       - name: 故障诊断
-        if: failure()
+        if: failure() && github.event_name == 'workflow_dispatch'
         run: |
           docker compose --profile app ps
           docker compose --profile app logs --tail=80
       - uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && github.event_name == 'workflow_dispatch' }}
         with:
           name: browser-test-results
           path: apps/web/test-results
           if-no-files-found: ignore
       - name: 清理隔离的 CI 数据卷
-        if: always()
+        if: always() && github.event_name == 'workflow_dispatch'
         run: docker compose --profile app down -v

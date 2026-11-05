@@ -127,9 +127,19 @@ def main():
                     original = AIRun.handle
 
                     def trace(run, event):
+                        entry = None
                         if event.get("type") == "tool":
-                            tool_calls.append({"name": event["name"], "args": event.get("args")})
-                        return original(run, event)
+                            entry = {"name": event["name"], "args": event.get("args")}
+                            tool_calls.append(entry)
+                        try:
+                            response = original(run, event)
+                        except Exception as exc:
+                            if entry is not None:
+                                entry["error_code"] = getattr(exc, "code", type(exc).__name__)
+                            raise
+                        if entry is not None:
+                            entry["response"] = response
+                        return response
 
                     with patch.object(AIRun, "handle", trace):
                         execute_job(response.data["id"])
@@ -137,6 +147,7 @@ def main():
                 result = ReviewRecord.objects.filter(job=job).first()
                 report = {
                     "case": name,
+                    "input_manuscript": texts,
                     "selected_sources": {versions[source_index]: f"source-{source_index + 1}"}
                     if source_index is not None
                     else {},

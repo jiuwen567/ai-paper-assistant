@@ -67,11 +67,13 @@ try {
     ["read_impact", "读取固定变更说明、新旧材料节选和所选原稿；不能扩展范围。", Type.Object({}, { additionalProperties: false })],
     ["submit_impact", "提交可能相关位置；不修改正文，不确认作者处理。", impactSchema(config.block_version_ids)]);
   let failed = false;
+  let submitted = false;
   let usageKnown = false;
   const tools: AgentTool[] = definitions.map(([name, description, parameters]) => ({
     name, label: name, description, parameters, executionMode: "sequential", replay: "never",
     async execute(_id, args) {
       const result = await rpc("tool", { name, args });
+      if (name === "submit_review" && result?.status === "staged") submitted = true;
       if (["submit_reading", "submit_review", "submit_expression", "submit_feedback", "submit_impact"].includes(name) && result?.status === "rejected") {
         return { content: [{ type: "text", text: JSON.stringify(result) }], details: {}, isError: true };
       }
@@ -89,7 +91,9 @@ try {
         timeoutMs: config.request_timeout_ms ?? 30_000,
         maxTokens: config.max_tokens ?? 2048, temperature: 0,
         // 阅读一次提交全部资料；避免供应商在同一响应中反复生成完整提交。
-        onPayload: ["reading", "comparison"].includes(config.purpose)
+        onPayload: config.purpose === "review"
+          ? payload => ({ ...(payload as Record<string, unknown>), tool_choice: "required" })
+          : ["reading", "comparison"].includes(config.purpose)
           ? payload => ({ ...(payload as Record<string, unknown>), parallel_tool_calls: false })
           : options?.onPayload,
         // 重定向及非配置端点均拒绝；模型不能选择 URL、文件或调用服务器命令。
@@ -127,6 +131,11 @@ try {
     }
   });
   await agent.prompt(config.prompt);
+  if (config.purpose === "review" && !failed && !submitted) {
+    // 部分兼容服务不执行 tool_choice；只补一次协议提示，调用预算仍由业务端控制。
+    await rpc("validation_error", { reason: "missing_submission" });
+    await agent.prompt("已有读取结果仍有效。请调用 submit_review 提交诊断，不要输出普通文字。没有具体问题时 findings 为空；不要新增问题凑数，也不要重复读取已有内容。");
+  }
   await rpc("done", { success: !failed && !agent.state.errorMessage });
 } catch {
   // 不透传供应商响应、密钥、原始异常或模型文本。

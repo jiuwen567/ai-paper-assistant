@@ -13,6 +13,10 @@ if SECRET_KEY.startswith("replace-"):
     raise ImproperlyConfigured("请运行 scripts/init_dev.py 生成本地凭据。")
 DEBUG = env("DJANGO_DEBUG")
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1", "[::1]"])
+CSRF_TRUSTED_ORIGINS = env.list(
+    "DJANGO_CSRF_TRUSTED_ORIGINS",
+    default=["http://localhost:5173", "http://127.0.0.1:5173"] if DEBUG else [],
+)
 INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",

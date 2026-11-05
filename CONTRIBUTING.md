@@ -4,7 +4,9 @@
 
 ## 提交方式
 
-使用功能分支，例如 `feat/5-material-upload` 或 `fix/12-stale-revision`。一次 PR 处理一个明确任务；必要的迁移、测试和文档随代码提交。
+分支统一使用 `<类型>/<Issue 编号>-<英文短描述>`，短描述采用小写 kebab-case。功能使用 `feat/`，修复使用 `fix/`，文档和维护分别使用 `docs/`、`chore/`，例如 `feat/2-auth-project-permissions`、`fix/12-stale-revision`。创建或推送分支前核对对应 Issue 与命名，不使用随机名称或无业务含义的描述。
+
+一次 PR 处理一个明确任务；必要的迁移、测试和文档随代码提交。
 
 PR 说明改了什么、怎样验证、还有什么限制。全部完成时用 `Closes #编号` 关联 Issue；只完成部分工作时用 `Refs #编号`，不要提前关闭。
 

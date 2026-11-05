@@ -4,7 +4,7 @@
 
 Web 用于阅读、写作和审阅；微信小程序用于收集资料、查看证据和处理待办；公众号提供入口和使用说明。
 
-> 当前提供 M1 基础工程：Web、小程序、Django API、Celery Worker 与本地基础服务。论文业务功能、微信账号绑定与公众号授权尚未接入。
+> 当前提供 M1 基础工程及 Web 登录、项目管理、成员权限与 AI 辅助规则版本。材料、稿件、模型任务、微信账号绑定与公众号授权尚未接入。
 
 ## 本地启动
 
@@ -20,12 +20,15 @@ make up
 初始化脚本生成随机本地凭据，不覆盖已有 `.env`。`make up` 构建并启动应用、执行数据库迁移，再检查依赖和 Worker 任务往返。首次拉取镜像需要网络及数 GB 可用磁盘空间。
 
 - Web：[http://localhost:5173](http://localhost:5173)
+- 环境概览：[http://localhost:5173/environment](http://localhost:5173/environment)
 - API 存活检查：[http://localhost:8000/api/v1/health/live/](http://localhost:8000/api/v1/health/live/)
 - 依赖就绪检查：[http://localhost:8000/api/v1/health/ready/](http://localhost:8000/api/v1/health/ready/)（故障时返回 503）
 - 公众号 H5 说明入口：[http://localhost:5173/wechat](http://localhost:5173/wechat)
 - 微信开发者工具导入 `apps/miniapp`，配置自己的测试 AppID。操作见[开发说明](docs/development.md#微信小程序与公众号)。
 
 `make down` 停止容器并保留数据卷。需要源码热更新时，使用[开发说明](docs/development.md)中的本机开发方式。该文档也记录检查命令和实际验证范围。
+
+首次使用先按[账号与项目说明](docs/development.md#账号与项目)创建本地账号。新项目的 AI 辅助默认关闭；作者核对规则来源及版本后，才能选择允许的功能。
 
 ## 主要功能
 

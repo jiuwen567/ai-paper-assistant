@@ -1,6 +1,6 @@
 # 开发说明
 
-本工程对应 [Issue #1](https://github.com/jiuwen567/ai-paper-assistant/issues/1)，提供客户端、API、Worker 和本地基础设施，不包含论文业务实现。
+本工程提供 [Issue #1](https://github.com/jiuwen567/ai-paper-assistant/issues/1) 的基础设施，以及 [Issue #2](https://github.com/jiuwen567/ai-paper-assistant/issues/2) 的账号、项目和权限实现。材料、稿件与业务任务仍由后续任务接入。
 
 ## 技术栈与版本
 
@@ -30,7 +30,7 @@ apps/
   miniapp/                     可由微信开发者工具导入的原生工程
 services/backend/
   config/                      Django 配置、URL、WSGI
-  core/                        健康检查、初始化迁移、管理命令、测试
+  core/                        账号、项目、权限、健康检查、迁移与测试
   worker/                      独立 Celery 进程及诊断任务
 infra/seaweedfs/filer.toml      Filer 元数据持久化配置
 infra/seaweedfs/master.toml     本地 Volume 按需分配配置
@@ -124,11 +124,63 @@ SeaweedFS 加载本地生成的 S3 凭据，Filer 与 Master 不发布宿主机�
 
 SeaweedFS 按需每次分配 1 个 Volume，单节点最多 32 个，每个上限 128 MB，适用于本地开发。容器健康检查同时确认 Master 已成为 Leader、存储节点有可分配容量和 Filer 可访问，避免重启选举期间提前宣告就绪。只启用本阶段需要的 S3 接口，未启用额外的 IAM、Iceberg 和 Lance 服务。
 
-首次迁移安装 `vector` 扩展，并应用 Django 自带的 auth、contenttypes、sessions 迁移。当前没有业务表，也不会创建用户或演示论文。初始化数据库用户有安装扩展权限；生产应另外设计最小权限和迁移角色。
+首次迁移安装 `vector` 扩展，应用 Django 自带的 auth、contenttypes、sessions 迁移，以及项目、成员和规则版本迁移。迁移不会创建用户或演示论文。初始化数据库用户有安装扩展权限；生产应另外设计最小权限和迁移角色。
 
 数据库密码保存在已有数据卷内，修改 `.env` 不会自动更改 PostgreSQL / Neo4j 已初始化的密码。应通过数据库管理命令同步修改；修改 S3 凭据后重跑初始化脚本并重启 SeaweedFS。
 
 `.env`、`.local/`、虚拟环境、node_modules、构建产物、浏览器测试结果、真实资料和运行数据均由 `.gitignore` 排除，构建上下文也通过 `.dockerignore` 排除。不要提交这些文件。
+
+## 账号与项目
+
+Web 首页为“我的论文”，环境检查位于 `/environment`。账号使用 Django 内部用户和数据库 Session；当前不开放自助注册或密码找回，微信身份绑定由 #4 接入。
+
+本机开发创建普通账号：
+
+```bash
+uv run python services/backend/manage.py shell
+```
+
+在交互终端执行，用户名替换为自己的测试账号，密码通过隐藏输入读取：
+
+```python
+from getpass import getpass
+from django.contrib.auth import get_user_model
+get_user_model().objects.create_user(username="local-author", password=getpass("密码："))
+```
+
+容器模式用 `docker compose exec api python manage.py shell` 进入同一终端。重复创建已存在的用户名会失败；修改密码用 `manage.py changepassword 用户名`。服务不会提供默认账号或固定密码。
+
+登录后可创建项目，保存论文类型、写作要求与模板选择。首版模板标识为 `department-default`（院系模板），这里只登记选择，模板文件、版本与 Word 导出由 #17 提供。
+
+| 身份 | 权限 |
+| --- | --- |
+| 创建者 | 作者全部权限，添加、调整或移除已有账号的项目成员资格 |
+| 作者 | 查看和编辑项目，新增规则版本，在当前规则允许时通过 AI 权限检查 |
+| 审阅者 | 查看项目、成员和规则历史；不能编辑、修改成员或启动 AI 辅助 |
+| 非成员 | 列表不可见；直接请求项目返回 404，包括超级用户 |
+
+创建者始终保留作者权限，本阶段不提供创建者转移或移除。添加已有成员会更新角色；成员管理仅凭准确用户名，不提供全站用户目录。撤权后下一次请求重新校验，已下载或已显示的内容无法追回。
+
+规则初始为 v1、未核对且全部 AI 功能关闭。核对必须填写规则来源与来源版本，再分别允许 `reading`、`comparison`、`review`、`expression`、`feedback`。未核对时服务端拒绝启用任何功能，未知能力也拒绝。每次规则保存新增不可由 API 改写的历史版本，记录操作者和时间；取消核对会保存关闭全部辅助的新版本。
+
+接口均位于 `/api/v1/`：
+
+| 路径 | 方法与用途 |
+| --- | --- |
+| `auth/session/` | GET 获取身份与 CSRF token；POST 用户名/密码登录并返回新 token |
+| `auth/logout/` | POST 退出并使当前 Session 失效 |
+| `projects/` | GET 授权项目列表；POST 创建项目与默认规则 |
+| `projects/{id}/` | GET 详情；PATCH 更新项目设置 |
+| `projects/{id}/members/` | GET 协作者列表；POST 添加或更新角色 |
+| `projects/{id}/members/{user_id}/` | DELETE 移除成员 |
+| `projects/{id}/policies/` | GET 规则历史；POST 保存新规则版本 |
+| `projects/{id}/ai-permissions/` | POST 检查 `action` 与 `policy_version`，不创建或执行任务 |
+
+所有写请求包含 `X-CSRFToken`；登录也校验 CSRF，成功登录后 token 旋转。开发代理的可信 Origin 默认仅允许本机 5173 端口，可通过 `DJANGO_CSRF_TRUSTED_ORIGINS` 显式配置；非 DEBUG 默认无可信 Origin，Session/CSRF Cookie 仅通过 HTTPS 发送。
+
+列表统一按 `?page=1` 分页，每页 20 条，返回 `count/next/previous/results`。成员列表只返回协作者，创建者信息在项目详情中。修改项目、成员和规则均须提交详情中的 `version`；服务端在项目行锁内检查版本与当前权限，成功后递增版本。重复或并发的旧提交返回 409，页面保留输入，重新加载后再编辑。规则的 `policy_version` 独立计数，AI 检查携带旧规则版本同样返回 409。
+
+后续文件与任务接口复用 `core/access.py`：先调用 `require_project`；资源 ID 查找调用 `require_project_resource`，同时限定资源实际的 `project_id`，不得仅依赖 URL 或界面筛选。事务写入传 `lock=True`，成员变更使用同一项目锁。AI 任务在入口、每次工具调用和发布结果前分别调用 `require_ai_action`；发布时必须在事务内持有项目锁，不能把预检查成功当作持久授权。业务任务取消、状态持久化与迟到结果处理由 #3/#8 实现，本任务不提供模型执行入口。
 
 ## 微信小程序与公众号
 
@@ -197,7 +249,9 @@ make integration
 uv run python services/backend/manage.py makemigrations --check --dry-run
 ```
 
-真实集成测试在单独的 `test_paper_assistant` 数据库中从空库执行迁移，并测试 vector 查询、Neo4j 连接、S3 自制文本写入读取删除、错误 S3 凭据返回 403 和 Worker 消息往返。S3 测试只创建随机命名的 `paper-test-*` 临时桶并清理，不操作已有资料。集成测试缺少服务时失败，不伪装成跳过或成功。
+真实集成测试在单独的 `test_paper_assistant` 数据库中从空库执行迁移，并测试账号与项目权限、规则版本冲突、vector 查询、Neo4j 连接、S3 自制文本写入读取删除、错误 S3 凭据返回 403 和 Worker 消息往返。S3 测试只创建随机命名的 `paper-test-*` 临时桶并清理，不操作已有资料。集成测试缺少服务时失败，不伪装成跳过或成功。
+
+只运行账号和项目测试时，需要 PostgreSQL，无需其他服务：`uv run pytest services/backend/core/tests/test_projects.py`。这些测试仍执行真实迁移和数据库约束，不使用 SQLite 替代。
 
 浏览器测试（自动启动 Django WSGI 和 Vite，也可复用已启动的本地服务）：
 
@@ -206,11 +260,20 @@ pnpm --filter @paper/web exec playwright install chromium
 pnpm --filter @paper/web test:e2e
 ```
 
-覆盖桌面与手机尺寸、真实 API 代理、503 依赖故障展示、断网重试恢复、`/wechat` 直接访问与横向溢出检查。依赖未启动时可以验证真实 503 路径，但不代替成功路径的多服务联调。测试截图和失败追踪在 `apps/web/test-results/`，不进入 Git。
+覆盖桌面与手机尺寸、真实登录与 CSRF、项目编辑、规则变更、越权与撤权、真实 API 代理、503 依赖故障展示、断网重试恢复、`/wechat` 直接访问与横向溢出检查。账号场景要求 PostgreSQL 已启动并迁移；测试为每个用例生成随机账号与密码，结束时只清理对应随机前缀的专用数据。测试只在 DEBUG 环境运行，失败追踪可能包含测试会话，不公开发布。依赖未启动时可以验证环境页的真实 503 路径，但不代替成功路径的多服务联调。测试截图和失败追踪在 `apps/web/test-results/`，不进入 Git。
 
 GitHub Actions 的 `Engineering checks` 工作流包含上述检查、真实 Docker 基础服务、空库迁移、集成测试、浏览器测试及完整容器启动检查。工作流尚未在远端执行时，不应把它记作通过。
 
-## 当前验证记录（2026-11-04）
+## 账号与项目验收（2026-11-05）
+
+- 后端：12 项原有单元测试、33 项真实集成测试通过。其中 28 项覆盖登录/退出、CSRF、项目隔离、作者/审阅者权限、成员撤权、规则默认关闭、版本历史、旧请求冲突、数据库约束与并发规则更新。
+- Web：6 项协议测试通过；完整容器环境下 10 项桌面/手机尺寸浏览器测试通过，覆盖真实登录、创建与编辑、模板选择、规则版本与禁用功能拦截、成员管理、撤权、会话失效后的重新登录及原有环境页回归。
+- 工程：Django 系统检查、Python 编译与 Ruff、Web/小程序 TypeScript 检查、Web 生产构建通过；PostgreSQL 测试库从空库迁移成功，本地重复迁移无变更，`makemigrations --check --dry-run` 无遗漏。
+- 联调：容器构建启动通过，五项依赖检查及 Worker 任务往返通过。首次容器验收发现已有 Web 容器仍使用旧镜像，强制重新创建应用容器后再运行并通过浏览器测试；未清理基础服务数据卷。
+- 提交前复查：统一未授权项目与不存在项目的 404 响应，避免通过错误文案探测项目是否存在；28 项项目权限测试重新运行通过。分支命名规范已写入协作说明。
+- 边界：跨项目资源 ID 使用规则资源验证统一鉴权函数；真实文件与业务任务接口尚未实现，需在 #3/#5/#8 接入并重新联调。AI 接口仅检查权限，未执行模型，未发布外部服务。远端 CI 结果以关联 PR 的 Checks 为准。
+
+## 基础工程验证记录（2026-11-04）
 
 - 已执行：依赖安装与锁定、Django 系统检查、Web / 小程序 TypeScript 检查、Vue 生产构建。
 - 已执行：后端 12 项单元测试、Web 6 项协议测试。

@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 
 from core.access import VersionConflict, require_project
 from core.ai_jobs import digest
-from core.disclosures import draft_for, facts_for, job_data, pick, usage_jobs
+from core.disclosures import draft_for, facts_for, input_sources, job_data, pick, usage_jobs
 from core.models import DisclosureRevision
 from core.projects import paginated, validated
 from core.reading import StrictSerializer
@@ -132,7 +132,7 @@ class UsageDetailView(APIView):
     def get(self, request, project_id, job_id):
         require_project(request.user, project_id, lock=True)
         job = get_object_or_404(usage_jobs(project_id), pk=job_id)
-        sources = job.input_snapshot.get("sources", [])
+        sources = input_sources(job)
         return Response(
             {
                 **job_data(job),

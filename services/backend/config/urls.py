@@ -16,6 +16,18 @@ from core.expression_views import (
     SuggestionListView,
     SuggestionPreviewView,
 )
+from core.feedback_views import (
+    FeedbackCandidateDecisionView,
+    FeedbackCandidatesView,
+    FeedbackDetailView,
+    FeedbackListView,
+    FeedbackSplitView,
+    FeedbackTaskCreateView,
+    FeedbackTaskHistoryView,
+    FeedbackTasksView,
+    FeedbackTaskView,
+    MentorReportsView,
+)
 from core.job_views import JobControlView, JobDetailView, JobListView
 from core.library_views import (
     BibliographyView,
@@ -85,6 +97,40 @@ urlpatterns = [
     path("api/v1/projects/<uuid:project_id>/members/<int:user_id>/", MemberDetailView.as_view()),
     path("api/v1/projects/<uuid:project_id>/ai-permissions/", AIPermissionView.as_view()),
     path("api/v1/projects/<uuid:project_id>/jobs/", JobListView.as_view()),
+    path("api/v1/projects/<uuid:project_id>/feedback/", FeedbackListView.as_view()),
+    path(
+        "api/v1/projects/<uuid:project_id>/feedback/<uuid:feedback_id>/",
+        FeedbackDetailView.as_view(),
+    ),
+    path(
+        "api/v1/projects/<uuid:project_id>/feedback/<uuid:feedback_id>/split/",
+        FeedbackSplitView.as_view(),
+    ),
+    path(
+        "api/v1/projects/<uuid:project_id>/feedback/<uuid:feedback_id>/candidates/",
+        FeedbackCandidatesView.as_view(),
+    ),
+    path(
+        "api/v1/projects/<uuid:project_id>/feedback/<uuid:feedback_id>/tasks/",
+        FeedbackTaskCreateView.as_view(),
+    ),
+    path(
+        "api/v1/projects/<uuid:project_id>/feedback-candidates/<uuid:candidate_id>/decision/",
+        FeedbackCandidateDecisionView.as_view(),
+    ),
+    path("api/v1/projects/<uuid:project_id>/feedback-tasks/", FeedbackTasksView.as_view()),
+    path(
+        "api/v1/projects/<uuid:project_id>/feedback-tasks/<uuid:task_id>/",
+        FeedbackTaskView.as_view(),
+    ),
+    path(
+        "api/v1/projects/<uuid:project_id>/feedback-tasks/<uuid:task_id>/history/",
+        FeedbackTaskHistoryView.as_view(),
+    ),
+    path(
+        "api/v1/projects/<uuid:project_id>/feedback-tasks/<uuid:task_id>/mentor-reports/",
+        MentorReportsView.as_view(),
+    ),
     path("api/v1/projects/<uuid:project_id>/usage/", UsageListView.as_view()),
     path("api/v1/projects/<uuid:project_id>/usage/<uuid:job_id>/", UsageDetailView.as_view()),
     path("api/v1/projects/<uuid:project_id>/disclosure/", DisclosureView.as_view()),

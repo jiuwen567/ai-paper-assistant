@@ -32,6 +32,7 @@
         <view class="requirements">{{project.requirements}}</view>
         <button bindtap="openLibrary" disabled="{{loading}}">阅读与证据</button>
         <button bindtap="openSuggestions" disabled="{{loading}}">表达建议</button>
+        <button bindtap="openFeedback" disabled="{{loading}}">修改待办</button>
         <view class="title">材料</view>
         <button bindtap="refreshMaterials" disabled="{{loading}}">刷新材料</button>
         <view wx:if="{{!loading && !materials.length}}">暂无材料。</view>

@@ -1,0 +1,30 @@
+<scroll-view scroll-y type="list" class="page-scroll"><view class="page">
+  <view class="title">修改待办</view><button bindtap="back">返回项目</button>
+  <view wx:if="{{error}}" class="error" role="alert">{{error}}</view><view wx:if="{{loading}}">处理中…</view><view wx:if="{{message}}">{{message}}</view>
+  <button bindtap="refresh" disabled="{{loading}}">刷新待办列表</button>
+  <picker range="{{filterLabels}}" value="{{filterIndex}}" bindchange="changeFilter" disabled="{{loading}}"><view>{{filterLabels[filterIndex]}}</view></picker>
+  <view wx:if="{{project && !tasks.length}}">暂无符合条件的待办。</view>
+  <button wx:for="{{tasks}}" wx:key="id" data-id="{{item.id}}" bindtap="select" disabled="{{loading}}">{{item.current.title}} · {{item.label}}</button>
+  <view class="actions"><button wx:if="{{previous}}" bindtap="previousPage" disabled="{{loading}}">上一页</button><button wx:if="{{next}}" bindtap="nextPage" disabled="{{loading}}">下一页</button></view>
+  <block wx:if="{{selected && project}}">
+    <view class="title">{{selected.current.title}} · 处理 v{{selected.current.number}}</view><view>{{selected.current.instruction}}</view>
+    <view class="card"><view>原始意见（作者转录）</view><view user-select>{{feedback.text}}</view><view>{{feedback.source_label}}</view></view>
+    <view wx:if="{{selected.original_location}}" class="card">任务初始原稿 v{{selected.original_location.manuscript_version}} · 块 {{selected.original_location.position}}<view user-select>{{selected.original_location.text}}</view></view>
+    <view wx:if="{{selected.current.location.stale}}" class="error">原稿位置已变化，请核对后重新关联。</view>
+    <view wx:if="{{selected.current.location}}" class="card">已保存处理位置：原稿 v{{selected.current.location.manuscript_version}} · 块 {{selected.current.location.position}}<view user-select>{{selected.current.location.text}}</view></view>
+    <button bindtap="refreshSelected" disabled="{{loading}}">刷新已存进度与原稿（保留说明）</button>
+    <block wx:if="{{project.role === 'author'}}">
+      <picker range="{{statusLabels}}" value="{{statusIndex}}" bindchange="changeStatus" disabled="{{loading}}"><view>作者进度：{{statusLabels[statusIndex]}}</view></picker>
+      <textarea value="{{note}}" bindinput="changeNote" maxlength="4000" placeholder="处理说明" disabled="{{loading}}" auto-height />
+      <picker wx:if="{{statusIndex === 2}}" range="{{resultLabels}}" value="{{resultIndex}}" bindchange="changeResult" disabled="{{loading}}"><view>{{resultLabels[resultIndex]}}</view></picker>
+      <view>当前关联：{{linked ? '原稿 v' + linked.manuscript_version + ' · 块 ' + linked.position : '未关联正文'}}</view>
+      <picker range="{{blockLabels}}" value="{{blockIndex}}" bindchange="changeBlock" disabled="{{loading}}"><view>{{blockLabels[blockIndex]}}</view></picker>
+      <button bindtap="relink" disabled="{{loading || !blockIndex}}">关联所选最新正文</button><button bindtap="unlink" disabled="{{loading}}">取消正文关联</button>
+      <block wx:if="{{version !== selected.current.number}}"><view class="error">另有新处理记录，请核对已保存说明：{{selected.current.note}}</view><button bindtap="adoptVersion" disabled="{{loading}}">保留说明并采用最新处理版本</button></block>
+      <button bindtap="save" disabled="{{loading || version !== selected.current.number}}">保存处理进度</button>
+    </block>
+    <view wx:else>{{selected.current.note}}</view>
+    <view class="title">导师回复（作者转录）</view><view wx:if="{{!selected.current.mentor_reports.length}}">当前处理版本尚未登记导师回复。</view>
+    <view wx:for="{{selected.current.mentor_reports}}" wx:key="id" class="card">{{item.status === 'confirmed' ? '确认本次处理' : '仍需修改'}}：{{item.text}}<view>{{item.source_label}}</view></view>
+  </block>
+</view></scroll-view>

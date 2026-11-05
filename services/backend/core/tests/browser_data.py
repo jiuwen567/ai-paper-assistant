@@ -50,7 +50,7 @@ def main():
             from core.wechat import login_wechat
 
             print(json.dumps(login_wechat(prefix), default=str))
-        elif data["action"] in ["ai", "reading", "review", "expression"]:
+        elif data["action"] in ["ai", "reading", "review", "expression", "feedback"]:
             # 浏览器展示验收走真实 Pi SDK，供应商仅使用本机受控协议样例。
             from unittest.mock import patch
             from uuid import uuid4
@@ -77,7 +77,17 @@ def main():
                 "policy_version": policy.version,
                 "version_ids": [str(source.pk) for source in available],
             }
-            if data["action"] == "expression":
+            if data["action"] == "feedback":
+                from core.tests.test_feedback import output
+
+                def respond(number, _):
+                    return (
+                        [("read_feedback", {})] if number == 1 else [("submit_feedback", output())]
+                    )
+
+                endpoint = f"feedback/{data['feedback_id']}/split/"
+                body = data["payload"]
+            elif data["action"] == "expression":
                 from core.manuscripts import revision_data
                 from core.models import Manuscript
                 from core.tests.test_expressions import output_for, respond_with
@@ -150,6 +160,7 @@ def main():
                     patch("core.reading_views.dispatch"),
                     patch("core.review_views.dispatch"),
                     patch("core.expression_views.dispatch"),
+                    patch("core.feedback_views.dispatch"),
                 ):
                     response = client.post(
                         f"/api/v1/projects/{project.pk}/{endpoint}", body, format="json"

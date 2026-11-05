@@ -1,0 +1,57 @@
+{
+  "purpose": "备用本机模型专项对照；全部为自制软件验收数据，内容判断待独立人工复核。",
+  "model": "model.json",
+  "reasoning_effort": "所有本目录请求省略该字段，采用 Ollama 模型默认；不是显式 none。",
+  "temperature": 0,
+  "actual_context_length": 16384,
+  "token_field": "max_tokens",
+  "budgets": {
+    "system_max_calls": 4,
+    "direct_max_calls": 1,
+    "review_expression": {
+      "tokens_per_call": 8192,
+      "request_seconds": 60,
+      "system_task_seconds": 180
+    },
+    "feedback": {
+      "tokens_per_call": 4096,
+      "request_seconds": 30,
+      "system_task_seconds": 90
+    }
+  },
+  "production_prompt_versions": {
+    "review": "review-v2",
+    "feedback": "feedback-v2",
+    "expression_baseline": "expression-v2"
+  },
+  "code_reference": "../expression-scope-fix/baseline-sources.json（review/feedback及expression基线）；后续 expression-v3 两模型结果与摘要见同目录 configuration.json。直接表达/反馈随后运行，请求完整保存在各自报告，期间直接提示未改变。",
+  "expression_system_reference": "../expression-scope-fix/qwen35-baseline-v2.json",
+  "none_mode_reference": "../reasoning-mode/core-none.json（另一轮、更新源码及显式 none；不能混作默认模式同轮结果）",
+  "trial_overrides": {
+    "qwen3-focused-trial.json": "qwen3-focused-prompt.txt",
+    "qwen3-minimal-trial.json": "qwen3-minimal-prompt.txt",
+    "review-scope-trial.json": "review-scope-prompt.txt"
+  },
+  "trial_limitations": "本地 wrapper 覆盖提示，报告中的 review-v2 不表示该提示为生产版。试验未逐轮冻结完整源码，没有采用这些提示；不能据模型版本字段混用。",
+  "comparison_limitations": [
+    "固定先系统后直接，未平衡冷启动与缓存。",
+    "表达直接首例在由旧 Qwen3 切回 Qwen3.5 后执行，冷启动可能贡献延时；第二例同样超时，全部保留。",
+    "各组为独立专项运行，不是完整14案例的一轮。没有独立人工准确率、操作量或计时。",
+    "未改变用户 .env，未自动启用备用模型。"
+  ],
+  "artifact_sha256": {
+    "expression-direct.json": "3b2cd17811b665a6d132c1725a58bce0aa9a1df246362625377b1164294b8f4c",
+    "feedback-direct.json": "5997fca1197e2597e13e58f6fadf8b1d4a9eca0c26b1bad37c2b9b72c2eff9f7",
+    "feedback-system.json": "ebff0b00978022bb2db55272d11a22f623653d06e418f82b3d08e7021d4b75ef",
+    "model-manifest.json": "d8b0f5e9760cd1682034f292d7ef72ec46f432149be0df7574bf2d6e92e38c04",
+    "model.json": "32b87fba2fed63103257d6b28f061fdd6956d7494db6c096e3621839cacacc1c",
+    "qwen3-focused-prompt.txt": "f490e292fd71250ef32e131677c7f9f35e8af2281d0fed44aa5ff0978244a176",
+    "qwen3-focused-trial.json": "8a70297a770d1997ce73e3436467ca0641da4640990bcecf80275c9ab0704b9d",
+    "qwen3-minimal-prompt.txt": "9857d013e13fd95cb43fc0f2d8fa4b8739689db00fb6007ebe3f7405616c5e64",
+    "qwen3-minimal-trial.json": "ee13a9d14be399876cf23bd596157a410204e44fb2c841af3f5a64318a172f68",
+    "review-direct.json": "2482d8f787a44634b60aac88438a861f0db0c26da23ecf790f5d028f739bbe30",
+    "review-scope-prompt.txt": "68f300a9a579740550b104f2bce6f5865c0672911a41150a90c367dbabe7c73a",
+    "review-scope-trial.json": "65ba8d9ba8a098fb6cfdd4ba70e60334d98a72a4c7e55ca1934f6f49a1f213d6",
+    "review-system.json": "fed2618c14be8887eb57a633b13eeec482a6ead0d34c2d4fe03d08e1fc313eea"
+  }
+}

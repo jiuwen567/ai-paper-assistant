@@ -78,7 +78,6 @@ def create_split(context, feedback, manuscript=None):
 
 def output():
     return {
-        "summary": "拆成两项，待作者核对。",
         "candidates": [
             {
                 "title": "补充样本条件",
@@ -233,6 +232,7 @@ def test_sdk_candidates_need_author_confirmation_and_do_not_modify_manuscript(co
     feedback, _ = create_feedback(context, manuscript)
     job = run_split(context, feedback, manuscript)
     assert job.model_calls.count() == 2
+    assert "2 条候选" in job.output["summary"] and "不代表导师确认" in job.output["summary"]
     assert not FeedbackTask.objects.exists() and not MentorReport.objects.exists()
     assert Manuscript.objects.get(project=project).current_revision.number == 1
     candidates = client.get(path(project, f"feedback/{feedback['id']}/candidates/")).data
@@ -340,10 +340,41 @@ def test_empty_feedback_split_is_valid_and_no_tasks_created(context):
         respond=lambda number, _: (
             [("read_feedback", {})]
             if number == 1
-            else [("submit_feedback", {"summary": "没有明确待办。", "candidates": []})]
+            else [("submit_feedback", {"candidates": []})]
         ),
     )
     assert job.output["candidate_ids"] == [] and not FeedbackTask.objects.exists()
+    assert "0 条候选" in job.output["summary"]
+
+
+def test_wrong_occurrence_reports_actual_count_and_requires_repair(context):
+    feedback, _ = create_feedback(context)
+    invalid = output()
+    invalid["candidates"][1]["occurrence"] = 2
+
+    def respond(number, body):
+        if number == 1:
+            return [("read_feedback", {})]
+        if number == 3:
+            assert "解释指标选择" in str(body) and "只有 1 处" in str(body)
+            assert not FeedbackCandidate.objects.exists() and not FeedbackTask.objects.exists()
+        return [("submit_feedback", invalid if number == 2 else output())]
+
+    job = run_split(context, feedback, respond=respond)
+    assert job.model_calls.count() == 3 and job.feedback_candidates.count() == 2
+    assert not FeedbackTask.objects.exists() and not MentorReport.objects.exists()
+
+
+def test_old_feedback_prompt_is_cancelled_without_model_request(context):
+    feedback, _ = create_feedback(context)
+    with provider(lambda *_: []) as requests:
+        job, _ = create_split(context, feedback)
+        job.input_snapshot["model"]["prompt_version"] = "feedback-v1"
+        job.save(update_fields=["input_snapshot"])
+        execute_job(str(job.pk))
+        job.refresh_from_db()
+        assert job.status == "cancelled", job.error_code
+        assert not requests and not FeedbackCandidate.objects.exists()
 
 
 @pytest.mark.parametrize(

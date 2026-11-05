@@ -53,12 +53,18 @@ def model_configuration(purpose="note"):
     return {
         "model": settings.AI_MODEL,
         "endpoint_digest": digest(settings.AI_BASE_URL),
-        "prompt_version": "reading-v1" if purpose in ["reading", "comparison"] else PROMPT_VERSION,
+        "prompt_version": {
+            "reading": "reading-v1",
+            "comparison": "reading-v1",
+            "review": "review-v1",
+        }.get(purpose, PROMPT_VERSION),
         "runtime": "pi-1.5.0",
     }
 
 
-def sources_snapshot(project_id, version_ids):
+def sources_snapshot(project_id, version_ids, *, allow_empty=False):
+    if allow_empty and not version_ids:
+        return []
     chunks = list(
         searchable_chunks(project_id)
         .filter(run__source_version_id__in=version_ids)
@@ -101,14 +107,25 @@ def valid_locked(job, generation):
     try:
         unchanged = (
             model_configuration(job.input_snapshot.get("purpose")) == job.input_snapshot["model"]
-            and sources_snapshot(job.project_id, job.input_snapshot["version_ids"])
+            and sources_snapshot(
+                job.project_id,
+                job.input_snapshot["version_ids"],
+                allow_empty=job.input_snapshot.get("purpose") == "review",
+            )
             == job.input_snapshot["sources"]
         )
+        if unchanged and job.input_snapshot.get("purpose") == "review":
+            from core.reviews import unchanged as manuscript_unchanged
+
+            unchanged = manuscript_unchanged(job)
     except ParseFailure:
         unchanged = False
     if not unchanged:
         finish(
-            job, Job.Status.CANCELLED, "ai_input_changed", "资料或模型配置已变化，请重新创建任务。"
+            job,
+            Job.Status.CANCELLED,
+            "ai_input_changed",
+            "原稿、资料或模型配置已变化，请重新创建任务。",
         )
         return False
     return True
@@ -161,6 +178,8 @@ class AIRun:
         self.read_characters = 0
         self.proposals = []
         self.reading = None
+        self.review = None
+        self.manuscript_read = False
 
     @transaction.atomic
     def handle(self, message):
@@ -213,16 +232,59 @@ class AIRun:
             details = {"number": self.calls}
         elif kind == "tool":
             is_reading = job.input_snapshot.get("purpose") in ["reading", "comparison"]
+            is_review = job.input_snapshot.get("purpose") == "review"
+            structured = is_reading or is_review
             if (
                 self.call is not None
                 or self.calls == 0
-                or self.tools >= (32 if is_reading else MAX_TOOLS)
+                or self.tools >= (32 if structured else MAX_TOOLS)
             ):
                 raise ParseFailure("tool_call_limit", "工具调用达到上限或顺序异常。")
             self.tools += 1
             name = message.get("name")
+            if (
+                is_review
+                and not job.input_snapshot["version_ids"]
+                and name in ["project_search", "read_evidence"]
+            ):
+                raise ParseFailure("tool_denied", "未选择材料，不能调用资料工具。")
             details = {"name": name, "number": self.tools}
-            if is_reading and name == "submit_reading":
+            if is_review and name == "read_manuscript":
+                from core.reviews import read_manuscript
+
+                if message.get("args") != {}:
+                    raise ParseFailure("tool_schema_invalid", "读取原稿不接受范围扩展参数。")
+                result = read_manuscript(job)
+                self.manuscript_read = True
+            elif is_review and name == "submit_review":
+                from core.reviews import validate_review
+
+                try:
+                    candidate = validate_review(
+                        job, message.get("args"), self.read_ids, self.manuscript_read
+                    )
+                except ParseFailure as exc:
+                    # 仅允许修正尚未暂存的内容错误；权限、范围及版本检查仍立即终止。
+                    if self.review is not None or exc.code not in {
+                        "review_quote_invalid",
+                        "review_citation_invalid",
+                        "review_research_invalid",
+                        "review_support_invalid",
+                        "review_number_mismatch",
+                        "review_duplicate_finding",
+                    }:
+                        raise
+                    job.ai_events.create(
+                        generation=self.generation,
+                        kind="validation_error",
+                        details={"code": exc.code, "number": self.tools},
+                    )
+                    return {"status": "rejected", "code": exc.code, "message": exc.message}
+                if self.review is not None and self.review != candidate:
+                    raise ParseFailure("review_duplicate", "模型重复提交了不同的诊断结果。")
+                self.review = candidate
+                result = {"status": "staged"}
+            elif is_reading and name == "submit_reading":
                 from core.reading import validate_reading
 
                 candidate = validate_reading(job, message.get("args"), self.read_ids)
@@ -231,9 +293,9 @@ class AIRun:
                 self.reading = candidate
                 result = {"status": "staged"}
             else:
-                if is_reading and name not in ["project_search", "read_evidence"]:
-                    raise ParseFailure("tool_denied", "阅读任务请求了未授权工具。")
-                if is_reading and name == "read_evidence":
+                if structured and name not in ["project_search", "read_evidence"]:
+                    raise ParseFailure("tool_denied", "任务请求了未授权工具。")
+                if structured and name == "read_evidence":
                     raw = message.get("args")
                     serializer = ReadBatchInput(data=raw)
                     if (
@@ -252,10 +314,14 @@ class AIRun:
             if (
                 message.get("success") is not True
                 or self.call
-                or not (self.proposals or self.reading)
+                or not (self.proposals or self.reading or self.review)
             ):
                 raise ParseFailure("result_invalid", "模型未提交有效的待核对结果。")
-            if self.reading is not None:
+            if self.review is not None:
+                from core.reviews import publish_review
+
+                job.output = publish_review(job, self.review)
+            elif self.reading is not None:
                 from core.reading import publish_reading
 
                 job.output = publish_reading(job, self.reading)
@@ -266,8 +332,9 @@ class AIRun:
             return {}
         elif kind == "validation_error":
             if (
-                job.input_snapshot.get("purpose") not in ["reading", "comparison"]
+                job.input_snapshot.get("purpose") not in ["reading", "comparison", "review"]
                 or self.reading is not None
+                or self.review is not None
                 or self.call is not None
                 or not self.calls
             ):
@@ -275,7 +342,7 @@ class AIRun:
             self.tools += 1
             if self.tools > 32:
                 raise ParseFailure("tool_call_limit", "工具调用达到上限。")
-            details = {"code": "reading_schema_invalid", "number": self.tools}
+            details = {"code": "result_schema_invalid", "number": self.tools}
         elif kind == "tool_error":
             raise ParseFailure("tool_rejected", "模型工具调用未通过校验。")
         else:
@@ -354,7 +421,7 @@ def execute_ai(job):
         + ", ".join(item["chunk_id"] for item in job.input_snapshot["sources"][:5]),
     }
     purpose = job.input_snapshot.get("purpose")
-    if purpose in ["reading", "comparison"]:
+    if purpose in ["reading", "comparison", "review"]:
         from core.reading import READING_PROMPT
 
         # 每个文件提供入口；不能把前几个片段误当作全部资料已读。
@@ -389,9 +456,35 @@ def execute_ai(job):
                 ensure_ascii=False,
             ),
         )
+        if purpose == "review":
+            from core.reviews import REVIEW_PROMPT
+
+            config.update(
+                system_prompt=REVIEW_PROMPT,
+                block_version_ids=[
+                    item["version_id"] for item in job.input_snapshot["manuscript"]["blocks"]
+                ],
+                prompt=(
+                    "先调用 read_manuscript。"
+                    + (
+                        "再直接调用 read_evidence 批量读取下面目录的 chunk_ids，不要先检索。"
+                        if catalog
+                        else "本次没有外部材料，只能检查原稿和作者研究说明，不要编造证据编号。"
+                    )
+                    + "随后必须调用 submit_review 提交结果，普通文字答复不会保存。\n"
+                )
+                + json.dumps(
+                    {
+                        "question": job.input_snapshot["question"],
+                        "sources": catalog,
+                        "manuscript_version": job.input_snapshot["manuscript"]["version"],
+                    },
+                    ensure_ascii=False,
+                ),
+            )
     run_pi(
         config,
         run.handle,
         lambda: checkpoint(job.pk, job.generation),
-        timeout_seconds=180 if purpose in ["reading", "comparison"] else None,
+        timeout_seconds=180 if purpose in ["reading", "comparison", "review"] else None,
     )

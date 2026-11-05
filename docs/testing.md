@@ -209,3 +209,17 @@ PYTHONPATH=services/backend uv run python services/backend/core/tests/evaluate_f
 可复现问题已分别登记：[阅读漏提/比较失败 #41](https://github.com/jiuwen567/ai-paper-assistant/issues/41)、[诊断来源混淆与误报 #42](https://github.com/jiuwen567/ai-paper-assistant/issues/42)、[表达遗漏与对象错误 #43](https://github.com/jiuwen567/ai-paper-assistant/issues/43)、[反馈漏拆/漏任务 #44](https://github.com/jiuwen567/ai-paper-assistant/issues/44)、[影响分析无效重提及误报 #45](https://github.com/jiuwen567/ai-paper-assistant/issues/45)。合法任务与越权粘贴文本混在一起时，两组都漏掉了单位核对；无关光照实验在本轮直接组明确判为不受影响，但系统内部候选仍误报且没有通过提交校验。失败未放行正文修改或作者确认。
 
 此前有一轮完整试跑，[pilot-v1.json](evaluation/2026-11-06/pilot-v1.json) 原样保留。直接组提示误把六项阅读要求加给了表达等任务，发现后改为按任务分别提示并完整重跑；该轮不用于上表，不能挑选两轮的成功结果拼接，也不能用它论证组间效果。两轮均未将模型输出当作人工标注。当前样本短、合成、数量小，判断草案有主观性且受预期粒度影响；还缺人工复核和真实论文任务验证。真实微信、指定院系模板和 Microsoft Word 实际打开验收仍分别留在原 Issue。
+
+## 隔离部署与恢复演练（Issue #20）
+
+2026-11-06，在同一 WSL/Docker 主机上以两套新配置、不同宿主端口、独立 Compose 网络和空数据卷进行演练；复用已下载镜像及公开模型缓存，没有操作日常项目的数据卷。这验证了空卷启动及数据迁移，不等于在全新操作系统上验证了依赖安装，也不是公开生产部署。
+
+源环境从空库完成迁移、API/Web/Worker/scheduler 启动，真实 PostgreSQL、Neo4j、SeaweedFS、Redis 健康检查和 Worker 任务往返通过。自制夹具登记两份 TXT 原件、解析、两段正文、引用、作者依据关系及一个 Word 文件。后台同步执行，API 使用测试客户端；引用由夹具登记，不把此过程冒充手机或真实模型操作。
+
+停止应用写入后，使用 PostgreSQL 17 的 custom dump 与停止后的 SeaweedFS 整卷归档建立配对备份，记录校验摘要和存储镜像 ID。随后在源环境通过清理流程删除第一份材料，保留备份之后的专用删除记录。新目标使用独立凭据与空卷，以 `pg_restore --single-transaction --exit-on-error` 恢复数据库，恢复匹配的 SeaweedFS 归档；未复制 Neo4j 或 Redis 数据卷。
+
+目标在尚未启动 API/Worker 时通过 `deployment_fixture.py check`：两份原件和 Word 文件 SHA-256 与源记录一致，正文与引用保留，Neo4j 从 PostgreSQL 重新投影。按备份之后的专用删除记录重放后，旧原件返回 404、对应派生正文和旧导出消失，无关原件/正文/引用仍保留，图中仅剩无关材料的有效路径。之后启动目标应用，依赖健康及 Worker 往返再次通过；Chromium 实际登录目标 Web、保持 Session/CSRF 并创建项目通过。
+
+初始化的两个专项测试验证配置/端口一致、已有凭据不覆盖和非法端口提前拒绝；本项 `make check test build` 通过，其中后端非集成 39 项、Web 单元 6 项，小程序模拟测试及类型检查通过；Ruff 和默认 Compose 配置检查通过。本项未重跑完整后端集成回归，上一轮全量结果见 #19。常规 CI 未增加数据库恢复、浏览器或模型实测。
+
+说明和复现步骤见[部署、恢复与升级](deployment.md)，课程操作步骤见[双端使用流程](workflows.md#演示用例)。已修正文档中图片上传、独立结构生成、消息推送、模板版本等与现状不一致的表述。恢复脚本只处理随机专用样例的一次材料删除，不是通用生产账本导入；未实现完整生产删除/权限变更合并、自动备份轮换、时间点恢复或灾备时限。真实微信开发者工具仍未打开/登录，实际手机跨端演示、指定院系模板和 Word 打开验收未测，因此 #20 继续保留这些待办。

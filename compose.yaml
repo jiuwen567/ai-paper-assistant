@@ -4,7 +4,7 @@ x-backend: &backend
   build:
     context: .
     dockerfile: services/backend/Dockerfile
-  env_file: .env
+  env_file: ${PAPER_ENV_FILE:-.env}
   environment:
     DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1},api
     POSTGRES_HOST: postgres
@@ -14,7 +14,7 @@ x-backend: &backend
     S3_ENDPOINT_URL: http://seaweedfs:8333
     EMBEDDING_CACHE_DIR: /app/models
   volumes:
-    - ./.local/embeddings:/app/models:ro
+    - ${PAPER_EMBEDDING_CACHE:-./.local/embeddings}:/app/models:ro
 
 services:
   postgres:
@@ -38,7 +38,7 @@ services:
       NEO4J_server_memory_heap_initial__size: 256m
       NEO4J_server_memory_heap_max__size: 512m
       NEO4J_server_memory_pagecache_size: 256m
-    ports: ["127.0.0.1:7474:7474", "127.0.0.1:7687:7687"]
+    ports: ["127.0.0.1:${NEO4J_HTTP_PORT:-7474}:7474", "127.0.0.1:${NEO4J_BOLT_PORT:-7687}:7687"]
     volumes: ["neo4j_data:/data", "neo4j_logs:/logs"]
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:7474"]
@@ -62,10 +62,10 @@ services:
       - -s3.iam=false
       - -s3.port.iceberg=0
       - -s3.port.lance=0
-    ports: ["127.0.0.1:8333:8333"]
+    ports: ["127.0.0.1:${S3_PORT:-8333}:8333"]
     volumes:
       - seaweedfs_data:/data
-      - ./.local/seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
+      - ${PAPER_STATE_DIR:-./.local}/seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
       - ./infra/seaweedfs/filer.toml:/etc/seaweedfs/filer.toml:ro
       - ./infra/seaweedfs/master.toml:/etc/seaweedfs/master.toml:ro
     healthcheck:
@@ -101,7 +101,7 @@ services:
     <<: *backend
     profiles: [app]
     command: ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--timeout", "45"]
-    ports: ["127.0.0.1:8000:8000"]
+    ports: ["127.0.0.1:${API_PORT:-8000}:8000"]
     depends_on:
       migrate: { condition: service_completed_successfully }
     healthcheck:
@@ -139,7 +139,7 @@ services:
       dockerfile: apps/web/Dockerfile
     environment:
       API_PROXY_TARGET: http://api:8000
-    ports: ["127.0.0.1:5173:5173"]
+    ports: ["127.0.0.1:${WEB_PORT:-5173}:5173"]
     depends_on:
       api: { condition: service_healthy }
     healthcheck:

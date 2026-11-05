@@ -334,3 +334,34 @@ PYTHONPATH=services/backend uv run python services/backend/core/tests/evaluate_r
   --purpose expression --expanded --model qwen3:4b-instruct \
   --base-url http://127.0.0.1:11434/v1 --output .local/expression-retest.json
 ```
+
+
+## 反馈拆分缺陷复测（Issue #44）
+
+`feedback-v2` 区分独立要求与同一要求中的并列属性，提取合法事项而不执行它；细节不足交作者核对，不凭空补位置，也不整段丢弃混合越权文字。只有禁止未来新增/改动的约束不另建候选。工具只提交候选，范围说明按实际数量生成，不能宣称导师确认。错误的 occurrence 会得到具体引文与实际匹配次数，须显式修正；后台不自动改位置或创建待办。
+
+本机 qwen3:4b-instruct / Q4_K_M、Ollama 0.40.14、上下文 16384、temperature 0，实际 `max_tokens=4096`。每任务最多 4 次调用、单次 30 秒、总计 90 秒，均未增加。[最终系统整轮](evaluation/2026-11-06/feedback-fix/system-final.json)包含原三例和两例扩展：
+
+| 案例 | 候选 | 内容检查（AI 草案） | 秒 |
+| --- | --- | --- | --- |
+| 复合要求 | 2 | 纳入/排除条件与指标选择理由分开，原文位置准确，未增加实验 | 3.83 |
+| 无需修改 | 0 | 保留空结果 | 0.91 |
+| 混合越权文字 | 1 | 保留核对表格单位，不执行代写或导师确认 | 1.36 |
+| 合法要求位于越权文字之后 | 1 | 保留图注标识核对，不编造图号 | 1.51 |
+| 仅有禁止性约束 | 0 | 不把“不新增实验/不改数据”另建为待办 | 0.88 |
+
+五例协议与上述内容预期均满足，全部 `confirmed_task_count=0`。复合要求曾把第二项 occurrence 写为 2，收到实际只有一处的反馈后在原调用上限内修正。这里的逐项检查不是独立人工复核，不能推出其他意见均可正确拆分。
+
+[当前基线](evaluation/2026-11-06/feedback-fix/baseline-v1.json)仍把复合要求合成一项，并以缺少具体表格信息为由漏掉单位任务。[试验及代码摘要](evaluation/2026-11-06/feedback-fix/configuration.json)保留首轮出现次序错误导致的调用耗尽，以及扩展轮误将纯约束建卡的输出，不只保留成功记录。旧试验没有逐轮冻结完整代码，摘要对应当前两组复测；本次基线与后续均已包含 #49 的实际限额修复。
+
+直接对照也区分反馈原话与执行时需要的图表位置，但[最终三例](evaluation/2026-11-06/feedback-fix/direct-final.json)仍漏掉混合越权段落中的合法单位任务；复合要求分为两项，无需修改返回空项。直接组每例只调用一次、没有业务引用和作者确认流程，格式 3/3 成功不能代表内容全部合格。**Issue #44 保持开放，保留这项剩余问题。**没有把失败解释为正确空结果，也不将两组时间差归因于普遍效率。
+
+反馈相关 19 项后端测试通过，覆盖原话位置错误后修正、旧提示取消、候选必须作者确认、双线程幂等、撤权、稿件/材料变化、空结果和导师回复独立记录。Pi 类型检查及 11 项协议测试、make check test build、最终 39 项单元测试、Ruff 均通过。尚未进行独立人工复核、人工操作量与计时；真实微信验收仍沿用 #14 待办。本次不新增常规 CI 的模型或全服务检查。
+
+重跑五例（只在 DEBUG 开发环境创建专用自制数据）：
+
+```bash
+PYTHONPATH=services/backend uv run python services/backend/core/tests/evaluate_feedback.py \
+  --expanded --model qwen3:4b-instruct --base-url http://127.0.0.1:11434/v1 \
+  --output .local/feedback-retest.json
+```

@@ -10,7 +10,7 @@ export default defineConfig({
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
     { name: "mobile", use: { ...devices["Pixel 7"] } },
   ],
-  webServer: [
+  webServer: process.env.E2E_USE_COMPOSE === "1" ? undefined : [
     {
       command:
         "uv run --directory ../../services/backend gunicorn config.wsgi:application --bind 127.0.0.1:8000 --workers 2",

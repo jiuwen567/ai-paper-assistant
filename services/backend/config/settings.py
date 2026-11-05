@@ -94,3 +94,8 @@ DATA_UPLOAD_MAX_NUMBER_FILES = 1
 
 EMBEDDING_MODEL = env("EMBEDDING_MODEL", default="BAAI/bge-small-zh-v1.5")
 EMBEDDING_CACHE_DIR = env("EMBEDDING_CACHE_DIR", default=str(ROOT_DIR / ".local" / "embeddings"))
+
+AI_MODEL = env("AI_MODEL", default="")
+AI_BASE_URL = env("AI_BASE_URL", default="")
+AI_API_KEY = env("AI_API_KEY", default="")
+PI_RUNNER = ROOT_DIR / "services" / "pi-runner" / "src" / "runner.ts"

@@ -50,6 +50,52 @@ def main():
             from core.wechat import login_wechat
 
             print(json.dumps(login_wechat(prefix), default=str))
+        elif data["action"] == "ai":
+            # 浏览器展示验收走真实 Pi SDK，供应商仅使用本机受控协议样例。
+            from unittest.mock import patch
+            from uuid import uuid4
+
+            from rest_framework.test import APIClient
+
+            from core.models import Job
+            from core.tests.test_ai_jobs import provider
+            from worker.tasks import execute_job
+
+            owner = users.objects.get(username=usernames[0])
+            project = Project.objects.get(owner=owner)
+            source = MaterialVersion.objects.get(material__project=project, status="available")
+            chunk = source.parses.get(job__status="succeeded").chunks.order_by("ordinal").first()
+            policy = project.policies.order_by("-version").first()
+            client = APIClient(HTTP_HOST="localhost")
+            client.force_authenticate(owner)
+            with provider(
+                lambda number, _: (
+                    [("read_evidence", {"chunk_id": str(chunk.pk)})]
+                    if number == 1
+                    else [
+                        (
+                            "save_note",
+                            {"text": "协议样例摘记，等待作者核对。", "chunk_ids": [str(chunk.pk)]},
+                        )
+                    ]
+                )
+            ):
+                with patch("core.ai_views.dispatch"):
+                    response = client.post(
+                        f"/api/v1/projects/{project.pk}/ai-tasks/",
+                        {
+                            "idempotency_key": str(uuid4()),
+                            "policy_version": policy.version,
+                            "version_ids": [str(source.pk)],
+                        },
+                        format="json",
+                    )
+                if response.status_code != 201:
+                    raise ValueError("无法创建浏览器测试模型任务。")
+                execute_job(response.data["id"])
+                if Job.objects.get(pk=response.data["id"]).status != "succeeded":
+                    raise ValueError("浏览器测试模型任务失败。")
+                print(json.dumps({"job_id": response.data["id"]}))
         elif data["action"] == "cleanup":
             WechatIdentity.objects.filter(open_id=prefix).delete()
             from contextlib import closing

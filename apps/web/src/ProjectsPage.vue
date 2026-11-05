@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref } from "vue";
 import LibraryPanel from "./LibraryPanel.vue";
 import ReadingPanel from "./ReadingPanel.vue";
+import ManuscriptPanel from "./ManuscriptPanel.vue";
 import JobsPanel from "./JobsPanel.vue";
 import MaterialsPanel from "./MaterialsPanel.vue";
 import WechatBindingPanel from "./WechatBindingPanel.vue";
@@ -20,6 +21,7 @@ const password = ref("");
 const projects = ref<Page<Project> | null>(null);
 const projectPage = ref(1);
 const selected = ref<Project | null>(null);
+const manuscriptDirty = ref(false);
 const creating = ref(false);
 const members = ref<Page<Member> | null>(null);
 const memberPage = ref(1);
@@ -141,6 +143,7 @@ async function signIn() {
   await loadProjects();
 }
 async function signOut() {
+  if (manuscriptDirty.value && !window.confirm("原稿仍有未保存修改，确认退出？")) return;
   await logout();
   user.value = null;
   selected.value = null;
@@ -148,6 +151,11 @@ async function signOut() {
   members.value = null;
   history.value = null;
   creating.value = false;
+}
+async function returnToList() {
+  if (manuscriptDirty.value && !window.confirm("放弃当前未保存的原稿修改并返回列表？")) return;
+  selected.value = null; creating.value = false;
+  await loadProjects();
 }
 onMounted(() => perform(initialize));
 </script>
@@ -202,7 +210,7 @@ onMounted(() => perform(initialize));
       </template>
       <template v-else>
         <div class="actions">
-          <button :disabled="busy" @click="perform(async () => { selected = null; creating = false; await loadProjects(); })">返回列表</button>
+          <button :disabled="busy" @click="perform(returnToList)">返回列表</button>
           <button v-if="selected" :disabled="busy" @click="perform(() => openProject(selected!.id))">重新加载</button>
           <span v-if="selected">{{ roleName(selected.role) }}</span>
         </div>
@@ -220,6 +228,7 @@ onMounted(() => perform(initialize));
           <MaterialsPanel :key="selected.id" :project="selected" :user-id="user!.id" @access-lost="cause => perform(async () => { throw cause; })" />
           <LibraryPanel :key="selected.id" :project="selected" @access-lost="cause => perform(async () => { throw cause; })" />
           <ReadingPanel :key="selected.id" :project="selected" @access-lost="cause => perform(async () => { throw cause; })" />
+          <ManuscriptPanel :key="selected.id" :project="selected" @dirty-change="manuscriptDirty = $event" @access-lost="cause => perform(async () => { throw cause; })" />
           <JobsPanel :key="selected.id" :project="selected" @access-lost="cause => perform(async () => { throw cause; })" />
           <form class="editor" @submit.prevent="perform(savePolicy)">
             <h2>AI 辅助规则 · v{{ selected.policy.version }}</h2>

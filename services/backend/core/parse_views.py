@@ -59,7 +59,7 @@ class ParseListView(APIView):
     def post(self, request, project_id, version_id):
         project = require_project(request.user, project_id, write=True, lock=True)
         source = get_object_or_404(
-            MaterialVersion,
+            MaterialVersion.objects.exclude(usage_state="withdrawn"),
             pk=version_id,
             material__project=project,
             material__access_state="active",

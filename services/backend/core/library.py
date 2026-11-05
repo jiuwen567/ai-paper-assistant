@@ -5,7 +5,13 @@ from core.parse_views import published_chunks
 
 
 def active_chunks(project_id):
-    return published_chunks(project_id).filter(run__source_version__material__access_state="active")
+    return (
+        published_chunks(project_id)
+        .filter(
+            run__source_version__material__access_state="active",
+        )
+        .exclude(run__source_version__usage_state="withdrawn")
+    )
 
 
 def searchable_chunks(project_id):
@@ -19,7 +25,9 @@ def searchable_chunks(project_id):
         .order_by("-number")
         .values("id")[:1]
     )
-    return active_chunks(project_id).filter(run_id=Subquery(latest))
+    return active_chunks(project_id).filter(
+        run_id=Subquery(latest), run__source_version__usage_state="active"
+    )
 
 
 def default_bibliography(source):

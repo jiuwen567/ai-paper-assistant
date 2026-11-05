@@ -59,6 +59,7 @@ def model_configuration(purpose="note"):
             "review": "review-v1",
             "expression": "expression-v1",
             "feedback": "feedback-v1",
+            "impact": "impact-v1",
         }.get(purpose, PROMPT_VERSION),
         "runtime": "pi-1.5.0",
     }
@@ -113,10 +114,14 @@ def valid_locked(job, generation):
                 job.project_id,
                 job.input_snapshot["version_ids"],
                 allow_empty=job.input_snapshot.get("purpose")
-                in ["review", "expression", "feedback"],
+                in ["review", "expression", "feedback", "impact"],
             )
             == job.input_snapshot["sources"]
         )
+        if unchanged and job.input_snapshot.get("purpose") == "impact":
+            from core.impact_ai import unchanged as impact_unchanged
+
+            unchanged = impact_unchanged(job)
         if unchanged and job.input_snapshot.get("purpose") == "feedback":
             from core.feedback import unchanged as feedback_unchanged
 
@@ -191,6 +196,8 @@ class AIRun:
         self.reading = None
         self.review = None
         self.expression = None
+        self.impact = None
+        self.impact_read = False
         self.feedback = None
         self.feedback_read = False
         self.manuscript_read = False
@@ -250,7 +257,8 @@ class AIRun:
             is_expression = job.input_snapshot.get("purpose") == "expression"
             is_feedback = job.input_snapshot.get("purpose") == "feedback"
             is_manuscript = is_review or is_expression
-            structured = is_reading or is_manuscript or is_feedback
+            is_impact = job.input_snapshot.get("purpose") == "impact"
+            structured = is_reading or is_manuscript or is_feedback or is_impact
             if (
                 self.call is not None
                 or self.calls == 0
@@ -259,6 +267,8 @@ class AIRun:
                 raise ParseFailure("tool_call_limit", "工具调用达到上限或顺序异常。")
             self.tools += 1
             name = message.get("name")
+            if is_impact and name not in ["read_impact", "submit_impact"]:
+                raise ParseFailure("tool_denied", "影响补查只能读取固定变更范围和提交候选。")
             if is_feedback and name not in ["read_feedback", "submit_feedback"]:
                 raise ParseFailure("tool_denied", "反馈拆分只能读取已选意见和提交候选任务。")
             if (
@@ -268,7 +278,35 @@ class AIRun:
             ):
                 raise ParseFailure("tool_denied", "未选择材料，不能调用资料工具。")
             details = {"name": name, "number": self.tools}
-            if is_feedback and name == "read_feedback":
+            if is_impact and name == "read_impact":
+                from core.impact_ai import read_impact
+
+                if message.get("args") != {}:
+                    raise ParseFailure("tool_schema_invalid", "读取影响范围不接受扩展参数。")
+                result = read_impact(job)
+                self.impact_read = True
+            elif is_impact and name == "submit_impact":
+                from core.impact_ai import validate_output
+
+                try:
+                    candidate = validate_output(job, message.get("args"), self.impact_read)
+                except ParseFailure as exc:
+                    if self.impact is not None or exc.code not in {
+                        "impact_quote_invalid",
+                        "impact_duplicate",
+                    }:
+                        raise
+                    job.ai_events.create(
+                        generation=self.generation,
+                        kind="validation_error",
+                        details={"code": exc.code, "number": self.tools},
+                    )
+                    return {"status": "rejected", "code": exc.code, "message": exc.message}
+                if self.impact is not None and self.impact != candidate:
+                    raise ParseFailure("impact_resubmitted", "重复提交了不同候选。")
+                self.impact = candidate
+                result = {"status": "staged"}
+            elif is_feedback and name == "read_feedback":
                 from core.feedback import read_feedback
 
                 if message.get("args") != {}:
@@ -392,10 +430,15 @@ class AIRun:
                     or self.review
                     or self.expression
                     or self.feedback
+                    or self.impact
                 )
             ):
                 raise ParseFailure("result_invalid", "模型未提交有效的待核对结果。")
-            if self.feedback is not None:
+            if self.impact is not None:
+                from core.impact_ai import publish_output
+
+                job.output = publish_output(job, self.impact)
+            elif self.feedback is not None:
                 from core.feedback import publish_split
 
                 job.output = publish_split(job, self.feedback)
@@ -419,11 +462,12 @@ class AIRun:
         elif kind == "validation_error":
             if (
                 job.input_snapshot.get("purpose")
-                not in ["reading", "comparison", "review", "expression", "feedback"]
+                not in ["reading", "comparison", "review", "expression", "feedback", "impact"]
                 or self.reading is not None
                 or self.review is not None
                 or self.expression is not None
                 or self.feedback is not None
+                or self.impact is not None
                 or self.call is not None
                 or not self.calls
             ):
@@ -510,6 +554,20 @@ def execute_ai(job):
         + ", ".join(item["chunk_id"] for item in job.input_snapshot["sources"][:5]),
     }
     purpose = job.input_snapshot.get("purpose")
+    if purpose == "impact":
+        from core.impact_ai import IMPACT_PROMPT
+
+        config.update(
+            purpose=purpose,
+            system_prompt=IMPACT_PROMPT,
+            block_version_ids=[
+                b["version_id"]
+                for b in job.input_snapshot["impact"]["manuscript"]["blocks"]
+                if b["version_id"] not in job.input_snapshot["impact"]["registered_blocks"]
+            ],
+            max_tokens=4096,
+            prompt="先调用 read_impact，再用 submit_impact 提交可能相关位置。",
+        )
     if purpose == "feedback":
         from core.feedback import FEEDBACK_PROMPT
 

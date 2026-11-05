@@ -6,7 +6,7 @@ import { expect, test as base, type APIRequestContext, type Page } from "@playwr
 
 type Accounts = { prefix: string; owner: string; reviewer: string; reviewerId: number; password: string; otherId: string };
 const root = fileURLToPath(new URL("../../..", import.meta.url));
-function fixtureData(action: "create" | "cleanup" | "binding" | "ai" | "reading" | "review" | "expression" | "feedback", prefix: string, options: Record<string, unknown> = {}) {
+function fixtureData(action: "create" | "cleanup" | "binding" | "ai" | "reading" | "review" | "expression" | "feedback" | "impact", prefix: string, options: Record<string, unknown> = {}) {
   return execFileSync("uv", ["run", "python", "services/backend/core/tests/browser_data.py"], {
     cwd: root, input: JSON.stringify({ action, prefix, ...options }), encoding: "utf-8",
     env: { ...process.env, PYTHONPATH: "services/backend" },
@@ -880,4 +880,89 @@ test("摘要证据、作者笔记、真实语义检索与材料撤回", async ({
   await library.getByRole("button", { name: "检索材料", exact: true }).click();
   await expect(results).toContainText("没有匹配的有效资料");
   await expect(library.getByText("仅摘要 · 材料已撤回")).toBeVisible();
+});
+
+test("材料更正三处影响、处理冲突、模型候选与复查", async ({ page, accounts }, testInfo) => {
+  test.setTimeout(120000);
+  await page.goto("/"); await login(page, accounts.owner, accounts.password);
+  await page.getByRole("button", { name: "创建项目" }).click();
+  await page.getByLabel("项目名称", { exact: true }).fill("材料更正验收");
+  const [created] = await Promise.all([
+    page.waitForResponse(response => response.url().endsWith("/api/v1/projects/") && response.request().method() === "POST"),
+    page.getByRole("button", { name: "创建", exact: true }).click(),
+  ]);
+  expect(created.status()).toBe(201);
+  const project = await created.json();
+  const base = `projects/${project.id}/`;
+  const draft = { version: 0, request_key: randomUUID(), research: { question: "", method: "", result: "" }, blocks: ["提高温度后反应速率增加。", "温度组与对照组存在差异。", "本次测量记录支持温度组的论述。", "依据温度组记录还需核对单位。", "无关实验的光照保持不变。"].map(text => ({ id: randomUUID(), text, heading_level: 0 })) };
+  const saved = await mutate(page.request, base + "manuscript/", "PUT", draft); expect(saved.status()).toBe(200);
+  const manuscript = await saved.json();
+  const materials = page.getByRole("region", { name: "材料", exact: true });
+  await materials.getByLabel("材料名称", { exact: true }).fill("温度组自制记录");
+  await materials.locator('input[type="file"]').setInputFiles({ name: "temperature-v1.txt", mimeType: "text/plain", buffer: Buffer.from("提高温度后反应速率增加。") });
+  await materials.getByRole("button", { name: "上传材料", exact: true }).click();
+  await materials.getByRole("button", { name: "查看原文 v1", exact: true }).click();
+  const reader = materials.getByRole("region", { name: "原文定位", exact: true });
+  await reader.getByRole("button", { name: "解析材料", exact: true }).click();
+  await expect(reader.getByRole("button", { name: "解析 #1 · 解析成功", exact: true })).toBeVisible();
+  const material = (await (await page.request.get(`/api/v1/${base}materials/`)).json()).results[0];
+  const parse = (await (await page.request.get(`/api/v1/${base}files/${material.latest_version.id}/parses/`)).json()).results[0];
+  const chunk = (await (await page.request.get(`/api/v1/${base}parses/${parse.id}/chunks/`)).json()).results[0];
+  for (const block of draft.blocks.slice(0, 3)) expect((await mutate(page.request, base + "evidence-links/", "POST", { request_key: randomUUID(), manuscript_version: 1, block_id: block.id, chunk_id: chunk.id, claim: block.text, claim_occurrence: 1, evidence_quote: "提高温度后反应速率增加。", evidence_occurrence: 1, kind: "supports", note: "自制登记依赖", confirmed: true })).status()).toBe(201);
+  await materials.locator('input[type="file"]').setInputFiles({ name: "temperature-v2.txt", mimeType: "text/plain", buffer: Buffer.from("更正：单位修正后未见反应速率增加。") });
+  await materials.getByRole("button", { name: "上传新版本", exact: true }).click();
+  await materials.getByRole("button", { name: "查看原文 v2", exact: true }).click();
+  await reader.getByRole("button", { name: "解析材料", exact: true }).click();
+  await expect(reader.getByRole("button", { name: "解析 #1 · 解析成功", exact: true })).toBeVisible();
+  const versions = (await (await page.request.get(`/api/v1/${base}materials/${material.id}/versions/`)).json()).results;
+  expect(versions.every((v: { usage_state: string }) => v.usage_state === "active")).toBeTruthy();
+  const panel = page.getByRole("region", { name: "材料变更与影响", exact: true });
+  await panel.getByRole("button", { name: "刷新变更区" }).click();
+  await panel.locator("summary").filter({ hasText: "登记材料变更" }).click();
+  await panel.getByLabel("变更材料", { exact: true }).selectOption(material.id);
+  await panel.getByLabel("变更类型", { exact: true }).selectOption("correction");
+  await panel.getByLabel("旧文件版本", { exact: true }).selectOption(material.latest_version.id);
+  await panel.getByLabel("新文件版本", { exact: true }).selectOption(versions[0].id);
+  await panel.getByLabel("变更说明", { exact: true }).fill("单位更正，需要复核温度组论述。");
+  await panel.getByLabel("我已核对文件版本、变更类型与说明").check();
+  await panel.getByRole("button", { name: "保存材料变更", exact: true }).click();
+  await expect(panel).toContainText("材料变更已记录。");
+  await panel.getByRole("button", { name: "查看旧材料", exact: true }).click();
+  await panel.getByRole("button", { name: /片段 .*提高温度/ }).click();
+  await expect(panel.getByRole("region", { name: "原文上下文" })).toContainText("temperature-v1.txt");
+  await panel.getByRole("button", { name: "查看新材料", exact: true }).click();
+  await panel.getByRole("button", { name: /片段 .*更正/ }).click();
+  await expect(panel.getByRole("region", { name: "原文上下文" })).toContainText("未见反应速率增加");
+  await panel.getByRole("button", { name: "生成影响清单", exact: true }).click();
+  await expect(panel.locator(".impact-item")).toHaveCount(3);
+  const card = panel.locator(".impact-item").filter({ hasText: "提高温度后反应速率增加。" });
+  await card.getByLabel("处理结果", { exact: true }).selectOption("retained");
+  await card.getByLabel("处理说明", { exact: true }).fill("保留我的草稿处理说明");
+  await card.getByLabel("我已核对材料、当前位置与处理结果").check();
+  const change = (await (await page.request.get(`/api/v1/${base}material-changes/`)).json()).results[0];
+  const run = (await (await page.request.get(`/api/v1/${base}material-changes/${change.id}/runs/`)).json()).results[0];
+  const items = (await (await page.request.get(`/api/v1/${base}impact-runs/${run.id}/items/`)).json()).results;
+  const item = items.find((i: { location: { block_id: string } }) => i.location.block_id === draft.blocks[0].id);
+  expect((await mutate(page.request, base + `impact-items/${item.id}/`, "POST", { request_key: randomUUID(), version: 0, facts_token: item.facts_token, state: "pending", note: "另一窗口更新处理记录", confirmed: true })).status()).toBe(200);
+  await card.getByRole("button", { name: "记录作者处理", exact: true }).click();
+  await expect(card.getByRole("alert")).toContainText("已变化");
+  await card.getByRole("button", { name: "刷新此项状态", exact: true }).click();
+  await expect(card.getByLabel("处理说明", { exact: true })).toHaveValue("保留我的草稿处理说明");
+  await card.getByRole("button", { name: "核对后采用最新状态", exact: true }).click();
+  await card.getByLabel("我已核对材料、当前位置与处理结果").check();
+  await card.getByRole("button", { name: "记录作者处理", exact: true }).click();
+  await expect(card).toContainText("作者处理已记录。");
+  await card.getByRole("button", { name: "处理历史", exact: true }).click();
+  await expect(card).toContainText("另一窗口更新处理记录");
+  expect((await mutate(page.request, base + "policies/", "POST", { version: project.version, source: "自制规则", source_version: "v1", verified: true, notes: "", allowed_actions: ["review"] })).status()).toBe(201);
+  fixtureData("impact", accounts.prefix, { run_id: run.id, payload: { idempotency_key: randomUUID(), policy_version: 2, block_ids: draft.blocks.map(b => b.id) }, output: { summary: "协议样例：一处潜在关联。", candidates: [{ block_version_id: manuscript.blocks[3].version_id, body_quote: draft.blocks[3].text, reason: "可能受单位更正影响，请作者核对。", basis: "note", chunk_id: null, change_quote: "单位更正" }] } });
+  await panel.getByRole("button", { name: "刷新变更区" }).click();
+  await expect(panel.locator(".impact-item")).toHaveCount(4);
+  await expect(panel.locator(".impact-item").filter({ hasText: "模型补充候选" })).toContainText("需要作者复核");
+  expect((await (await page.request.get(`/api/v1/${base}manuscript/`)).json()).blocks).toEqual(manuscript.blocks);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+  await panel.screenshot({ path: testInfo.outputPath("material-impact.png") });
+  await panel.getByRole("button", { name: "复查已登记依赖", exact: true }).click();
+  await expect(panel).toContainText("与第 1 轮相比：仍有登记 3 处");
+  await expect(panel.locator(".impact-item")).toHaveCount(3);
 });

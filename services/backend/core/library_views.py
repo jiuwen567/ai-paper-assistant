@@ -254,6 +254,7 @@ class EvidenceDetailView(APIView):
 class MaterialStateInput(serializers.Serializer):
     version = serializers.IntegerField(min_value=1)
     access_state = serializers.ChoiceField(choices=["active", "withdrawn"])
+    note = serializers.CharField(max_length=2000, default="作者撤回整个材料（未填写补充说明）")
 
 
 class MaterialStateView(APIView):
@@ -275,4 +276,8 @@ class MaterialStateView(APIView):
             material.access_state = data["access_state"]
             material.state_version += 1
             material.save()
+            if material.access_state == "withdrawn":
+                from core.impacts import record_global_withdrawal
+
+                record_global_withdrawal(material, request.user, data["note"])
         return Response({"access_state": material.access_state, "version": material.state_version})

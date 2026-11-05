@@ -45,6 +45,7 @@ async function loadFinding(id: string) {
   const value = await request<ReviewFinding>(`${base()}review-findings/${id}/`);
   if (mounted) output.value = [`原稿 v${value.manuscript_version}：${value.model_output.quote}`, value.model_output.reason, value.model_output.action, `作者判断：${reviewDecisions[value.status]}`, value.author_decision?.reason || ""];
 }
+async function loadImpact(id: string) { const value = await request<import("./impact").ImpactItem>(`${base()}impact-items/${id}/`); if (mounted) output.value = [value.location?.text || "", value.snapshot.reason || "", value.snapshot.change_quote || "", value.current ? `作者处理：${value.current.note}` : "待作者复核"]; }
 async function loadNotes() { const value = await request<{ output: { proposals?: { text: string }[] } }>(`${base()}jobs/${props.usage.id}/`); if (mounted) output.value = (value.output?.proposals || []).map(item => item.text); }
 onUnmounted(() => { mounted = false; });
 </script>
@@ -62,6 +63,7 @@ onUnmounted(() => { mounted = false; });
       <button v-if="detail.input.manuscript_version" :disabled="busy" @click="perform(() => loadManuscript(detail!.input.manuscript_version!))">查看输入稿件版本</button>
       <details v-if="detail.sources?.length"><summary>输入资料片段</summary><button v-for="(source, index) in detail.sources" :key="source.chunk_id || source.id" :disabled="busy" @click="perform(() => loadSource((source.chunk_id || source.id)!))">片段 {{ index + 1 }}</button></details>
       <ul><li v-for="call in detail.calls" :key="`${call.generation}-${call.number}`">执行代次 {{ call.generation }} · 调用 {{ call.number }} · {{ statusLabels[call.status] }} · {{ call.elapsed_ms === null ? '耗时未知' : `${call.elapsed_ms} ms` }}<p v-if="call.usage">Token：输入 {{ call.usage.input }}，输出 {{ call.usage.output }}，缓存读取 {{ call.usage.cache_read }}，缓存写入 {{ call.usage.cache_write }}</p><p v-else>用量未知</p><p v-if="call.error_code">错误：{{ call.error_code }}</p></li></ul>
+      <button v-for="(item, index) in detail.impact_candidates" :key="item.id" :disabled="busy" @click="perform(() => loadImpact(item.id))">回查影响候选 {{ index + 1 }}</button>
       <button v-if="detail.reading" :disabled="busy" @click="perform(() => loadReading(detail!.reading!.id))">回查阅读结果与作者修订</button>
       <button v-if="detail.notes" :disabled="busy" @click="perform(loadNotes)">回查摘记结果</button>
       <button v-if="detail.review" :disabled="busy" @click="perform(() => loadReview(detail!.review!.id))">回查诊断说明</button>
@@ -70,7 +72,7 @@ onUnmounted(() => { mounted = false; });
       <template v-for="(item, index) in detail.feedback_candidates" :key="item.id"><button v-if="item.task_id" :disabled="busy" @click="perform(() => loadFeedbackTask(item.task_id!))">回查修改待办 {{ index + 1 }}</button><p v-else>候选 {{ index + 1 }} · {{ item.decision === 'rejected' ? '作者拒绝' : '待作者确认' }}</p></template>
       <button v-for="(finding, index) in detail.review?.findings" :key="finding.id" :disabled="busy" @click="perform(() => loadFinding(finding.id))">回查诊断 {{ index + 1 }}</button>
       <button v-for="(item, index) in detail.suggestions" :key="item.id" :disabled="busy" @click="perform(() => loadSuggestion(item.id))">回查建议 {{ index + 1 }} · {{ item.decision ? decisionLabels[item.decision.action] : '未决定' }}</button>
-      <p v-if="!detail.reading && !detail.notes && !detail.review && !detail.suggestions.length && !detail.feedback_candidates.length && detail.kind === 'ai'">没有发布可回查的输出。</p>
+      <p v-if="!detail.reading && !detail.notes && !detail.review && !detail.suggestions.length && !detail.feedback_candidates.length && !detail.impact_candidates.length && detail.kind === 'ai'">没有发布可回查的输出。</p>
       <div v-if="output.length"><p v-for="(line, index) in output" :key="index" class="source-text">{{ line }}</p></div>
       <section v-if="suggestion" aria-label="使用记录中的表达修改">
         <h4>原建议 · 稿件 v{{ suggestion.manuscript_version }}</h4>

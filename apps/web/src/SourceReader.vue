@@ -6,7 +6,7 @@ import BibliographyEditor from "./BibliographyEditor.vue";
 import { anchorLabel, type Chunk, type SourceLocation as Location } from "./sources";
 type Job = { id: string; status: string; generation: number; progress: number; retryable: boolean; error_message: string };
 type Run = { id: string; number: number; parser_version: string; job: Job; published_at: string | null; warnings: string[]; coverage: string };
-const props = defineProps<{ project: Project; version: { id: string; number: number; file_name: string } }>();
+const props = defineProps<{ project: Project; version: { id: string; number: number; file_name: string; usage_state?: string } }>();
 const emit = defineEmits<{ accessLost: [error: ApiError] }>();
 const runs = ref<Page<Run> | null>(null);
 const selected = ref<Run | null>(null);
@@ -98,7 +98,7 @@ onUnmounted(() => { mounted = false; clearTimeout(timer); });
     <div class="actions">
       <button :disabled="busy" @click="perform(() => load())">刷新解析</button>
       <button v-if="project.role === 'author'" :disabled="busy" @click="perform(create)">{{ runs?.count ? '重新解析' : '解析材料' }}</button>
-      <button v-if="project.role === 'author' && project.policy.allowed_actions.includes('reading')" :disabled="busy || !runs?.results.some(run => run.published_at)" @click="perform(createAI)">AI 阅读</button>
+      <button v-if="project.role === 'author' && project.policy.allowed_actions.includes('reading')" :disabled="busy || !runs?.results.some(run => run.published_at) || (!!version.usage_state && version.usage_state !== 'active')" @click="perform(createAI)">AI 阅读</button>
       <a :href="`/api/v1/${base()}files/${version.id}/`">下载原件 v{{ version.number }}</a>
     </div>
     <p v-if="runs?.count === 0">尚无解析记录。</p>

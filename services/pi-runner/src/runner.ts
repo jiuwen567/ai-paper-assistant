@@ -5,6 +5,7 @@ import type { Model } from "@earendil-works/pi-ai";
 import { Type } from "typebox";
 import { readingSchema } from "./reading-schema.ts";
 import { reviewSchema } from "./review-schema.ts";
+import { expressionSchema } from "./expression-schema.ts";
 
 // 仅由 Worker 启动。业务数据和凭据走管道，stdout 只写结构化协议。
 const lines = createInterface({ input: process.stdin });
@@ -43,12 +44,13 @@ try {
     ["save_note", "暂存待作者核对的摘记，必须引用本次已读取的片段；不会写入作者笔记。", proposal],
     ["submit_suggestion", "暂存待作者核对的建议，必须引用本次已读取的片段；不能采纳或修改正文。", proposal],
   ];
-  if (["reading", "comparison", "review"].includes(config.purpose)) {
+  if (["reading", "comparison", "review", "expression"].includes(config.purpose)) {
     definitions[1] = ["read_evidence", "批量读取原文。每批最多六十四个片段，优先一次读取目录中的相关片段；unavailable 表示未取得该片段。", Type.Object({ chunk_ids: Type.Array(Type.String({ format: "uuid" }), { minItems: 1, maxItems: 64, uniqueItems: true }) }, { additionalProperties: false })];
-    if (config.purpose === "review") {
+    if (["review", "expression"].includes(config.purpose)) {
       definitions.splice(2, 2,
         ["read_manuscript", "读取作者所选的固定稿件版本、研究说明和资料登记信息。不能扩展正文范围。", Type.Object({}, { additionalProperties: false })],
         ["submit_review", "提交有位置、依据、原因和作者行动建议的问题卡，不修改原稿或确认问题。", reviewSchema(config.block_version_ids)]);
+      if (config.purpose === "expression") definitions[3] = ["submit_expression", "暂存表达建议供作者审阅；不能采纳或修改正文。", expressionSchema(config.block_version_ids)];
       if (!config.version_ids.length) definitions.splice(0, 2);
     } else {
       definitions.splice(2, 2, ["submit_reading", "提交所有所选资料的结构化阅读结果。每篇资料必须分别提供全部六个字段；引文精确来自本次已读取原文。", readingSchema(config.version_ids, config.purpose === "comparison")]);
@@ -60,11 +62,11 @@ try {
     name, label: name, description, parameters, executionMode: "sequential", replay: "never",
     async execute(_id, args) {
       const result = await rpc("tool", { name, args });
-      if (name === "submit_review" && result?.status === "rejected") {
+      if (["submit_review", "submit_expression"].includes(name) && result?.status === "rejected") {
         return { content: [{ type: "text", text: JSON.stringify(result) }], details: {}, isError: true };
       }
       return { content: [{ type: "text", text: JSON.stringify(result) }], details: {},
-        terminate: ["save_note", "submit_suggestion", "submit_reading", "submit_review"].includes(name) };
+        terminate: ["save_note", "submit_suggestion", "submit_reading", "submit_review", "submit_expression"].includes(name) };
     },
   }));
   const agent = new Agent({
@@ -101,7 +103,7 @@ try {
       } : null });
     }
     if (event.type === "tool_execution_end" && event.isError) {
-      if (config.purpose && ["submit_reading", "submit_review"].includes(event.toolName)) {
+      if (config.purpose && ["submit_reading", "submit_review", "submit_expression"].includes(event.toolName)) {
         // Pi 的 schema 错误反馈可在剩余调用预算内修正；越权工具仍立即结束。
         await rpc("validation_error");
       } else {

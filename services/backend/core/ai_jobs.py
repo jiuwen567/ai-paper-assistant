@@ -57,6 +57,7 @@ def model_configuration(purpose="note"):
             "reading": "reading-v1",
             "comparison": "reading-v1",
             "review": "review-v1",
+            "expression": "expression-v1",
         }.get(purpose, PROMPT_VERSION),
         "runtime": "pi-1.5.0",
     }
@@ -110,14 +111,18 @@ def valid_locked(job, generation):
             and sources_snapshot(
                 job.project_id,
                 job.input_snapshot["version_ids"],
-                allow_empty=job.input_snapshot.get("purpose") == "review",
+                allow_empty=job.input_snapshot.get("purpose") in ["review", "expression"],
             )
             == job.input_snapshot["sources"]
         )
-        if unchanged and job.input_snapshot.get("purpose") == "review":
+        if unchanged and job.input_snapshot.get("purpose") in ["review", "expression"]:
             from core.reviews import unchanged as manuscript_unchanged
 
             unchanged = manuscript_unchanged(job)
+            if unchanged and job.input_snapshot.get("purpose") == "expression":
+                from core.expressions import input_changed
+
+                unchanged = not input_changed(job)
     except ParseFailure:
         unchanged = False
     if not unchanged:
@@ -179,6 +184,7 @@ class AIRun:
         self.proposals = []
         self.reading = None
         self.review = None
+        self.expression = None
         self.manuscript_read = False
 
     @transaction.atomic
@@ -233,7 +239,9 @@ class AIRun:
         elif kind == "tool":
             is_reading = job.input_snapshot.get("purpose") in ["reading", "comparison"]
             is_review = job.input_snapshot.get("purpose") == "review"
-            structured = is_reading or is_review
+            is_expression = job.input_snapshot.get("purpose") == "expression"
+            is_manuscript = is_review or is_expression
+            structured = is_reading or is_manuscript
             if (
                 self.call is not None
                 or self.calls == 0
@@ -243,13 +251,13 @@ class AIRun:
             self.tools += 1
             name = message.get("name")
             if (
-                is_review
+                is_manuscript
                 and not job.input_snapshot["version_ids"]
                 and name in ["project_search", "read_evidence"]
             ):
                 raise ParseFailure("tool_denied", "未选择材料，不能调用资料工具。")
             details = {"name": name, "number": self.tools}
-            if is_review and name == "read_manuscript":
+            if is_manuscript and name == "read_manuscript":
                 from core.reviews import read_manuscript
 
                 if message.get("args") != {}:
@@ -284,6 +292,31 @@ class AIRun:
                     raise ParseFailure("review_duplicate", "模型重复提交了不同的诊断结果。")
                 self.review = candidate
                 result = {"status": "staged"}
+            elif is_expression and name == "submit_expression":
+                from core.expressions import validate_expression
+
+                try:
+                    candidate = validate_expression(
+                        job, message.get("args"), self.read_ids, self.manuscript_read
+                    )
+                except ParseFailure as exc:
+                    if self.expression is not None or exc.code not in {
+                        "review_quote_invalid",
+                        "expression_citation_invalid",
+                        "expression_duplicate",
+                        "expression_unchanged",
+                    }:
+                        raise
+                    job.ai_events.create(
+                        generation=self.generation,
+                        kind="validation_error",
+                        details={"code": exc.code, "number": self.tools},
+                    )
+                    return {"status": "rejected", "code": exc.code, "message": exc.message}
+                if self.expression is not None and self.expression != candidate:
+                    raise ParseFailure("expression_resubmitted", "重复提交了不同的表达建议。")
+                self.expression = candidate
+                result = {"status": "staged"}
             elif is_reading and name == "submit_reading":
                 from core.reading import validate_reading
 
@@ -314,10 +347,14 @@ class AIRun:
             if (
                 message.get("success") is not True
                 or self.call
-                or not (self.proposals or self.reading or self.review)
+                or not (self.proposals or self.reading or self.review or self.expression)
             ):
                 raise ParseFailure("result_invalid", "模型未提交有效的待核对结果。")
-            if self.review is not None:
+            if self.expression is not None:
+                from core.expressions import publish_expression
+
+                job.output = publish_expression(job, self.expression)
+            elif self.review is not None:
                 from core.reviews import publish_review
 
                 job.output = publish_review(job, self.review)
@@ -332,9 +369,11 @@ class AIRun:
             return {}
         elif kind == "validation_error":
             if (
-                job.input_snapshot.get("purpose") not in ["reading", "comparison", "review"]
+                job.input_snapshot.get("purpose")
+                not in ["reading", "comparison", "review", "expression"]
                 or self.reading is not None
                 or self.review is not None
+                or self.expression is not None
                 or self.call is not None
                 or not self.calls
             ):
@@ -421,7 +460,7 @@ def execute_ai(job):
         + ", ".join(item["chunk_id"] for item in job.input_snapshot["sources"][:5]),
     }
     purpose = job.input_snapshot.get("purpose")
-    if purpose in ["reading", "comparison", "review"]:
+    if purpose in ["reading", "comparison", "review", "expression"]:
         from core.reading import READING_PROMPT
 
         # 每个文件提供入口；不能把前几个片段误当作全部资料已读。
@@ -456,11 +495,14 @@ def execute_ai(job):
                 ensure_ascii=False,
             ),
         )
-        if purpose == "review":
+        if purpose in ["review", "expression"]:
+            from core.expressions import EXPRESSION_PROMPT
             from core.reviews import REVIEW_PROMPT
 
+            submit = "submit_review" if purpose == "review" else "submit_expression"
+
             config.update(
-                system_prompt=REVIEW_PROMPT,
+                system_prompt=REVIEW_PROMPT if purpose == "review" else EXPRESSION_PROMPT,
                 block_version_ids=[
                     item["version_id"] for item in job.input_snapshot["manuscript"]["blocks"]
                 ],
@@ -471,7 +513,7 @@ def execute_ai(job):
                         if catalog
                         else "本次没有外部材料，只能检查原稿和作者研究说明，不要编造证据编号。"
                     )
-                    + "随后必须调用 submit_review 提交结果，普通文字答复不会保存。\n"
+                    + f"随后必须调用 {submit} 提交结果，普通文字答复不会保存。\n"
                 )
                 + json.dumps(
                     {
@@ -486,5 +528,7 @@ def execute_ai(job):
         config,
         run.handle,
         lambda: checkpoint(job.pk, job.generation),
-        timeout_seconds=180 if purpose in ["reading", "comparison", "review"] else None,
+        timeout_seconds=180
+        if purpose in ["reading", "comparison", "review", "expression"]
+        else None,
     )

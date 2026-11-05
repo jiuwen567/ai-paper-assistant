@@ -3,7 +3,7 @@ export type Research = { question: string; method: string; result: string };
 export const researchLabels = { question: "研究问题", method: "研究方法", result: "研究结果" } as const;
 export type Manuscript = {
   version: number; current_version: number; research: Research; blocks: Block[];
-  origin: "edit" | "import" | "restore"; source: { file_name?: string; warnings?: string[]; from_version?: number };
+  origin: "edit" | "import" | "restore" | "expression"; source: { file_name?: string; warnings?: string[]; from_version?: number };
   created_at: string | null; created_by: number | null;
 };
 export type Revision = Pick<Manuscript, "version" | "origin" | "source" | "created_at" | "created_by">;

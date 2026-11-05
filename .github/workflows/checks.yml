@@ -1,0 +1,62 @@
+name: Engineering checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.9.26'
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.13.0'
+          cache: pnpm
+      - run: make init install check test build
+      - name: 校验 Compose 与启动真实基础服务
+        run: |
+          docker compose --profile app config --quiet
+          make infra migrate
+          uv run python services/backend/manage.py makemigrations --check --dry-run
+          uv run --directory services/backend celery -A worker.app worker --loglevel=info --concurrency=2 > /tmp/paper-worker.log 2>&1 &
+          for attempt in $(seq 1 20); do
+            if make health; then exit 0; fi
+            sleep 3
+          done
+          exit 1
+      - run: make integration
+      - run: pnpm --filter @paper/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @paper/web test:e2e
+      - name: 验证完整容器启动路径
+        run: |
+          docker compose --profile app up -d --build --wait
+          docker compose exec -T api python manage.py check_services
+          docker compose exec -T api python manage.py check_worker
+      - name: 故障诊断
+        if: failure()
+        run: |
+          docker compose --profile app ps
+          docker compose --profile app logs --tail=80
+          cat /tmp/paper-worker.log || true
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: browser-test-results
+          path: apps/web/test-results
+          if-no-files-found: ignore
+      - name: 清理隔离的 CI 数据卷
+        if: always()
+        run: docker compose --profile app down -v

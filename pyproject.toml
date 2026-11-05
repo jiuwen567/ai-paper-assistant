@@ -1,0 +1,39 @@
+[project]
+name = "ai-paper-assistant"
+version = "0.1.0"
+description = "论文辅助工具的 API 与后台任务工程"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+  "Django>=5.2,<5.3",
+  "djangorestframework>=3.18,<3.19",
+  "django-environ>=0.14,<0.15",
+  "psycopg[binary]>=3.3,<3.4",
+  "celery[redis]>=5.6,<5.7",
+  "neo4j>=6.4,<6.5",
+  "boto3>=1.43,<1.44",
+  "gunicorn>=23,<24",
+]
+
+[dependency-groups]
+dev = ["pytest>=9,<10", "pytest-django>=4.14,<5", "ruff>=0.17,<0.18"]
+
+[[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple"
+default = true
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+pythonpath = ["services/backend"]
+testpaths = ["services/backend/core/tests"]
+markers = ["integration: 需要真实的 PostgreSQL、Neo4j、SeaweedFS、Redis 和 Worker"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["config", "core", "worker"]

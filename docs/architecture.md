@@ -4,7 +4,7 @@
 
 采用模块化后端，Web 和小程序共用业务 API。解析、模型分析、图同步、清理和导出通过后台任务执行。首版不按模块拆分微服务，不另建数仓。
 
-客户端框架、服务端框架和运行版本在工程初始化任务中确定，届时补入开发文档和依赖锁文件。
+Web 使用 Vue 3 + TypeScript，小程序采用微信原生 TypeScript + Skyline + glass-easel，公众号复用响应式 H5。业务 API 使用 Django 5.2 LTS + DRF，Worker 使用独立 Celery 进程，Redis 承担消息代理。运行版本、依赖锁文件与启动方式见[开发说明](development.md)。
 
 | 部分 | 职责 |
 | --- | --- |

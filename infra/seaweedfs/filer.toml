@@ -1,0 +1,4 @@
+# Filer 元数据和 Volume 数据一起保存在 SeaweedFS 的独立数据卷。
+[leveldb2]
+enabled = true
+dir = "/data/filer"

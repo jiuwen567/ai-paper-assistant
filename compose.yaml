@@ -1,0 +1,145 @@
+name: ai-paper-assistant
+
+x-backend: &backend
+  build:
+    context: .
+    dockerfile: services/backend/Dockerfile
+  env_file: .env
+  environment:
+    DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1},api
+    POSTGRES_HOST: postgres
+    POSTGRES_PORT: 5432
+    NEO4J_URI: bolt://neo4j:7687
+    REDIS_URL: redis://redis:6379/0
+    S3_ENDPOINT_URL: http://seaweedfs:8333
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.7-pg17-trixie
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-paper_assistant}
+      POSTGRES_USER: ${POSTGRES_USER:-paper}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?请先运行 scripts/init_dev.py}
+    ports: ["127.0.0.1:${POSTGRES_PORT:-5432}:5432"]
+    volumes: ["postgres_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  neo4j:
+    image: neo4j:5.26.27-community
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:?请先运行 scripts/init_dev.py}
+      NEO4J_server_memory_heap_initial__size: 256m
+      NEO4J_server_memory_heap_max__size: 512m
+      NEO4J_server_memory_pagecache_size: 256m
+    ports: ["127.0.0.1:7474:7474", "127.0.0.1:7687:7687"]
+    volumes: ["neo4j_data:/data", "neo4j_logs:/logs"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:7474"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.52
+    command:
+      - server
+      - -dir=/data
+      - -ip=seaweedfs
+      - -ip.bind=0.0.0.0
+      - -master.volumeSizeLimitMB=128
+      - -volume.max=32
+      - -filer
+      - -s3
+      - -s3.config=/etc/seaweedfs/s3.json
+      - -s3.iam=false
+      - -s3.port.iceberg=0
+      - -s3.port.lance=0
+    ports: ["127.0.0.1:8333:8333"]
+    volumes:
+      - seaweedfs_data:/data
+      - ./.local/seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
+      - ./infra/seaweedfs/filer.toml:/etc/seaweedfs/filer.toml:ro
+      - ./infra/seaweedfs/master.toml:/etc/seaweedfs/master.toml:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          wget -q -O - http://127.0.0.1:9333/cluster/status | grep -q '"IsLeader":true'
+          && wget -q -O - http://127.0.0.1:9333/dir/status | grep -Eq '"Free":[[:space:]]*[1-9]'
+          && wget -q -O /dev/null http://127.0.0.1:8888/
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:8.2.3-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports: ["127.0.0.1:${REDIS_PORT:-6379}:6379"]
+    volumes: ["redis_data:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  migrate:
+    <<: *backend
+    profiles: [app]
+    command: ["python", "manage.py", "migrate", "--noinput"]
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  api:
+    <<: *backend
+    profiles: [app]
+    command: ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--timeout", "45"]
+    ports: ["127.0.0.1:8000:8000"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health/live/', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  worker:
+    <<: *backend
+    profiles: [app]
+    command: ["celery", "-A", "worker.app", "worker", "--loglevel=info", "--concurrency=2", "--hostname=worker@%h"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A worker.app inspect ping -d worker@$$HOSTNAME --timeout=3"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 15s
+
+  web:
+    profiles: [app]
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    environment:
+      API_PROXY_TARGET: http://api:8000
+    ports: ["127.0.0.1:5173:5173"]
+    depends_on:
+      api: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:5173').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  postgres_data:
+  neo4j_data:
+  neo4j_logs:
+  seaweedfs_data:
+  redis_data:

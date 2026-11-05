@@ -1,0 +1,14 @@
+{
+  "name": "@paper/miniapp",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "check": "tsc --noEmit",
+    "test:e2e": "node tests/acceptance.cjs"
+  },
+  "devDependencies": {
+    "miniprogram-api-typings": "5.2.3",
+    "miniprogram-automator": "0.13.0",
+    "typescript": "5.9.3"
+  }
+}

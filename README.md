@@ -4,7 +4,28 @@
 
 Web 用于阅读、写作和审阅；微信小程序用于收集资料、查看证据和处理待办；公众号提供入口和使用说明。
 
-> 当前处于开发准备阶段。本仓库先维护需求、设计和开发任务，尚未提供可运行应用。
+> 当前提供 M1 基础工程：Web、小程序、Django API、Celery Worker 与本地基础服务。论文业务功能、微信账号绑定与公众号授权尚未接入。
+
+## 本地启动
+
+需要 Python 3.12、GNU Make、Docker Engine / Docker Desktop（Linux 容器）和 Docker Compose v2。WSL 使用 Docker Desktop 时，先开启当前发行版的 WSL Integration，确认 `docker info` 能连接服务端。
+
+```bash
+git clone https://github.com/jiuwen567/ai-paper-assistant.git
+cd ai-paper-assistant
+python3 scripts/init_dev.py
+make up
+```
+
+初始化脚本生成随机本地凭据，不覆盖已有 `.env`。`make up` 构建并启动应用、执行数据库迁移，再检查依赖和 Worker 任务往返。首次拉取镜像需要网络及数 GB 可用磁盘空间。
+
+- Web：[http://localhost:5173](http://localhost:5173)
+- API 存活检查：[http://localhost:8000/api/v1/health/live/](http://localhost:8000/api/v1/health/live/)
+- 依赖就绪检查：[http://localhost:8000/api/v1/health/ready/](http://localhost:8000/api/v1/health/ready/)（故障时返回 503）
+- 公众号 H5 说明入口：[http://localhost:5173/wechat](http://localhost:5173/wechat)
+- 微信开发者工具导入 `apps/miniapp`，配置自己的测试 AppID。操作见[开发说明](docs/development.md#微信小程序与公众号)。
+
+`make down` 停止容器并保留数据卷。需要源码热更新时，使用[开发说明](docs/development.md)中的本机开发方式。该文档也记录检查命令和实际验证范围。
 
 ## 主要功能
 
@@ -20,12 +41,16 @@ Web 用于阅读、写作和审阅；微信小程序用于收集资料、查看�
 
 | 组件 | 用途 |
 | --- | --- |
+| Vue 3 + TypeScript + Vite | Web 工作台与公众号 H5 入口 |
+| 微信原生 TypeScript + Skyline + glass-easel | 小程序 |
+| Django 5.2 LTS + Django REST framework | 统一业务 API |
+| Celery + Redis | 独立 Worker、任务消息与诊断结果 |
 | Pi | 受限的模型与业务工具执行 |
 | PostgreSQL + pgvector | 业务数据、版本、事务和资料检索 |
 | Neo4j | 依据路径与变更影响查询 |
 | SeaweedFS S3 | 原始资料、预览、模板和导出文件 |
 
-客户端与服务端框架、组件版本在工程初始化时确定。各组件承担具体业务职责，不以部署数量衡量完成度。
+JavaScript 使用 pnpm workspace，Python 使用 uv；依赖由锁文件固定。Pi 仅为后续架构约定，当前未安装或接入。组件版本和目录职责见[开发说明](docs/development.md)。
 
 ## 文档
 

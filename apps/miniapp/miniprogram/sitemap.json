@@ -1,0 +1,1 @@
+{ "desc": "开发阶段不索引", "rules": [{ "action": "disallow", "page": "*" }] }

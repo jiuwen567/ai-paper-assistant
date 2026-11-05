@@ -41,6 +41,13 @@ from core.reading_views import (
     ReadingSourceView,
     ReadingTaskView,
 )
+from core.review_views import (
+    ReviewDetailView,
+    ReviewFindingsView,
+    ReviewFindingView,
+    ReviewListView,
+    ReviewTaskView,
+)
 from core.search_views import IndexListView, SearchView
 from core.views import LiveView, ReadyView
 from core.wechat_views import (
@@ -78,6 +85,17 @@ urlpatterns = [
         ManuscriptImportPreviewView.as_view(),
     ),
     path("api/v1/projects/<uuid:project_id>/ai-tasks/", AITaskView.as_view()),
+    path("api/v1/projects/<uuid:project_id>/reviews/", ReviewListView.as_view()),
+    path("api/v1/projects/<uuid:project_id>/reviews/tasks/", ReviewTaskView.as_view()),
+    path("api/v1/projects/<uuid:project_id>/reviews/<uuid:review_id>/", ReviewDetailView.as_view()),
+    path(
+        "api/v1/projects/<uuid:project_id>/reviews/<uuid:review_id>/findings/",
+        ReviewFindingsView.as_view(),
+    ),
+    path(
+        "api/v1/projects/<uuid:project_id>/review-findings/<uuid:finding_id>/",
+        ReviewFindingView.as_view(),
+    ),
     path("api/v1/projects/<uuid:project_id>/reading/", ReadingListView.as_view()),
     path("api/v1/projects/<uuid:project_id>/reading/tasks/", ReadingTaskView.as_view()),
     path("api/v1/projects/<uuid:project_id>/reading/sources/", ReadingSourceView.as_view()),

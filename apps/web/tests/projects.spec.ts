@@ -6,9 +6,9 @@ import { expect, test as base, type APIRequestContext, type Page } from "@playwr
 
 type Accounts = { prefix: string; owner: string; reviewer: string; reviewerId: number; password: string; otherId: string };
 const root = fileURLToPath(new URL("../../..", import.meta.url));
-function fixtureData(action: "create" | "cleanup" | "binding" | "ai" | "reading", prefix: string) {
+function fixtureData(action: "create" | "cleanup" | "binding" | "ai" | "reading" | "review", prefix: string, options: Record<string, unknown> = {}) {
   return execFileSync("uv", ["run", "python", "services/backend/core/tests/browser_data.py"], {
-    cwd: root, input: JSON.stringify({ action, prefix }), encoding: "utf-8",
+    cwd: root, input: JSON.stringify({ action, prefix, ...options }), encoding: "utf-8",
     env: { ...process.env, PYTHONPATH: "services/backend" },
   });
 }
@@ -30,6 +30,86 @@ async function mutate(api: APIRequestContext, path: string, method: string, data
   const session = await (await api.get("/api/v1/auth/session/")).json();
   return api.fetch(`/api/v1/${path}`, { method, data, headers: { "X-CSRFToken": session.csrf_token } });
 }
+
+test("原稿诊断固定位置、来源范围、作者判断与修改后复查", async ({ page, accounts }, testInfo) => {
+  test.setTimeout(90000);
+  await page.goto("/"); await login(page, accounts.owner, accounts.password);
+  await page.getByRole("button", { name: "创建项目" }).click();
+  await page.getByLabel("项目名称", { exact: true }).fill("诊断验收");
+  await page.getByRole("button", { name: "创建", exact: true }).click();
+  await page.getByLabel("规则来源", { exact: true }).fill("自制规则");
+  await page.getByLabel("来源版本", { exact: true }).fill("v1");
+  await page.getByLabel("已核对学校或课程规则").check();
+  await page.getByRole("checkbox", { name: "原稿诊断", exact: true }).check();
+  await page.getByRole("button", { name: "保存规则新版本" }).click();
+  await expect(page.getByRole("heading", { name: "AI 辅助规则 · v2" })).toBeVisible();
+  const manuscript = page.getByRole("region", { name: "作者原稿", exact: true });
+  await manuscript.getByRole("button", { name: "添加章节", exact: true }).click();
+  await manuscript.getByLabel("标题 1", { exact: true }).fill("结论");
+  await manuscript.getByRole("button", { name: "添加正文块", exact: true }).click();
+  await manuscript.getByLabel("正文块 2", { exact: true }).fill("所有条件下均有效。另一个待核对的句子。");
+  await manuscript.getByRole("button", { name: "保存原稿新版本", exact: true }).click();
+  await expect(manuscript.getByRole("heading", { name: "作者原稿 · v1", exact: true })).toBeVisible();
+  const materials = page.getByRole("region", { name: "材料", exact: true });
+  await materials.getByLabel("材料名称", { exact: true }).fill("诊断自制摘要");
+  await materials.locator('input[type="file"]').setInputFiles({ name: "review.txt", mimeType: "text/plain", buffer: Buffer.from("仅在指定模拟条件观察到效果，不能外推到实际装置。") });
+  await materials.getByRole("button", { name: "上传材料", exact: true }).click();
+  await materials.getByRole("button", { name: "查看原文 v1", exact: true }).click();
+  const reader = materials.getByRole("region", { name: "原文定位", exact: true });
+  await reader.getByRole("button", { name: "解析材料", exact: true }).click();
+  await expect(reader.getByRole("button", { name: "解析 #1 · 解析成功", exact: true })).toBeVisible();
+  const project = (await (await page.request.get("/api/v1/projects/")).json()).results[0];
+  const versions = (await (await page.request.get(`/api/v1/projects/${project.id}/reading/sources/`)).json()).results;
+  const bibliography = await (await page.request.get(`/api/v1/projects/${project.id}/files/${versions[0].id}/bibliography/`)).json();
+  expect((await mutate(page.request, `projects/${project.id}/files/${versions[0].id}/bibliography/`, "PUT", { version: bibliography.version, snapshot: { ...bibliography.snapshot, source_scope: "abstract" } })).status()).toBe(200);
+  const panel = page.getByRole("region", { name: "原稿诊断", exact: true });
+  await panel.getByRole("button", { name: "刷新审阅区" }).click();
+  await panel.locator("summary").filter({ hasText: "选择原稿" }).click();
+  await panel.getByRole("checkbox", { name: /块 2/ }).check();
+  await panel.locator("summary").filter({ hasText: "选择依据" }).click();
+  await panel.getByRole("checkbox", { name: /诊断自制摘要/ }).check();
+  await panel.getByRole("button", { name: "开始诊断", exact: true }).click();
+  await expect(panel.getByRole("alert")).toContainText("配置生成模型");
+  let recheck = false;
+  // 控制的供应商协议，经真实 Pi/业务任务发布；不把此样例算作模型效果。
+  await page.route("**/reviews/tasks/", async route => {
+    const created = JSON.parse(fixtureData("review", accounts.prefix, { payload: route.request().postDataJSON(), recheck }));
+    await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify(created.task) });
+  });
+  await panel.getByRole("button", { name: "开始诊断", exact: true }).click();
+  const result = panel.getByRole("article", { name: "诊断结果", exact: true });
+  const card = result.getByRole("article", { name: /问题：所有条件下均有效/ });
+  await expect(card).toBeVisible();
+  await card.locator("summary").filter({ hasText: "查看固定版本原稿" }).click();
+  await expect(card.locator("mark")).toHaveText("所有条件下均有效。");
+  await result.locator("summary").filter({ hasText: "资料与全文范围" }).click();
+  await expect(result).toContainText("出版真实性未核验");
+  await expect(result).toContainText("未提供全文");
+  await card.locator("summary").filter({ hasText: "材料原文依据" }).click();
+  await card.getByRole("button", { name: "回查依据 1", exact: true }).click();
+  await expect(card.getByRole("region", { name: "原文上下文" })).toContainText("不能外推到实际装置");
+  await card.getByLabel("作者处理", { exact: true }).selectOption("ignored");
+  await card.getByLabel("处理原因", { exact: true }).fill("作者认为已有其他限定，记录忽略原因。");
+  await card.getByRole("button", { name: "保存作者判断", exact: true }).click();
+  await expect(card.getByRole("heading", { name: "结论越界 · 已忽略" })).toBeVisible();
+  await result.getByLabel("处理状态", { exact: true }).selectOption("ignored");
+  await result.getByRole("button", { name: "筛选问题" }).click();
+  await expect(card).toBeVisible();
+  await manuscript.getByLabel("正文块 2", { exact: true }).fill("仅在指定模拟条件下观察到效果，不外推到实际装置。");
+  await manuscript.getByRole("button", { name: "保存原稿新版本", exact: true }).click();
+  await expect(manuscript.getByRole("heading", { name: "作者原稿 · v2", exact: true })).toBeVisible();
+  await result.getByRole("button", { name: "重新加载诊断" }).click();
+  await expect(result).toContainText("原稿或依据已变化");
+  await result.getByRole("button", { name: "按当前原稿复查" }).click();
+  recheck = true;
+  await panel.getByRole("button", { name: "开始复查", exact: true }).click();
+  await expect(result.getByRole("heading", { name: "原稿 v2 · 模型建议", exact: true })).toBeVisible();
+  await expect(result).toContainText("当前范围没有问题卡");
+  await result.getByRole("button", { name: "查看前次诊断" }).click();
+  await expect(card.getByLabel("处理原因", { exact: true })).toHaveValue("作者认为已有其他限定，记录忽略原因。");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+  await result.screenshot({ path: testInfo.outputPath("manuscript-review.png") });
+});
 
 test("作者原稿保存、历史对照、冲突保护与 DOCX 导入", async ({ page, accounts }, testInfo) => {
   test.setTimeout(90000);

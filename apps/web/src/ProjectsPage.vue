@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref } from "vue";
 import LibraryPanel from "./LibraryPanel.vue";
 import ReadingPanel from "./ReadingPanel.vue";
+import ReviewPanel from "./ReviewPanel.vue";
 import ManuscriptPanel from "./ManuscriptPanel.vue";
 import JobsPanel from "./JobsPanel.vue";
 import MaterialsPanel from "./MaterialsPanel.vue";
@@ -229,6 +230,7 @@ onMounted(() => perform(initialize));
           <LibraryPanel :key="selected.id" :project="selected" @access-lost="cause => perform(async () => { throw cause; })" />
           <ReadingPanel :key="selected.id" :project="selected" @access-lost="cause => perform(async () => { throw cause; })" />
           <ManuscriptPanel :key="selected.id" :project="selected" @dirty-change="manuscriptDirty = $event" @access-lost="cause => perform(async () => { throw cause; })" />
+          <ReviewPanel :key="selected.id" :project="selected" @access-lost="cause => perform(async () => { throw cause; })" />
           <JobsPanel :key="selected.id" :project="selected" @access-lost="cause => perform(async () => { throw cause; })" />
           <form class="editor" @submit.prevent="perform(savePolicy)">
             <h2>AI 辅助规则 · v{{ selected.policy.version }}</h2>

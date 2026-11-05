@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
 import JobsPanel from "./JobsPanel.vue";
+import MaterialsPanel from "./MaterialsPanel.vue";
 import WechatBindingPanel from "./WechatBindingPanel.vue";
 import {
   aiActions, ApiError, logout, request, session,
@@ -214,6 +215,7 @@ onMounted(() => perform(initialize));
           </fieldset>
         </form>
         <template v-if="selected">
+          <MaterialsPanel :key="selected.id" :project="selected" :user-id="user!.id" @access-lost="cause => perform(async () => { throw cause; })" />
           <JobsPanel :key="selected.id" :project="selected" @access-lost="cause => perform(async () => { throw cause; })" />
           <form class="editor" @submit.prevent="perform(savePolicy)">
             <h2>AI 辅助规则 · v{{ selected.policy.version }}</h2>

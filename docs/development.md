@@ -1,6 +1,6 @@
 # 开发说明
 
-本工程提供 [Issue #1](https://github.com/jiuwen567/ai-paper-assistant/issues/1) 的基础设施，以及 [Issue #2](https://github.com/jiuwen567/ai-paper-assistant/issues/2) 的账号、项目和权限实现。Issue #3 提供持久后台任务与字数统计样例；材料、稿件与模型任务由后续任务接入。
+本工程提供 [Issue #1](https://github.com/jiuwen567/ai-paper-assistant/issues/1) 的基础设施，以及 [Issue #2](https://github.com/jiuwen567/ai-paper-assistant/issues/2) 的账号、项目和权限实现。Issue #3 提供持久后台任务与字数统计样例；Issue #5 提供材料上传与版本管理；解析、稿件与模型任务由后续任务接入。
 
 ## 技术栈与版本
 
@@ -195,7 +195,7 @@ get_user_model().objects.create_user(username="local-author", password=getpass("
 5. 在模拟器点击“检查 API 连接”，确认界面显示“API 已连接”。若请求报合法域名校验错误，可在该项目的本地调试设置中处理，公共工程配置保留 `urlCheck: true`。
 6. 真机的 `127.0.0.1` 指向手机本身。真机调试改用可达 HTTPS API，配置 request 合法域名，恢复域名校验；不要向客户端添加服务端密钥。
 
-小程序首页保留 API 检查，点击“我的论文”进入微信登录、项目列表、详情和后台任务。Web 与小程序共用内部用户和项目权限。上传、证据卡和修改待办由后续任务接入。
+小程序首页保留 API 检查，点击“我的论文”进入微信登录、项目列表、详情和后台任务。Web 与小程序共用内部用户和项目权限。材料上传、版本与 PDF/DOCX 下载入口已接入；证据卡和修改待办由后续任务接入。
 
 服务端 `.env` 配置 `WECHAT_APP_ID`、`WECHAT_APP_SECRET`，重建 API 镜像或重启本机 API。AppID 必须与小程序工程一致，AppSecret 只放服务端，不复制进小程序或公开仓库。未配置时登录明确返回 503，不提供模拟身份登录后门。`wx.login` 的 code 只发送至业务 API，由服务器调用 [微信 code2Session](https://developers.weixin.qq.com/miniprogram/dev/server/API/user-login/api_code2session.html)。不存储或返回 session_key，不依据 UnionID、昵称、手机号自动合并。
 
@@ -283,6 +283,26 @@ pnpm --filter @paper/web test:e2e
 GitHub Actions 的 `Engineering checks` 在 PR 上运行系统与类型检查、单元测试和构建；同分支新提交取消旧检查，合并到 main 后不重复执行。完整 Docker 启动、空库迁移、集成及浏览器测试在 Actions 中手动运行该工作流。开发时仍按改动范围执行本地数据库或外部服务联调，不因常规 CI 精简而省略功能验收。工作流尚未在远端执行时，不应把它记作通过。
 
 
+## 材料上传与版本
+
+项目中打开“材料”，上传文献、研究材料或作者原稿。首版支持 PDF、DOCX、UTF-8 CSV/TXT，单文件最多 20 MB。PDF 不接收加密文件，DOCX 仅检查标准正文包结构；本步骤不解析正文、不执行文件内容。CSV 必须有非空列名且每行列数一致，结果字段约定由解析模块接入。
+
+Web 可新增材料、选择已有材料上传新版本、查看每版状态并下载原件。小程序在项目详情选择聊天文件上传，失败后可“重试同一文件”；重新进入时从对应版本“重新选择文件上传”。小程序预览 PDF/DOCX；CSV/TXT 原件通过 Web 下载。所有操作复用项目权限，审阅者不能上传；下载由业务 API 鉴权转发，不暴露 S3 凭据或公共对象链接。已经下载的副本无法撤回。
+
+上传分为两步：`POST /api/v1/projects/{project}/uploads/` 登记 `request_key`、材料名称/分类、文件名与大小；新版本还需 `material_id`、`base_revision`。随后向 `/uploads/{version}/` 提交 multipart `file`。同一用户同请求键返回同一版本，输入变化或旧材料版本返回 409。上传登记可能占用版本号，失败记录保留，不重新编号。
+
+文件先进行格式与大小检查，再登记摘要和执行租约、写入独立 S3 对象、读回核对 SHA-256，最后在 PostgreSQL 发布可用状态。重复传输只允许相同内容，已可用的旧对象不会被新版本覆盖。发布时重新检查上传者权限。列表和版本记录显示等待上传、上传校验中、可用或失败。
+
+服务端 `MATERIAL_BUCKET` 默认 `paper-materials`；首次上传会创建该私有桶，部署账号需具备相应权限。没有完成的对象始终有版本记录和对象键。对象写入成功但数据库发布失败时，可等待 2 分钟租约过期后重试同一文件，或运行：
+
+```bash
+uv run python services/backend/manage.py reconcile_uploads
+```
+
+命令每批最多检查 100 个已登记对象，不扫描或删除未知对象。对象缺失、摘要不匹配或上传者撤权时保留失败状态；物理删除与生命周期清理由 #18 接入。测试命令：`uv run pytest services/backend/core/tests/test_materials.py`，使用真实 PostgreSQL 和随机 `paper-test-*` S3 桶，仅清理对应自制数据。
+
+Web 容器仅安装 Web 依赖；小程序自动化 SDK 仍由本机/测试环境安装，不进入 Web 运行镜像。
+
 ## 后台任务
 
 项目页面可提交字数统计样例、查看进度和尝试记录、取消或重试。样例不调用模型。刷新或离开页面不会丢失任务；审阅者只能查看，任务输入不由客户端选定创建者或执行代次。
@@ -294,6 +314,15 @@ GitHub Actions 的 `Engineering checks` 在 PR 上运行系统与类型检查、
 - 本地容器模式包含 `scheduler` 服务；本机模式需运行上述 Beat。调度器故障或停机恢复后可手动执行 `uv run python services/backend/manage.py recover_jobs`。恢复扫描每批最多 100 项，按更新时间轮转；任务量增加后再优化批量调度。
 
 任务测试：`uv run pytest services/backend/core/tests/test_jobs.py`。需要 PostgreSQL 和 Redis；真实 Worker 重启测试启动专用队列与独立测试库进程，结束时清理。只提供确定性的样例任务，上层解析、模型、导出实现随各自 Issue 接入，不把样例输出当作真实 AI 结果。
+
+## 材料上传实现验证（2026-11-05）
+
+- 11 项材料测试通过，真实 PostgreSQL 与 SeaweedFS 覆盖原件读写及 SHA-256、版本不覆盖、重复/并发登记、损坏文件、旧版本冲突、存储失败、对象写入后数据库发布失败对账、撤权拦截和跨项目下载拒绝。PDF/DOCX/CSV/TXT 样例均为自制；专用随机桶已清理。
+- 自制小程序 token 经过实际认证后上传，Web 账号可读回同一材料；这验证业务 API 的双端身份一致，不代替真实微信登录与真机上传。
+- 与账号、任务和微信测试合并运行共 71 项通过。小程序会话层 3 项模拟测试及 Web 6 项协议测试通过。
+- 桌面/手机尺寸共 16 项浏览器测试通过，包含两版文件逐字节下载对比、损坏 PDF 失败状态及原有功能回归。浏览器测试清理仅处理其随机账号项目下的自制对象。
+- Ruff、双端类型检查、构建、迁移遗漏检查和容器重建启动通过。初次 Web 镜像构建因无关小程序自动化依赖下载发生 DNS 失败；改为仅安装 Web 依赖后构建及完整浏览器测试通过。
+- 未执行微信开发者工具新上传页面与真机端到端验收，Issue #5 保留待验收。物理删除、资料解析与正文导入由后续任务接入；未操作真实论文或发布外部服务。
 
 ## 微信绑定实现验证（2026-11-05）
 

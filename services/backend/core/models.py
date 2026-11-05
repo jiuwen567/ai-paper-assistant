@@ -146,3 +146,56 @@ class WechatSession(models.Model):
     token_hash = models.CharField(max_length=64, unique=True)
     expires_at = models.DateTimeField()
     revoked_at = models.DateTimeField(null=True)
+
+
+class Material(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="materials")
+    title = models.CharField(max_length=200)
+    category = models.CharField(max_length=24)
+    revision = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class MaterialVersion(models.Model):
+    class Status(models.TextChoices):
+        UPLOADING = "uploading", "等待上传"
+        VALIDATING = "validating", "上传校验中"
+        AVAILABLE = "available", "可用"
+        FAILED = "failed", "失败"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    material = models.ForeignKey(Material, on_delete=models.CASCADE, related_name="versions")
+    number = models.PositiveIntegerField()
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    request_key = models.CharField(max_length=128)
+    request_snapshot = models.JSONField()
+    file_name = models.CharField(max_length=255)
+    size = models.PositiveBigIntegerField()
+    media_type = models.CharField(max_length=100)
+    sha256 = models.CharField(max_length=64, blank=True)
+    bucket = models.CharField(max_length=100)
+    object_key = models.CharField(max_length=200, unique=True)
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.UPLOADING)
+    generation = models.PositiveIntegerField(default=0)
+    lease_until = models.DateTimeField(null=True)
+    error_code = models.CharField(max_length=64, blank=True)
+    error_message = models.CharField(max_length=300, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["material", "number"], name="unique_material_version"),
+            models.UniqueConstraint(
+                fields=["created_by", "request_key"], name="unique_upload_request"
+            ),
+            models.CheckConstraint(condition=models.Q(size__gt=0), name="material_nonempty_file"),
+            models.CheckConstraint(
+                condition=models.Q(number__gt=0), name="material_positive_version"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(status__in=["uploading", "validating", "available", "failed"]),
+                name="material_valid_status",
+            ),
+        ]

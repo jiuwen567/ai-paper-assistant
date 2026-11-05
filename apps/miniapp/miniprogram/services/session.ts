@@ -48,3 +48,37 @@ export async function login(): Promise<LoginResult> {
   }
   return result;
 }
+
+export function uploadFile<T extends object>(path: string, filePath: string): Promise<T> {
+  return new Promise((resolve, reject) => wx.uploadFile({
+    url: `${API_BASE_URL}/api/v1/${path}`, filePath, name: "file", timeout: 60000,
+    header: { Authorization: `Bearer ${savedSession()?.token ?? ''}` },
+    success(response) {
+      let data: T;
+      try { data = JSON.parse(response.data) as T; }
+      catch { reject(new Error("上传响应异常，请刷新版本状态后重试。")); return; }
+      if (response.statusCode >= 200 && response.statusCode < 300) resolve(data);
+      else {
+        if ([401, 403].includes(response.statusCode)) clearSession();
+        reject(new RequestError(response.statusCode, errorMessage(data)));
+      }
+    },
+    fail: () => reject(new Error("上传中断，可重试同一文件。")),
+  }));
+}
+
+export function downloadDocument(path: string, fileType: "pdf" | "docx"): Promise<void> {
+  return new Promise((resolve, reject) => wx.downloadFile({
+    url: `${API_BASE_URL}/api/v1/${path}`, timeout: 60000,
+    header: { Authorization: `Bearer ${savedSession()?.token ?? ''}` },
+    success(response) {
+      if (response.statusCode !== 200) {
+        if ([401, 403].includes(response.statusCode)) clearSession();
+        reject(new RequestError(response.statusCode, "文件不可用或访问权限已变化。")); return;
+      }
+      wx.openDocument({ filePath: response.tempFilePath, fileType, showMenu: true,
+        success: () => resolve(), fail: () => reject(new Error("文件已下载，但微信无法预览此文档。")) });
+    },
+    fail: () => reject(new Error("下载失败，请检查网络后重试。")),
+  }));
+}

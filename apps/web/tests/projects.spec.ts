@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { expect, test as base, type APIRequestContext, type Page } from "@playwright/test";
@@ -163,4 +164,37 @@ test("Web 确认绑定并解除（自制微信身份）", async ({ page, account
   await page.getByLabel("绑定码", { exact: true }).fill(binding.binding_code);
   await page.getByRole("button", { name: "确认绑定当前账号" }).click();
   await expect(page.getByRole("alert")).toContainText("绑定码无效、过期或已使用");
+});
+
+
+test("材料原件上传、新版本及授权下载", async ({ page, accounts }) => {
+  await page.goto("/");
+  await login(page, accounts.owner, accounts.password);
+  await page.getByRole("button", { name: "创建项目" }).click();
+  await page.getByLabel("项目名称", { exact: true }).fill("自制材料项目");
+  await page.getByRole("button", { name: "创建", exact: true }).click();
+  const panel = page.getByRole("region", { name: "材料", exact: true });
+  await expect(panel.getByText("暂无材料。")).toBeVisible();
+  await panel.getByLabel("材料名称", { exact: true }).fill("自制研究记录");
+  const first = Buffer.from("自制材料第一版");
+  await panel.locator('input[type="file"]').setInputFiles({ name: "self-authored.txt", mimeType: "text/plain", buffer: first });
+  await panel.getByRole("button", { name: "上传材料", exact: true }).click();
+  await expect(panel.getByText("材料版本已保存。")).toBeVisible();
+  await expect(panel.getByRole("link", { name: "下载 v1", exact: true })).toBeVisible();
+  const second = Buffer.from("自制材料第二版，旧版保留。");
+  await panel.locator('input[type="file"]').setInputFiles({ name: "self-authored-v2.txt", mimeType: "text/plain", buffer: second });
+  await panel.getByRole("button", { name: "上传新版本", exact: true }).click();
+  await expect(panel.getByRole("link", { name: "下载 v2", exact: true })).toBeVisible();
+  for (const [number, content] of [[1, first], [2, second]] as const) {
+    const downloaded = page.waitForEvent("download");
+    await panel.getByRole("link", { name: `下载 v${number}`, exact: true }).click();
+    const file = await downloaded;
+    expect(await readFile((await file.path())!)).toEqual(content);
+  }
+  await panel.locator('input[type="file"]').setInputFiles({ name: "broken.pdf", mimeType: "application/pdf", buffer: Buffer.from("invalid PDF") });
+  await panel.getByRole("button", { name: "上传新版本", exact: true }).click();
+  await expect(panel.getByRole("alert")).toContainText("文件损坏");
+  await panel.getByRole("button", { name: "刷新材料", exact: true }).click();
+  await expect(panel.getByText("v3 · broken.pdf · 失败")).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
 });

@@ -88,3 +88,12 @@ summary { cursor: pointer; }
   main { padding: 24px 20px; }
   .status-panel { flex-wrap: wrap; }
 }
+
+.source-reader { margin-block: 1.5rem; border-top: 1px solid #cbd5e1; padding-top: 1rem; }
+.source-chunks { padding-left: 1.5rem; }
+.source-chunks button { width: 100%; text-align: left; margin-block: .25rem; }
+.chunk-excerpt { display: block; font-weight: normal; white-space: pre-wrap; overflow-wrap: anywhere; }
+.source-text { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
+.located-chunk { border-left: 3px solid #2563eb; padding-left: .75rem; }
+.source-preview { margin-block: .75rem; }
+.source-preview canvas { width: 100%; height: auto; border: 1px solid #cbd5e1; background: white; }

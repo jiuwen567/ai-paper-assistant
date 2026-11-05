@@ -1,6 +1,6 @@
 # 开发说明
 
-本工程提供 [Issue #1](https://github.com/jiuwen567/ai-paper-assistant/issues/1) 的基础设施，以及 [Issue #2](https://github.com/jiuwen567/ai-paper-assistant/issues/2) 的账号、项目和权限实现。Issue #3 提供持久后台任务与字数统计样例；Issue #5 提供材料上传与版本管理；解析、稿件与模型任务由后续任务接入。
+本工程提供 [Issue #1](https://github.com/jiuwen567/ai-paper-assistant/issues/1) 的基础设施，以及 [Issue #2](https://github.com/jiuwen567/ai-paper-assistant/issues/2) 的账号、项目和权限实现。Issue #3 提供持久后台任务与字数统计样例；Issue #5 提供材料上传与版本管理；Issue #6 提供后台解析和 Web 原文定位；稿件与模型任务由后续任务接入。
 
 ## 技术栈与版本
 
@@ -285,7 +285,7 @@ GitHub Actions 的 `Engineering checks` 在 PR 上运行系统与类型检查、
 
 ## 材料上传与版本
 
-项目中打开“材料”，上传文献、研究材料或作者原稿。首版支持 PDF、DOCX、UTF-8 CSV/TXT，单文件最多 20 MB。PDF 不接收加密文件，DOCX 仅检查标准正文包结构；本步骤不解析正文、不执行文件内容。CSV 必须有非空列名且每行列数一致，结果字段约定由解析模块接入。
+项目中打开“材料”，上传文献、研究材料或作者原稿。首版支持 PDF、DOCX、UTF-8 CSV/TXT，单文件最多 20 MB。PDF 不接收加密文件，DOCX 仅检查标准正文包结构；本步骤不解析正文、不执行文件内容。CSV 必须有非空列名且每行列数一致，实验结果解析使用下节的固定字段约定。
 
 Web 可新增材料、选择已有材料上传新版本、查看每版状态并下载原件。小程序在项目详情选择聊天文件上传，失败后可“重试同一文件”；重新进入时从对应版本“重新选择文件上传”。小程序预览 PDF/DOCX；CSV/TXT 原件通过 Web 下载。所有操作复用项目权限，审阅者不能上传；下载由业务 API 鉴权转发，不暴露 S3 凭据或公共对象链接。已经下载的副本无法撤回。
 
@@ -303,6 +303,21 @@ uv run python services/backend/manage.py reconcile_uploads
 
 Web 容器仅安装 Web 依赖；小程序自动化 SDK 仍由本机/测试环境安装，不进入 Web 运行镜像。
 
+## 材料解析与原文定位
+
+Web 材料版本中选择“查看原文 → 解析材料”。任务由真实 Worker 执行，离开页面后仍可从解析历史查回；“重新解析”新增独立记录，“重试解析”沿用失败记录与输入快照。片段、解析版本和成功状态在同一事务发布；存储或数据库故障保留错误代码，不展示半份结果。
+
+- PDF 提取文字层，按文件第几页定位，并显示 PDF 页码标签；标签不保证等于纸面印刷页码。点击片段显示相邻片段，PDF.js 在本地绘制对应文件页，也可在新标签打开定位页或下载原件。预览失败提供重试；不执行 PDF 脚本或加载外部服务。
+- DOCX 提取正文顶层段落与 1–9 级标题，空段仍占段落序号；使用段落与文字偏移，不生成稳定页码。表格、图片、公式不解析，并标记部分文字；版式以原件为准。
+- CSV 列顺序固定为 `experiment,metric,value,unit,conditions`。实验和指标名称必填，value 为有限数值；锚点保存记录序号、起止文件行和字段，支持带引号的跨行字段。表头不符保留 `csv_schema` 失败，可更正原件后上传新版本。
+- UTF-8 TXT 按行定位。单片段最多 4000 字符，提取总量最多 100 万字符、1 万片段；超过上限不发布结果。没有可提取文字时提示 `no_text`，不执行 OCR。
+
+解析记录固定原件摘要、文件版本、解析器版本和任务代次。重试前后检查当前权限、规则、原件状态与租约；撤权、取消和迟到结果不能发布。解析器版本升级后旧失败任务需重新解析，已经发布的历史片段保留。提取文字不代表该材料支持某个论点。
+
+接口位于 `/api/v1/projects/{project}/`：文件版本的 `files/{version}/parses/` 创建和列出解析；`parses/{run}/chunks/` 分页列出片段；`chunks/{chunk}/` 返回固定版本的定位及上下文。`files/{version}/preview/` 只允许 PDF 内联预览，经过项目鉴权；普通下载行为不变。
+
+测试命令：`uv run pytest services/backend/core/tests/test_parsing.py services/backend/core/tests/test_parse_jobs.py`。解析器边界参考 [pypdf 文字提取说明](https://pypdf.readthedocs.io/en/stable/user/extract-text.html)。
+
 ## 后台任务
 
 项目页面可提交字数统计样例、查看进度和尝试记录、取消或重试。样例不调用模型。刷新或离开页面不会丢失任务；审阅者只能查看，任务输入不由客户端选定创建者或执行代次。
@@ -313,7 +328,14 @@ Web 容器仅安装 Web 依赖；小程序自动化 SDK 仍由本机/测试环�
 - 队列发送失败保留 `queued/dispatch_failed`；调度器恢复后重新发送。重复消息由数据库领取锁拒绝。Worker 中断后，调度器将过期任务标记为 `failed/lease_expired`，作者可重试。错误只保存受控代码和文案，不保存底层异常正文。
 - 本地容器模式包含 `scheduler` 服务；本机模式需运行上述 Beat。调度器故障或停机恢复后可手动执行 `uv run python services/backend/manage.py recover_jobs`。恢复扫描每批最多 100 项，按更新时间轮转；任务量增加后再优化批量调度。
 
-任务测试：`uv run pytest services/backend/core/tests/test_jobs.py`。需要 PostgreSQL 和 Redis；真实 Worker 重启测试启动专用队列与独立测试库进程，结束时清理。只提供确定性的样例任务，上层解析、模型、导出实现随各自 Issue 接入，不把样例输出当作真实 AI 结果。
+任务测试：`uv run pytest services/backend/core/tests/test_jobs.py`。需要 PostgreSQL 和 Redis；真实 Worker 重启测试启动专用队列与独立测试库进程，结束时清理。字数统计和材料解析为确定性任务；模型和导出任务随各自 Issue 接入，不把样例输出当作真实 AI 结果。
+
+## 材料解析验证（2026-11-05）
+
+- 17 项解析测试通过，使用自制 PDF、DOCX、CSV、TXT、真实 PostgreSQL 和 SeaweedFS；覆盖页序/标签、段落/标题、跨行 CSV、并发请求、重新解析、存储失败重试、事务回滚、过期代次、取消、撤权、跨项目数据库约束及扫描件失败。
+- 后端完整测试 105 项通过，迁移及遗漏检查、Ruff、双端类型检查、Web 构建、依赖健康检查与真实 Worker 往返通过。最后补充 DOCX 嵌套结构提示后，4 项解析器测试重新通过。
+- 18 项桌面/手机尺寸浏览器测试通过，新流程调用真实 Worker；验证固定版本上下文、旧解析历史、扫描件错误和 PDF 绘制失败重试。首次截图发现原生 iframe 空白，改为本地 PDF.js 后验证画布实际像素并查看截图；字体、字符映射及解码资源随构建部署。
+- 本次不调用模型，不承诺 OCR 或复杂版式无损提取；微信真实验收仍保留在 #4/#5。轻量 CI 不运行这些基础设施和浏览器测试，完整验证在本地执行。
 
 ## 材料上传实现验证（2026-11-05）
 

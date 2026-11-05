@@ -98,10 +98,17 @@ def publish(job_id, generation, output):
 
 
 @transaction.atomic
-def fail(job_id, generation, *, retryable=False, code="execution_failed"):
+def fail(
+    job_id,
+    generation,
+    *,
+    retryable=False,
+    code="execution_failed",
+    message="执行失败，请按错误代码检查任务。",
+):
     job = lock_job(job_id)
     if active(job, generation):
-        finish(job, Job.Status.FAILED, code, "执行失败，请按错误代码检查任务。", retryable)
+        finish(job, Job.Status.FAILED, code, message, retryable)
 
 
 def dispatch(job_id):

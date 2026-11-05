@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { ApiError, request, type Page, type Project } from "./projects-api";
+import SourceReader from "./SourceReader.vue";
 type Version = {
   id: string; material_id: string; created_by: number; number: number; file_name: string;
   size: number; sha256: string; status: string; error_message: string;
@@ -10,6 +11,7 @@ const props = defineProps<{ project: Project; userId: number }>();
 const emit = defineEmits<{ accessLost: [error: ApiError] }>();
 const materials = ref<Page<Material> | null>(null);
 const selected = ref<Material | null>(null);
+const reading = ref<Version | null>(null);
 const versions = ref<Page<Version> | null>(null);
 const page = ref(1);
 const versionPage = ref(1);
@@ -32,7 +34,7 @@ async function perform(action: () => Promise<void>) {
   catch (cause) {
     error.value = cause instanceof Error ? cause.message : "请求失败，请重试。";
     if (cause instanceof ApiError && [401, 403, 404].includes(cause.status)) {
-      materials.value = null; selected.value = null; versions.value = null;
+      materials.value = null; selected.value = null; versions.value = null; reading.value = null;
       emit("accessLost", cause);
     }
   } finally { busy.value = false; }
@@ -48,9 +50,9 @@ async function history(material: Material, target = 1) {
   selected.value = material; versionPage.value = target;
 }
 function resetFile() { file.value = null; inputKey.value++; uploadTarget.value = null; requestKey = crypto.randomUUID(); }
-function newMaterial() { selected.value = null; versions.value = null; title.value = ""; resetFile(); }
+function newMaterial() { reading.value = null; selected.value = null; versions.value = null; title.value = ""; resetFile(); }
 function chooseFile(event: Event) { file.value = (event.target as HTMLInputElement).files?.[0] ?? null; }
-async function openMaterial(material: Material) { resetFile(); await history(material); }
+async function openMaterial(material: Material) { reading.value = null; resetFile(); await history(material); }
 function retry(version: Version) { resetFile(); uploadTarget.value = version; message.value = `请重新选择 ${version.file_name}。`; }
 async function upload() {
   if (!file.value) throw new Error("请选择文件。");
@@ -98,6 +100,7 @@ onMounted(() => perform(() => load()));
         <span>v{{ version.number }} · {{ version.file_name }} · {{ states[version.status] }}</span>
         <a v-if="version.status === 'available'" :href="`/api/v1/${base()}files/${version.id}/`">下载 v{{ version.number }}</a>
         <button v-else-if="project.role === 'author' && version.created_by === userId" :disabled="busy" @click="retry(version)">重试上传 v{{ version.number }}</button>
+        <button v-if="version.status === 'available'" :disabled="busy" @click="reading = version">查看原文 v{{ version.number }}</button>
         <p v-if="version.error_message">{{ version.error_message }}</p>
       </li></ul>
       <div v-if="versions && (versions.next || versions.previous)" class="actions">
@@ -105,6 +108,7 @@ onMounted(() => perform(() => load()));
         <button :disabled="busy || !versions.next" @click="perform(() => history(selected!, versionPage + 1))">较旧版本</button>
       </div>
     </template>
+    <SourceReader v-if="reading" :key="reading.id" :project="project" :version="reading" @access-lost="emit('accessLost', $event)" />
     <form v-if="project.role === 'author'" class="editor" @submit.prevent="perform(upload)">
       <fieldset :disabled="busy">
         <template v-if="!selected">

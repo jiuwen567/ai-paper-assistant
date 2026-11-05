@@ -199,3 +199,45 @@ class MaterialVersion(models.Model):
                 name="material_valid_status",
             ),
         ]
+
+
+class ParseRun(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    source_version = models.ForeignKey(
+        MaterialVersion, on_delete=models.CASCADE, related_name="parses"
+    )
+    number = models.PositiveIntegerField()
+    parser_version = models.CharField(max_length=128)
+    job = models.OneToOneField(Job, on_delete=models.CASCADE, related_name="parse_run")
+    warnings = models.JSONField(default=list)
+    coverage = models.CharField(max_length=16, default="pending")
+    published_at = models.DateTimeField(null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["source_version", "number"], name="unique_parse_version"
+            ),
+            models.CheckConstraint(condition=models.Q(number__gt=0), name="parse_positive_version"),
+        ]
+
+
+class SourceChunk(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    run = models.ForeignKey(ParseRun, on_delete=models.CASCADE, related_name="chunks")
+    ordinal = models.PositiveIntegerField()
+    text = models.TextField()
+    anchor = models.JSONField()
+    heading_level = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["run", "ordinal"], name="unique_source_chunk"),
+            models.CheckConstraint(
+                condition=models.Q(ordinal__gt=0), name="chunk_positive_ordinal"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(heading_level__lte=9), name="chunk_heading_range"
+            ),
+        ]

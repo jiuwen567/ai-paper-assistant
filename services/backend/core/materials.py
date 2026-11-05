@@ -111,6 +111,7 @@ def read_and_verify(client, version):
         data = body.read(MAX_FILE_SIZE + 1)
     if len(data) != version.size or hashlib.sha256(data).hexdigest() != version.sha256:
         raise ValueError("stored_file_mismatch")
+    return data
 
 
 def store_file(version, data):

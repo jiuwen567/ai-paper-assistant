@@ -3,7 +3,7 @@ import hashlib
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.http import FileResponse
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -168,6 +168,8 @@ class UploadFileView(APIView):
 
 
 class MaterialDownloadView(APIView):
+    inline = False
+
     def get(self, request, project_id, version_id):
         require_project(request.user, project_id)
         version = get_object_or_404(
@@ -176,6 +178,8 @@ class MaterialDownloadView(APIView):
             material__project_id=project_id,
             status="available",
         )
+        if self.inline and version.media_type != "application/pdf":
+            raise Http404
         client = s3_client()
         try:
             stored = client.get_object(Bucket=version.bucket, Key=version.object_key)
@@ -185,14 +189,21 @@ class MaterialDownloadView(APIView):
         response = ObjectResponse(
             stored["Body"],
             client,
-            as_attachment=True,
+            as_attachment=not self.inline,
             filename=version.file_name,
             content_type=version.media_type,
         )
         response["Content-Length"] = str(version.size)
         response["Cache-Control"] = "no-store"
         response["X-Content-Type-Options"] = "nosniff"
+        if self.inline:
+            response["Content-Security-Policy"] = "sandbox; frame-ancestors 'self'"
+            response["X-Frame-Options"] = "SAMEORIGIN"
         return response
+
+
+class MaterialPreviewView(MaterialDownloadView):
+    inline = True
 
 
 class ObjectResponse(FileResponse):

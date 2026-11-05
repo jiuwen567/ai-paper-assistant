@@ -17,3 +17,5 @@ exports
 backups
 scratch
 local
+
+apps/web/public/pdfjs

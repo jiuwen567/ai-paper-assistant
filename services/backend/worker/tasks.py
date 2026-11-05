@@ -13,6 +13,7 @@ def execute_job(job_id):
 
     from core.jobs import claim, fail, heartbeat, publish
     from core.models import Job
+    from core.parsing import ParseFailure
 
     try:
         job = claim(job_id)
@@ -21,6 +22,11 @@ def execute_job(job_id):
     if job is None:
         return
     try:
+        if job.kind == "parse":
+            from core.parse_jobs import execute_parse
+
+            execute_parse(job)
+            return
         if job.kind != "sample":
             fail(job.pk, job.generation, code="unknown_kind")
             return
@@ -37,6 +43,14 @@ def execute_job(job_id):
                 "characters": len(job.input_snapshot["text"]),
                 "source_version": job.input_snapshot["source_version"],
             },
+        )
+    except ParseFailure as error:
+        fail(
+            job.pk,
+            job.generation,
+            code=error.code,
+            message=error.message,
+            retryable=error.retryable,
         )
     except Exception as error:
         # 只记录异常类型，不记录可能含密钥或材料的异常正文。

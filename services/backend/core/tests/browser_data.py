@@ -50,7 +50,7 @@ def main():
             from core.wechat import login_wechat
 
             print(json.dumps(login_wechat(prefix), default=str))
-        elif data["action"] == "ai":
+        elif data["action"] in ["ai", "reading"]:
             # 浏览器展示验收走真实 Pi SDK，供应商仅使用本机受控协议样例。
             from unittest.mock import patch
             from uuid import uuid4
@@ -63,32 +63,56 @@ def main():
 
             owner = users.objects.get(username=usernames[0])
             project = Project.objects.get(owner=owner)
-            source = MaterialVersion.objects.get(material__project=project, status="available")
-            chunk = source.parses.get(job__status="succeeded").chunks.order_by("ordinal").first()
+            available = list(
+                MaterialVersion.objects.filter(
+                    material__project=project, status="available"
+                ).order_by("created_at")
+            )
             policy = project.policies.order_by("-version").first()
             client = APIClient(HTTP_HOST="localhost")
             client.force_authenticate(owner)
-            with provider(
-                lambda number, _: (
-                    [("read_evidence", {"chunk_id": str(chunk.pk)})]
-                    if number == 1
-                    else [
-                        (
-                            "save_note",
-                            {"text": "协议样例摘记，等待作者核对。", "chunk_ids": [str(chunk.pk)]},
-                        )
-                    ]
+            endpoint = "ai-tasks/"
+            body = {
+                "idempotency_key": str(uuid4()),
+                "policy_version": policy.version,
+                "version_ids": [str(source.pk) for source in available],
+            }
+            if data["action"] == "reading":
+                from core.tests.test_reading import extraction, respond_with
+
+                sources = [
+                    (source, source.parses.get(job__status="succeeded")) for source in available
+                ]
+                respond = respond_with(sources, extraction(sources))
+                endpoint = "reading/tasks/"
+                body["purpose"] = "comparison" if len(sources) > 1 else "reading"
+            else:
+                chunk = (
+                    available[0]
+                    .parses.get(job__status="succeeded")
+                    .chunks.order_by("ordinal")
+                    .first()
                 )
-            ):
-                with patch("core.ai_views.dispatch"):
+
+                def respond(number, _):
+                    return (
+                        [("read_evidence", {"chunk_id": str(chunk.pk)})]
+                        if number == 1
+                        else [
+                            (
+                                "save_note",
+                                {
+                                    "text": "协议样例摘记，等待作者核对。",
+                                    "chunk_ids": [str(chunk.pk)],
+                                },
+                            )
+                        ]
+                    )
+
+            with provider(respond):
+                with patch("core.ai_views.dispatch"), patch("core.reading_views.dispatch"):
                     response = client.post(
-                        f"/api/v1/projects/{project.pk}/ai-tasks/",
-                        {
-                            "idempotency_key": str(uuid4()),
-                            "policy_version": policy.version,
-                            "version_ids": [str(source.pk)],
-                        },
-                        format="json",
+                        f"/api/v1/projects/{project.pk}/{endpoint}", body, format="json"
                     )
                 if response.status_code != 201:
                     raise ValueError("无法创建浏览器测试模型任务。")

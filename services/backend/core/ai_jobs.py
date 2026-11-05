@@ -32,7 +32,7 @@ def digest(value):
     ).hexdigest()
 
 
-def model_configuration():
+def model_configuration(purpose="note"):
     try:
         url = urlsplit(settings.AI_BASE_URL)
         url.port  # 端口同样由标准 URL 解析器校验。
@@ -53,7 +53,7 @@ def model_configuration():
     return {
         "model": settings.AI_MODEL,
         "endpoint_digest": digest(settings.AI_BASE_URL),
-        "prompt_version": PROMPT_VERSION,
+        "prompt_version": "reading-v1" if purpose in ["reading", "comparison"] else PROMPT_VERSION,
         "runtime": "pi-1.5.0",
     }
 
@@ -100,7 +100,7 @@ def valid_locked(job, generation):
         return False
     try:
         unchanged = (
-            model_configuration() == job.input_snapshot["model"]
+            model_configuration(job.input_snapshot.get("purpose")) == job.input_snapshot["model"]
             and sources_snapshot(job.project_id, job.input_snapshot["version_ids"])
             == job.input_snapshot["sources"]
         )
@@ -126,6 +126,10 @@ class SearchInput(serializers.Serializer):
 
 class ReadInput(serializers.Serializer):
     chunk_id = serializers.UUIDField()
+
+
+class ReadBatchInput(serializers.Serializer):
+    chunk_ids = serializers.ListField(child=serializers.UUIDField(), min_length=1, max_length=64)
 
 
 class ProposalInput(serializers.Serializer):
@@ -154,7 +158,9 @@ class AIRun:
         self.call = None
         self.calls = self.tools = 0
         self.read_ids = set()
+        self.read_characters = 0
         self.proposals = []
+        self.reading = None
 
     @transaction.atomic
     def handle(self, message):
@@ -173,7 +179,7 @@ class AIRun:
                 generation=self.generation,
                 number=self.calls,
                 model=job.input_snapshot["model"]["model"],
-                prompt_version=PROMPT_VERSION,
+                prompt_version=job.input_snapshot["model"]["prompt_version"],
                 input_digest=digest(job.input_snapshot),
             )
             details = {"number": self.calls}
@@ -206,20 +212,70 @@ class AIRun:
                 return None
             details = {"number": self.calls}
         elif kind == "tool":
-            if self.call is not None or self.calls == 0 or self.tools >= MAX_TOOLS:
+            is_reading = job.input_snapshot.get("purpose") in ["reading", "comparison"]
+            if (
+                self.call is not None
+                or self.calls == 0
+                or self.tools >= (32 if is_reading else MAX_TOOLS)
+            ):
                 raise ParseFailure("tool_call_limit", "工具调用达到上限或顺序异常。")
             self.tools += 1
             name = message.get("name")
-            args = validate_arguments(name, message.get("args"))
             details = {"name": name, "number": self.tools}
-            result = self.tool(job, name, args)
+            if is_reading and name == "submit_reading":
+                from core.reading import validate_reading
+
+                candidate = validate_reading(job, message.get("args"), self.read_ids)
+                if self.reading is not None and self.reading != candidate:
+                    raise ParseFailure("reading_duplicate", "模型重复提交了阅读结果。")
+                self.reading = candidate
+                result = {"status": "staged"}
+            else:
+                if is_reading and name not in ["project_search", "read_evidence"]:
+                    raise ParseFailure("tool_denied", "阅读任务请求了未授权工具。")
+                if is_reading and name == "read_evidence":
+                    raw = message.get("args")
+                    serializer = ReadBatchInput(data=raw)
+                    if (
+                        not isinstance(raw, dict)
+                        or set(raw) != {"chunk_ids"}
+                        or not serializer.is_valid()
+                    ):
+                        raise ParseFailure("tool_schema_invalid", "读取片段参数未通过校验。")
+                    args = serializer.validated_data
+                    if len(args["chunk_ids"]) != len(set(args["chunk_ids"])):
+                        raise ParseFailure("tool_schema_invalid", "读取片段不能重复。")
+                else:
+                    args = validate_arguments(name, message.get("args"))
+                result = self.tool(job, name, args)
         elif kind == "done":
-            if message.get("success") is not True or self.call or not self.proposals:
+            if (
+                message.get("success") is not True
+                or self.call
+                or not (self.proposals or self.reading)
+            ):
                 raise ParseFailure("result_invalid", "模型未提交有效的待核对结果。")
-            job.output = {"status": "pending", "proposals": self.proposals}
+            if self.reading is not None:
+                from core.reading import publish_reading
+
+                job.output = publish_reading(job, self.reading)
+            else:
+                job.output = {"status": "pending", "proposals": self.proposals}
             job.progress = 100
             finish(job, Job.Status.SUCCEEDED)
             return {}
+        elif kind == "validation_error":
+            if (
+                job.input_snapshot.get("purpose") not in ["reading", "comparison"]
+                or self.reading is not None
+                or self.call is not None
+                or not self.calls
+            ):
+                raise ParseFailure("tool_rejected", "模型工具调用未通过校验。")
+            self.tools += 1
+            if self.tools > 32:
+                raise ParseFailure("tool_call_limit", "工具调用达到上限。")
+            details = {"code": "reading_schema_invalid", "number": self.tools}
         elif kind == "tool_error":
             raise ParseFailure("tool_rejected", "模型工具调用未通过校验。")
         else:
@@ -236,12 +292,40 @@ class AIRun:
                 for chunk in chunks.filter(text__icontains=args["query"]).order_by("id")[:8]
             ]
         if name == "read_evidence":
-            chunk_id = str(args["chunk_id"])
-            if chunk_id not in sources:
+            ids = (
+                [str(pk) for pk in args["chunk_ids"]]
+                if "chunk_ids" in args
+                else [str(args["chunk_id"])]
+            )
+            if not set(ids) <= set(sources):
                 raise ParseFailure("tool_scope_denied", "模型请求了任务范围外的资料。")
-            chunk = chunks.get(pk=chunk_id)
-            self.read_ids.add(chunk_id)
-            return {**sources[chunk_id], "text": chunk.text, "anchor": chunk.anchor}
+            output = []
+            for chunk_id in ids:
+                chunk = chunks.get(pk=chunk_id)
+                if "chunk_ids" in args and self.read_characters + len(chunk.text) > 8000:
+                    output.append(
+                        {
+                            "chunk_id": chunk_id,
+                            "unavailable": "本次原文读取已达到 8000 字符上限，此片段未发送。",
+                        }
+                    )
+                    continue
+                self.read_characters += len(chunk.text)
+                self.read_ids.add(chunk_id)
+                context = {**sources[chunk_id], "text": chunk.text, "anchor": chunk.anchor}
+                if "chunk_ids" in args:
+                    context = {
+                        key: context[key]
+                        for key in [
+                            "chunk_id",
+                            "source_version_id",
+                            "source_scope",
+                            "text",
+                            "anchor",
+                        ]
+                    }
+                output.append(context)
+            return output if "chunk_ids" in args else output[0]
         ids = [str(pk) for pk in args["chunk_ids"]]
         if len(ids) != len(set(ids)) or not set(ids) <= self.read_ids:
             raise ParseFailure("proposal_source_invalid", "待核对结果引用了本次未读取的资料。")
@@ -269,4 +353,45 @@ def execute_ai(job):
         "prompt": "请阅读以下片段并整理一条有出处的待核对摘记。片段编号："
         + ", ".join(item["chunk_id"] for item in job.input_snapshot["sources"][:5]),
     }
-    run_pi(config, run.handle, lambda: checkpoint(job.pk, job.generation))
+    purpose = job.input_snapshot.get("purpose")
+    if purpose in ["reading", "comparison"]:
+        from core.reading import READING_PROMPT
+
+        # 每个文件提供入口；不能把前几个片段误当作全部资料已读。
+        catalog = []
+        for version_id in job.input_snapshot["version_ids"]:
+            sources = [
+                item
+                for item in job.input_snapshot["sources"]
+                if item["source_version_id"] == version_id
+            ]
+            catalog.append(
+                {
+                    "version_id": version_id,
+                    "source_scope": sources[0]["source_scope"],
+                    "chunk_count": len(sources),
+                    "chunk_ids": [item["chunk_id"] for item in sources[:12]],
+                }
+            )
+        config.update(
+            purpose=purpose,
+            version_ids=job.input_snapshot["version_ids"],
+            system_prompt=READING_PROMPT,
+            max_tokens=8192,
+            request_timeout_ms=60_000,
+            prompt=(
+                "请先直接调用 read_evidence 批量读取下面目录中的 chunk_ids，不要先检索。"
+                "读完后调用 submit_reading。documents 必须包含下列每个 version_id，"
+                "一篇对应一项且含六个字段，不得只返回其中一篇。\n"
+            )
+            + json.dumps(
+                {"task": purpose, "question": job.input_snapshot["question"], "sources": catalog},
+                ensure_ascii=False,
+            ),
+        )
+    run_pi(
+        config,
+        run.handle,
+        lambda: checkpoint(job.pk, job.generation),
+        timeout_seconds=180 if purpose in ["reading", "comparison"] else None,
+    )

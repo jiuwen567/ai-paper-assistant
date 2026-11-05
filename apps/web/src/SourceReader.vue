@@ -68,11 +68,11 @@ async function control(action: "cancel" | "retry") {
 }
 async function createAI() {
   aiNotice.value = "";
-  await request(`${base()}ai-tasks/`, "POST", {
-    idempotency_key: aiKey, policy_version: props.project.policy.version, version_ids: [props.version.id],
+  await request(`${base()}reading/tasks/`, "POST", {
+    idempotency_key: aiKey, policy_version: props.project.policy.version, version_ids: [props.version.id], purpose: "reading",
   });
   aiKey = crypto.randomUUID();
-  if (mounted) aiNotice.value = "摘记任务已提交，可在后台任务查看。";
+  if (mounted) aiNotice.value = "阅读任务已提交，可在阅读区与后台任务查看。";
 }
 async function locate(chunk: Chunk) {
   const result = await request<Location>(`${base()}chunks/${chunk.id}/`);
@@ -98,7 +98,7 @@ onUnmounted(() => { mounted = false; clearTimeout(timer); });
     <div class="actions">
       <button :disabled="busy" @click="perform(() => load())">刷新解析</button>
       <button v-if="project.role === 'author'" :disabled="busy" @click="perform(create)">{{ runs?.count ? '重新解析' : '解析材料' }}</button>
-      <button v-if="project.role === 'author' && project.policy.allowed_actions.includes('reading')" :disabled="busy || !runs?.results.some(run => run.published_at)" @click="perform(createAI)">AI 摘记</button>
+      <button v-if="project.role === 'author' && project.policy.allowed_actions.includes('reading')" :disabled="busy || !runs?.results.some(run => run.published_at)" @click="perform(createAI)">AI 阅读</button>
       <a :href="`/api/v1/${base()}files/${version.id}/`">下载原件 v{{ version.number }}</a>
     </div>
     <p v-if="runs?.count === 0">尚无解析记录。</p>

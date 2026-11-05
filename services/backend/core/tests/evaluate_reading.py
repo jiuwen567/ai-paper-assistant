@@ -4,7 +4,6 @@ import argparse
 import json
 import os
 import time
-from contextlib import closing
 from pathlib import Path
 from unittest.mock import patch
 from uuid import uuid4
@@ -23,9 +22,9 @@ from django.test import override_settings  # noqa: E402
 from rest_framework.test import APIClient  # noqa: E402
 
 from core.ai_jobs import AIRun  # noqa: E402
-from core.health import s3_client  # noqa: E402
 from core.library import default_bibliography  # noqa: E402
 from core.models import Job, MaterialVersion, Project, ProjectPolicy, ReadingRecord  # noqa: E402
+from core.tests.evaluation_cleanup import remove_project  # noqa: E402
 from core.tests.reading_samples import SAMPLES  # noqa: E402
 from worker.tasks import execute_job  # noqa: E402
 
@@ -129,6 +128,7 @@ def main():
                 result = ReadingRecord.objects.filter(job=job).first()
                 record = {
                     "case": name,
+                    "selected_sources": {pk: f"source-{versions.index(pk) + 1}" for pk in selected},
                     "model": args.model,
                     "status": job.status,
                     "error_code": job.error_code,
@@ -153,12 +153,7 @@ def main():
                     flush=True,
                 )
     finally:
-        # 仅清理由本次随机评测项目拥有的对象与数据。
-        with closing(s3_client()) as storage:
-            for version in MaterialVersion.objects.filter(material__project=project):
-                storage.delete_object(Bucket=version.bucket, Key=version.object_key)
-        project.delete()
-        user.delete()
+        remove_project(project, user)
 
 
 if __name__ == "__main__":

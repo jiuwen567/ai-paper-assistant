@@ -21,9 +21,7 @@ from django.utils import timezone  # noqa: E402
 from rest_framework.test import APIClient  # noqa: E402
 
 from core.ai_jobs import AIRun  # noqa: E402
-from core.graph import purge_projection  # noqa: E402
 from core.models import (  # noqa: E402
-    GraphTombstone,
     ImpactItem,
     Job,
     Material,
@@ -33,6 +31,8 @@ from core.models import (  # noqa: E402
     ProjectPolicy,
     SourceChunk,
 )
+from core.tests.evaluation_cases import IMPACT_BLOCKS, IMPACT_SOURCES  # noqa: E402
+from core.tests.evaluation_cleanup import remove_project  # noqa: E402
 from core.tests.test_impacts import change, create_model, link_block, scan  # noqa: E402
 from core.tests.test_manuscripts import payload, save  # noqa: E402
 from worker.tasks import execute_job  # noqa: E402
@@ -58,9 +58,7 @@ def main():
             project=project, title="自制温度记录", category="research", revision=2
         )
         sources = []
-        for number, text in enumerate(
-            ["提高温度后反应速率增加。", "单位更正后，温度组与对照组的反应速率无明显差异。"], 1
-        ):
+        for number, text in enumerate(IMPACT_SOURCES, 1):
             source = MaterialVersion.objects.create(
                 material=material,
                 number=number,
@@ -94,13 +92,7 @@ def main():
                 run=run, ordinal=1, text=text, anchor={"kind": "text", "line": 1}
             )
             sources.append((source, run))
-        texts = [
-            "提高温度后反应速率增加。",
-            "温度组测量结果支持速率增加的论述。",
-            "本次记录提示温度与反应速率有关。",
-            "由于温度组的速率增加，讨论部分仍采用了这一解释。",
-            "另一项实验中，光照保持不变，尚未比较反应速率。",
-        ]
+        texts = IMPACT_BLOCKS
         manuscript = save(
             context,
             payload(
@@ -112,7 +104,10 @@ def main():
         corrected, _ = change(context, sources[0], sources[1])
         run, registered = scan(context, corrected)
         start = time.monotonic()
-        with override_settings(AI_MODEL=args.model, AI_BASE_URL=args.base_url, AI_API_KEY=""):
+        with (
+            transaction.atomic(),
+            override_settings(AI_MODEL=args.model, AI_BASE_URL=args.base_url, AI_API_KEY=""),
+        ):
             with patch("core.jobs.dispatch"):
                 job = create_model(context, run, manuscript)
             events = []
@@ -163,13 +158,7 @@ def main():
             flush=True,
         )
     finally:
-        with transaction.atomic():
-            Project.objects.select_for_update().get(pk=project.pk)
-            pid = project.pk
-            project.delete()
-            purge_projection(pid)
-            GraphTombstone.objects.filter(project_id=pid).delete()
-            user.delete()
+        remove_project(project, user)
 
 
 if __name__ == "__main__":

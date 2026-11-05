@@ -6,7 +6,7 @@ import { expect, test as base, type APIRequestContext, type Page } from "@playwr
 
 type Accounts = { prefix: string; owner: string; reviewer: string; reviewerId: number; password: string; otherId: string };
 const root = fileURLToPath(new URL("../../..", import.meta.url));
-function fixtureData(action: "create" | "cleanup" | "binding", prefix: string) {
+function fixtureData(action: "create" | "cleanup" | "binding" | "ai", prefix: string) {
   return execFileSync("uv", ["run", "python", "services/backend/core/tests/browser_data.py"], {
     cwd: root, input: JSON.stringify({ action, prefix }), encoding: "utf-8",
     env: { ...process.env, PYTHONPATH: "services/backend" },
@@ -298,6 +298,20 @@ test("摘要证据、作者笔记、真实语义检索与材料撤回", async ({
   await expect(reader.getByText("题录已保存。")).toBeVisible();
   await reader.getByRole("button", { name: "解析材料", exact: true }).click();
   await expect(reader.getByRole("button", { name: "解析 #1 · 解析成功", exact: true })).toBeVisible();
+  await reader.getByRole("button", { name: "AI 摘记", exact: true }).click();
+  await expect(reader.getByRole("alert")).toContainText("请先由管理员配置生成模型");
+  fixtureData("ai", accounts.prefix);
+  const jobs = page.getByRole("region", { name: "后台任务", exact: true });
+  await jobs.getByRole("button", { name: "刷新任务", exact: true }).click();
+  await jobs.locator("summary").filter({ hasText: "AI 摘记 · 成功" }).click();
+  await expect(jobs.getByText("待核对", { exact: true })).toBeVisible();
+  await expect(jobs.getByText("协议样例摘记，等待作者核对。", { exact: true })).toBeVisible();
+  await jobs.getByRole("button", { name: "调用记录", exact: true }).click();
+  await expect(jobs.getByText(/第 1 次执行 \/ 调用 2/)).toContainText("输入 20 / 输出 10 token");
+  await jobs.getByRole("button", { name: "来源 1 · 仅摘要", exact: true }).click();
+  await expect(jobs.getByRole("region", { name: "原文上下文" })).toContainText("提高温度");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+  await jobs.screenshot({ path: testInfo.outputPath("ai-pending-result.png") });
   await reader.locator(".source-chunks button").first().click();
   const context = reader.getByRole("region", { name: "原文上下文" });
   await context.getByLabel("作者笔记", { exact: true }).fill("我的理解，仍需复核。");

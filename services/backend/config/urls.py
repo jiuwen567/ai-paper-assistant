@@ -1,6 +1,7 @@
 from django.urls import path
 
 from core.accounts import LogoutView, SessionView
+from core.ai_views import AITaskView, AITraceView
 from core.job_views import JobControlView, JobDetailView, JobListView
 from core.library_views import (
     BibliographyView,
@@ -48,6 +49,8 @@ urlpatterns = [
     path("api/v1/projects/<uuid:project_id>/members/<int:user_id>/", MemberDetailView.as_view()),
     path("api/v1/projects/<uuid:project_id>/ai-permissions/", AIPermissionView.as_view()),
     path("api/v1/projects/<uuid:project_id>/jobs/", JobListView.as_view()),
+    path("api/v1/projects/<uuid:project_id>/ai-tasks/", AITaskView.as_view()),
+    path("api/v1/projects/<uuid:project_id>/ai-tasks/<uuid:job_id>/trace/", AITraceView.as_view()),
     path("api/v1/projects/<uuid:project_id>/jobs/<uuid:job_id>/", JobDetailView.as_view()),
     path(
         "api/v1/projects/<uuid:project_id>/jobs/<uuid:job_id>/<str:action>/",

@@ -1,0 +1,9 @@
+{
+  "name": "@paper/pi-runner",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "check": "tsc --noEmit", "test": "node --test test/*.test.mjs" },
+  "dependencies": { "@earendil-works/pi-agent-core": "1.5.0", "@earendil-works/pi-ai": "1.5.0", "typebox": "^1.1.24" },
+  "devDependencies": { "@types/node": "^24.0.0", "typescript": "5.9.3" }
+}

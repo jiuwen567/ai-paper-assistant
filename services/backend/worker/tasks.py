@@ -22,6 +22,11 @@ def execute_job(job_id):
     if job is None:
         return
     try:
+        if job.kind == "ai":
+            from core.ai_jobs import execute_ai
+
+            execute_ai(job)
+            return
         if job.kind == "index":
             from core.index_jobs import execute_index
 

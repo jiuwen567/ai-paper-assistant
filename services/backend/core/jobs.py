@@ -30,6 +30,16 @@ def finish(job, status, code="", message="", retryable=False):
     job.attempts.filter(generation=job.generation, finished_at=None).update(
         status=status, error_code=code, error_message=message, finished_at=timezone.now()
     )
+    # 取消、租约回收和 Worker 异常也结束未返回的模型调用，不留下永久 running。
+    if job.kind == "ai":
+        now = timezone.now()
+        for call in job.model_calls.filter(generation=job.generation, finished_at=None):
+            call.status = "cancelled" if status == Job.Status.CANCELLED else "failed"
+            call.error_code = code or "call_interrupted"
+            call.finished_at = now
+            call.elapsed_ms = max(0, int((now - call.started_at).total_seconds() * 1000))
+            call.save()
+        job.ai_events.create(generation=job.generation, kind=status, details={"code": code})
 
 
 def authorized(job):

@@ -121,6 +121,43 @@ class JobAttempt(models.Model):
         ]
 
 
+class ModelCall(models.Model):
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name="model_calls")
+    generation = models.PositiveIntegerField()
+    number = models.PositiveIntegerField()
+    model = models.CharField(max_length=128)
+    prompt_version = models.CharField(max_length=64)
+    input_digest = models.CharField(max_length=64)
+    status = models.CharField(max_length=16, default="running")
+    usage = models.JSONField(null=True)
+    elapsed_ms = models.PositiveIntegerField(null=True)
+    error_code = models.CharField(max_length=64, blank=True)
+    started_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["job", "generation", "number"], name="unique_model_call"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(number__gte=1, number__lte=4), name="model_call_limit"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(status__in=["running", "succeeded", "failed", "cancelled"]),
+                name="model_call_status",
+            ),
+        ]
+
+
+class AIEvent(models.Model):
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name="ai_events")
+    generation = models.PositiveIntegerField()
+    kind = models.CharField(max_length=32)
+    details = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
 class WechatIdentity(models.Model):
     app_id = models.CharField(max_length=64)
     open_id = models.CharField(max_length=128)

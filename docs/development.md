@@ -1,6 +1,6 @@
 # 开发说明
 
-本工程提供 [Issue #1](https://github.com/jiuwen567/ai-paper-assistant/issues/1) 的基础设施，以及 [Issue #2](https://github.com/jiuwen567/ai-paper-assistant/issues/2) 的账号、项目和权限实现。Issue #3 提供持久后台任务与字数统计样例；Issue #5 提供材料上传与版本管理；Issue #6 提供后台解析和 Web 原文定位；Issue #7 提供题录、证据、笔记和项目内检索。稿件与生成模型任务由后续任务接入。
+本工程提供 [Issue #1](https://github.com/jiuwen567/ai-paper-assistant/issues/1) 的基础设施，以及 [Issue #2](https://github.com/jiuwen567/ai-paper-assistant/issues/2) 的账号、项目和权限实现。Issue #3 提供持久后台任务与字数统计样例；Issue #5 提供材料上传与版本管理；Issue #6 提供后台解析和 Web 原文定位；Issue #7 提供题录、证据、笔记和项目内检索。Issue #8 提供受限 Pi 执行、调用记录和待核对摘记；稿件由后续任务接入。
 
 ## 技术栈与版本
 
@@ -115,7 +115,7 @@ uv run --directory services/backend gunicorn config.wsgi:application --bind 127.
 
 `.env.example` 只包含占位值和公共本地地址。直接运行 `scripts/init_dev.py` 会从示例生成随机开发凭据，并生成 `.local/seaweedfs/s3.json`。脚本只使用 Python 标准库，重复执行不会覆盖已有 `.env`。如果手动复制了示例文件，先填写随机值，或移走这份占位副本再运行脚本；包含占位值时脚本会拒绝启动配置生成。
 
-配置由 `config/settings.py` 从仓库根目录加载；进程环境变量优先。不要在小程序、`VITE_*` 或客户端代码中放 AppSecret、数据库密码、模型密钥。尚未接入的微信或 Pi 能力不要求填入真实凭据。
+配置由 `config/settings.py` 从仓库根目录加载；进程环境变量优先。不要在小程序、`VITE_*` 或客户端代码中放 AppSecret、数据库密码、模型密钥。未配置微信或生成模型时，相应入口明确返回不可用，不影响其他功能。
 
 | 服务 | 宿主机地址 | 数据卷 |
 | --- | --- | --- |
@@ -440,3 +440,27 @@ uv run python services/backend/manage.py prepare_embeddings --model BAAI/bge-sma
 - **Web 显示 API 连接失败**：确认 API 进程在运行、Vite 的代理目标可达；不要用静态文件服务器替代配置了 `/api` 代理的 Vite。
 - **就绪检查返回 503**：按 `checks` 中的故障服务查看日志。PostgreSQL 已连接但缺 `vector` 扩展或仍有迁移未应用，也会判定未就绪。只有 Redis 可达时才继续检查 Worker。
 - **Worker 没有响应**：确认 API 与 Worker 使用相同 `REDIS_URL`，运行 `check_worker` 验证真实任务消费。`system.ping` 只用于工程诊断，不是论文业务任务。
+
+## Pi 受限执行（Issue #8）
+
+在服务端 `.env` 配置 `AI_MODEL`、`AI_BASE_URL`、`AI_API_KEY`。端点须兼容 OpenAI Chat Completions 的流式工具调用，`AI_BASE_URL` 通常以 `/v1` 结尾；不自动选择供应商或读取其他客户端的账号配置。未配置时返回 `model_unconfigured`，不创建任务。容器中的本地模型地址须能从 Worker 访问；不要把密钥放入客户端或提交到仓库。配置后重建 API、Worker 和 scheduler。
+
+作者先启用当前规则的 `reading`，上传并解析材料，再在原文面板选择“AI 摘记”。后台任务显示取消、重试、待核对摘记、原文回查和调用记录。审阅者只能查看；来源的摘要/全文/未知范围来自题录版本，模型不能自行提升。当前入口用于执行框架与短摘记验证，不提供整篇论文写作。多文献问题、比较结构和效果评测由 #9/#19 验收。
+
+- `POST /api/v1/projects/{project_id}/ai-tasks/`：提交 `idempotency_key`、`policy_version` 和 1–5 个 `version_ids`。不接受提示词、模型、工具或身份字段。同一键和输入返回原任务，不同输入返回 409。
+- `GET /api/v1/projects/{project_id}/ai-tasks/{job_id}/trace/`：返回各代次的模型、提示词版本、输入快照摘要、用量、耗时、错误代码及有限事件。未返回用量时为 null，不能当作零用量。
+- 现有 `jobs/` 接口提供查询、取消和重试。失败至多重试至 3 个代次；旧代次、旧权限或旧输入均不能发布结果。
+
+`services/pi-runner` 固定使用 `@earendil-works/pi-agent-core` / `pi-ai` 1.5.0。Python Worker 以最小环境启动 Node.js 24 子进程，输入与密钥经 stdin 传递；模型只能使用 `project_search`、`read_evidence`、`save_note`、`submit_suggestion`。无 shell、服务器文件或任意网络工具。请求仅发送到管理员配置的端点，拒绝重定向，SDK 自动重试为 0。材料中的指令不能增加工具或项目范围。
+
+创建时冻结文件摘要、有效解析、片段摘要、材料状态版本及题录版本，最多 256 个片段。初始提示提供其中最多 5 个片段编号，模型可在作者所选版本内检索、读取；这不代表已完整审阅所有材料。每次模型和工具调用、等待回包时的心跳，以及最终发布均重查当前作者权限、规则、输入和模型配置。单任务每代次最多 4 次模型调用、8 次工具调用，总时长 90 秒，每次请求 30 秒、输出上限 2048 token。
+
+Pi 与业务端分别校验工具参数；摘记和建议必须引用本次实际读取的片段。写工具仅暂存内存中的候选结果，全部成功后在项目锁内发布到 `Job.output`，状态固定为 `pending`。中途失败、超时、撤权、撤回/恢复材料或输入变化会丢弃全部暂存结果；不会创建作者笔记、改写稿件或采纳建议。调用记录独立保留，Worker 中断后租约回收会结束未完成的调用，错误记录不含供应商原文或密钥。
+
+### Issue #8 实际验证
+
+2026-11-05：后端完整测试 133 项通过；最后的 URL 配置校验和进程回收调整后，17 项 AI 联调重新通过。Pi SDK 的 5 项受控协议测试通过，覆盖工具白名单、参数拒绝、用量、服务端错误不重试及拒绝重定向。撤权、角色移除、规则变化、资料变化、取消、超时、租约回收和暂存后失败均不会发布结果。
+
+Web 全量浏览器回归中 18 项通过，新增任务展示使用的测试主机名修正后，涉及的桌面/移动两项重新通过；实际查看了移动截图，待核对摘记可回查摘要原文，并能显示两次模型调用记录。类型检查、单元测试、Web 构建、迁移及遗漏检查、容器构建启动、五项依赖健康、真实 Worker 往返通过。构建曾遇到临时 DNS 故障，重试及宿主机网络构建后成功，未改变常规 CI 流程。
+
+以上使用真实 Pi SDK 和本地受控 HTTP/SSE 服务验证执行框架；未配置真实生成模型，不能据此认定阅读或比较内容质量通过。上层业务效果继续由 #9/#19 验收。

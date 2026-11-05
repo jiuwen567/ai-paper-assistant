@@ -16,6 +16,8 @@ const runPage = ref(1);
 const chunkPage = ref(1);
 const busy = ref(false);
 const error = ref("");
+const aiNotice = ref("");
+let aiKey = crypto.randomUUID();
 let key = crypto.randomUUID();
 let mounted = true;
 let timer: ReturnType<typeof setTimeout> | undefined;
@@ -64,6 +66,14 @@ async function control(action: "cancel" | "retry") {
   await request(`${base()}jobs/${job.id}/${action}/`, "POST", { generation: job.generation });
   await load();
 }
+async function createAI() {
+  aiNotice.value = "";
+  await request(`${base()}ai-tasks/`, "POST", {
+    idempotency_key: aiKey, policy_version: props.project.policy.version, version_ids: [props.version.id],
+  });
+  aiKey = crypto.randomUUID();
+  if (mounted) aiNotice.value = "摘记任务已提交，可在后台任务查看。";
+}
 async function locate(chunk: Chunk) {
   const result = await request<Location>(`${base()}chunks/${chunk.id}/`);
   if (mounted) location.value = result;
@@ -83,10 +93,12 @@ onUnmounted(() => { mounted = false; clearTimeout(timer); });
     <h3>{{ version.file_name }} · v{{ version.number }}</h3>
     <BibliographyEditor :key="version.id" :project="project" :version-id="version.id" />
     <p v-if="error" role="alert" class="error">{{ error }}</p>
+    <p v-if="aiNotice" role="status">{{ aiNotice }}</p>
     <p v-if="busy" role="status">加载中…</p>
     <div class="actions">
       <button :disabled="busy" @click="perform(() => load())">刷新解析</button>
       <button v-if="project.role === 'author'" :disabled="busy" @click="perform(create)">{{ runs?.count ? '重新解析' : '解析材料' }}</button>
+      <button v-if="project.role === 'author' && project.policy.allowed_actions.includes('reading')" :disabled="busy || !runs?.results.some(run => run.published_at)" @click="perform(createAI)">AI 摘记</button>
       <a :href="`/api/v1/${base()}files/${version.id}/`">下载原件 v{{ version.number }}</a>
     </div>
     <p v-if="runs?.count === 0">尚无解析记录。</p>

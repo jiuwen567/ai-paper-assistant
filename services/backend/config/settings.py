@@ -82,6 +82,7 @@ CSRF_COOKIE_SECURE = not DEBUG
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
 CELERY_BEAT_SCHEDULE = {
+    "recover-cleanup": {"task": "cleanup.recover", "schedule": 15.0},
     "recover-jobs": {"task": "jobs.recover", "schedule": 15.0},
     "sync-graph": {"task": "graph.sync", "schedule": 15.0},
 }

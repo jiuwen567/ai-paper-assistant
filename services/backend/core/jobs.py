@@ -16,7 +16,10 @@ MAX_ATTEMPTS = 3
 def lock_job(job_id):
     # 所有路径统一先锁项目，和成员、规则写入使用同一个串行化边界。
     project_id = Job.objects.values_list("project_id", flat=True).get(pk=job_id)
-    Project.objects.select_for_update().get(pk=project_id)
+    try:
+        Project.objects.select_for_update().get(pk=project_id)
+    except Project.DoesNotExist:
+        raise Job.DoesNotExist from None
     return Job.objects.select_for_update().select_related("created_by").get(pk=job_id)
 
 
@@ -116,7 +119,10 @@ def fail(
     code="execution_failed",
     message="执行失败，请按错误代码检查任务。",
 ):
-    job = lock_job(job_id)
+    try:
+        job = lock_job(job_id)
+    except Job.DoesNotExist:
+        return  # 删除之后的迟到结果无需重建诊断记录。
     if active(job, generation):
         finish(job, Job.Status.FAILED, code, message, retryable)
 

@@ -88,7 +88,13 @@ def execute_export(job):
         )
     except ExportStopped:
         return
-    if not export_checkpoint(snapshot, job.generation, 75):
+    store_export(snapshot, job.generation, artifact, data)
+
+
+@transaction.atomic
+def store_export(snapshot, generation, artifact, data):
+    # 持有项目锁直到存储和发布结束，删除清单不会遗漏迟到的对象写入。
+    if not export_checkpoint(snapshot, generation, 75):
         return
     artifact.sha256, artifact.size = hashlib.sha256(data).hexdigest(), len(data)
     try:
@@ -102,4 +108,4 @@ def execute_export(job):
         raise ParseFailure("export_integrity", "导出文件校验失败，可重试。", True) from None
     except Exception:
         raise ParseFailure("export_storage", "暂时无法保存导出文件，可重试。", True) from None
-    publish_export(artifact.pk, job.generation, artifact.sha256, artifact.size)
+    publish_export(artifact.pk, generation, artifact.sha256, artifact.size)

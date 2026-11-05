@@ -18,7 +18,7 @@ watch(dirty, value => emit("dirtyChange", value));
 const canEdit = computed(() => props.project.role === "author");
 const headings = computed(() => blocks.value.filter(block => block.heading_level));
 const kinds: Record<string, string> = { added: "新增", removed: "删除", modified: "修改", moved: "移动" };
-const origins = { edit: "作者编辑", import: "DOCX 导入", restore: "恢复旧稿", expression: "采纳表达建议" };
+const origins = { edit: "作者编辑", import: "DOCX 导入", restore: "恢复旧稿", expression: "采纳表达建议", cleanup: "资料删除后的保留稿" };
 const base = () => `projects/${props.project.id}/manuscript/`;
 let mounted = true, key = crypto.randomUUID();
 watch([draft, importMode, preview, past], () => { key = crypto.randomUUID(); });

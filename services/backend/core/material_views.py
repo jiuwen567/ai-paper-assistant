@@ -168,13 +168,13 @@ class UploadFileView(APIView):
         except ValidationError:
             with transaction.atomic():
                 require_project(request.user, project_id, write=True, lock=True)
-                version.refresh_from_db()
+                version = get_object_or_404(MaterialVersion, pk=version.pk)
                 if version.status in ["uploading", "failed"] and not version.sha256:
                     set_failure(version, "invalid_file", "文件大小、类型或内容校验失败。")
             raise
         version = claim_upload(request.user, version.pk, hashlib.sha256(data).hexdigest())
         store_file(version, data)
-        version.refresh_from_db()
+        version = get_object_or_404(MaterialVersion, pk=version.pk)
         return Response(MaterialVersionSerializer(version).data)
 
 

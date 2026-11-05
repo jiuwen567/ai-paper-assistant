@@ -5,7 +5,7 @@ from datetime import timedelta
 from botocore.exceptions import ClientError
 from django.db import transaction
 from django.utils import timezone
-from rest_framework.exceptions import APIException
+from rest_framework.exceptions import APIException, NotFound
 
 from core.access import VersionConflict, require_project
 from core.health import s3_client
@@ -22,7 +22,10 @@ def lock_version(version_id):
     project_id = MaterialVersion.objects.values_list("material__project_id", flat=True).get(
         pk=version_id
     )
-    Project.objects.select_for_update().get(pk=project_id)
+    try:
+        Project.objects.select_for_update().get(pk=project_id)
+    except Project.DoesNotExist:
+        raise MaterialVersion.DoesNotExist from None
     return (
         MaterialVersion.objects.select_for_update()
         .select_related("material", "created_by")
@@ -40,7 +43,10 @@ def set_failure(version, code, message):
 
 @transaction.atomic
 def claim_upload(user, version_id, sha256=None):
-    version = lock_version(version_id)
+    try:
+        version = lock_version(version_id)
+    except MaterialVersion.DoesNotExist:
+        raise NotFound("上传记录已删除。") from None
     require_project(user, version.material.project_id, write=True)
     if version.created_by_id != user.pk:
         raise VersionConflict("请由原上传者重试该上传记录。")
@@ -61,14 +67,20 @@ def claim_upload(user, version_id, sha256=None):
 
 @transaction.atomic
 def fail_upload(version_id, generation, code="storage_failed"):
-    version = lock_version(version_id)
+    try:
+        version = lock_version(version_id)
+    except MaterialVersion.DoesNotExist:
+        return
     if version.generation == generation and version.status != MaterialVersion.Status.AVAILABLE:
         set_failure(version, code, "上传或校验失败，请重试同一文件或执行对账。")
 
 
 @transaction.atomic
 def publish_upload(version_id, generation):
-    version = lock_version(version_id)
+    try:
+        version = lock_version(version_id)
+    except MaterialVersion.DoesNotExist:
+        return False
     if version.status == MaterialVersion.Status.AVAILABLE:
         return True
     if version.generation != generation or not version.lease_until:
@@ -114,9 +126,24 @@ def read_and_verify(client, version):
     return data
 
 
-def store_file(version, data):
+@transaction.atomic
+def store_current_file(submitted, data):
+    # 删除与写入共用项目锁，防止清理后迟到的上传再次写回对象。
+    try:
+        version = lock_version(submitted.pk)
+    except MaterialVersion.DoesNotExist:
+        raise NotFound("上传记录已删除。") from None
+    require_project(version.created_by, version.material.project_id, write=True)
     if version.status == MaterialVersion.Status.AVAILABLE:
-        return
+        return ""
+    if (
+        version.generation != submitted.generation
+        or version.status != MaterialVersion.Status.VALIDATING
+        or version.sha256 != submitted.sha256
+        or not version.lease_until
+        or version.lease_until <= timezone.now()
+    ):
+        return "changed"
     try:
         with closing(s3_client()) as client:
             ensure_bucket(client, version.bucket)
@@ -129,18 +156,30 @@ def store_file(version, data):
             )
             read_and_verify(client, version)
     except Exception:
-        fail_upload(version.pk, version.generation)
-        raise StorageUnavailable() from None
-    # 数据库发布失败时，已有对象仍通过版本记录、摘要与对象键可对账。
-    if not publish_upload(version.pk, version.generation):
+        set_failure(version, "storage_failed", "上传或校验失败，请重试同一文件或执行对账。")
+        return "storage_failed"
+    return "" if publish_upload(version.pk, version.generation) else "changed"
+
+
+def store_file(version, data):
+    # 在事务提交后报告失败，保留数据库诊断状态。
+    result = store_current_file(version, data)
+    if result == "storage_failed":
+        raise StorageUnavailable()
+    if result:
         raise VersionConflict("上传者权限或执行状态已变化，文件未发布。")
 
 
 def reconcile_upload(version_id):
-    version = MaterialVersion.objects.select_related("created_by").get(pk=version_id)
+    version = MaterialVersion.objects.select_related("created_by").filter(pk=version_id).first()
+    if version is None:
+        return
     if not version.sha256 or version.status == MaterialVersion.Status.AVAILABLE:
         return
-    version = claim_upload(version.created_by, version.pk)
+    try:
+        version = claim_upload(version.created_by, version.pk)
+    except NotFound:
+        return
     try:
         with closing(s3_client()) as client:
             read_and_verify(client, version)

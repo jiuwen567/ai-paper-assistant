@@ -2,6 +2,12 @@ from django.urls import path
 
 from core.accounts import LogoutView, SessionView
 from core.ai_views import AITaskView, AITraceView
+from core.cleanup_views import (
+    CleanupCreateView,
+    CleanupDetailView,
+    CleanupListView,
+    CleanupPreviewView,
+)
 from core.disclosure_views import (
     DisclosureHistoryView,
     DisclosureRevisionView,
@@ -103,6 +109,10 @@ from core.wechat_views import (
 )
 
 urlpatterns = [
+    path("api/v1/projects/<uuid:project_id>/cleanup-preview/", CleanupPreviewView.as_view()),
+    path("api/v1/projects/<uuid:project_id>/cleanup/", CleanupCreateView.as_view()),
+    path("api/v1/cleanups/", CleanupListView.as_view()),
+    path("api/v1/cleanups/<uuid:request_id>/", CleanupDetailView.as_view()),
     path("api/v1/projects/<uuid:project_id>/export-templates/", ExportTemplatesView.as_view()),
     path("api/v1/projects/<uuid:project_id>/exports/preview/", ExportPreviewView.as_view()),
     path("api/v1/projects/<uuid:project_id>/exports/", ExportsView.as_view()),

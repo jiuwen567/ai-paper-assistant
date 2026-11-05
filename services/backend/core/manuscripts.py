@@ -120,7 +120,11 @@ def publish(manuscript, user, data, request_digest, research, blocks, origin="ed
     items = []
     for position, value in enumerate(blocks):
         pk = str(value["id"])
-        block = known.get(pk) or ContentBlock.objects.create(id=pk, manuscript=manuscript)
+        block = known.get(pk) or ContentBlock.objects.create(
+            id=pk,
+            manuscript=manuscript,
+            imported_from_id=source["source_version_id"] if origin == "import" else None,
+        )
         previous = current.get(pk)
         if "version_id" in value:
             # 恢复只传数据库中的历史块版本，客户端编辑接口不接收此字段。

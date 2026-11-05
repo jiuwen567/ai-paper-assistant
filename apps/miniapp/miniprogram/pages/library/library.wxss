@@ -1,0 +1,9 @@
+.page-scroll { height: 100vh; }
+.page { padding: 110rpx 32rpx 48rpx; }
+.title { font-size: 38rpx; font-weight: 600; margin: 24rpx 0; }
+.card { background: white; padding: 24rpx; margin: 16rpx 0; border-radius: 12rpx; word-break: break-all; }
+.error { color: #a12323; margin: 16rpx 0; }
+.source-text { display: block; white-space: pre-wrap; margin: 16rpx 0; }
+button, input, textarea { margin: 16rpx 0; }
+input, textarea { border: 1px solid #b9c7b4; padding: 16rpx; box-sizing: border-box; width: 100%; }
+.actions { display: flex; gap: 16rpx; }

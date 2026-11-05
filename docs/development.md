@@ -1,6 +1,6 @@
 # 开发说明
 
-本工程提供 [Issue #1](https://github.com/jiuwen567/ai-paper-assistant/issues/1) 的基础设施，以及 [Issue #2](https://github.com/jiuwen567/ai-paper-assistant/issues/2) 的账号、项目和权限实现。Issue #3 提供持久后台任务与字数统计样例；Issue #5 提供材料上传与版本管理；Issue #6 提供后台解析和 Web 原文定位；稿件与模型任务由后续任务接入。
+本工程提供 [Issue #1](https://github.com/jiuwen567/ai-paper-assistant/issues/1) 的基础设施，以及 [Issue #2](https://github.com/jiuwen567/ai-paper-assistant/issues/2) 的账号、项目和权限实现。Issue #3 提供持久后台任务与字数统计样例；Issue #5 提供材料上传与版本管理；Issue #6 提供后台解析和 Web 原文定位；Issue #7 提供题录、证据、笔记和项目内检索。稿件与生成模型任务由后续任务接入。
 
 ## 技术栈与版本
 
@@ -329,6 +329,41 @@ Web 材料版本中选择“查看原文 → 解析材料”。任务由真实 W
 - 本地容器模式包含 `scheduler` 服务；本机模式需运行上述 Beat。调度器故障或停机恢复后可手动执行 `uv run python services/backend/manage.py recover_jobs`。恢复扫描每批最多 100 项，按更新时间轮转；任务量增加后再优化批量调度。
 
 任务测试：`uv run pytest services/backend/core/tests/test_jobs.py`。需要 PostgreSQL 和 Redis；真实 Worker 重启测试启动专用队列与独立测试库进程，结束时清理。字数统计和材料解析为确定性任务；模型和导出任务随各自 Issue 接入，不把样例输出当作真实 AI 结果。
+
+## 文献卡、证据卡与检索
+
+Web 的材料版本“查看原文”中可编辑文献卡：题录、资料范围、题录摘要、作者笔记和标签分开保存。默认“范围未核对”；“仅摘要”不会标成全文，全文范围由作者明确标记，不是模型验证结论。保存当前原文片段生成证据卡，固定该片段及当时的题录版本；之后编辑题录不会把旧摘要证据自动改成全文。笔记和标签保留修订历史，旧版本提交返回冲突；重复提交不重复创建卡片。
+
+“阅读与证据”提供原文关键词检索、证据笔记/标签筛选和原文回查。小程序项目中同名入口可看证据、上下文及补充笔记；微信 `wx.request` 使用 PUT 更新笔记，与 Web PATCH 共用版本检查。真实微信登录和界面仍需按微信验收流程联调。
+
+材料可从检索和新任务撤回，保留历史证据及原件以便复核；恢复材料时状态版本递增。物理删除由 #18 接入。新证据、解析和索引拒绝已撤回资料；检索限定当前授权项目、有效文件和该文件最近成功解析，历史证据继续引用原片段。
+
+语义检索使用 FastEmbed 的本地 CPU 模型与 PostgreSQL pgvector，未使用外部嵌入 API，不将论文内容发送到模型仓库。管理员先显式准备模型：
+
+```bash
+uv run python services/backend/manage.py prepare_embeddings
+```
+
+默认 `BAAI/bge-small-zh-v1.5`（512 维），另支持 `BAAI/bge-small-en-v1.5`（384 维）：
+
+```bash
+uv run python services/backend/manage.py prepare_embeddings --model BAAI/bge-small-en-v1.5
+```
+
+在 `.env` 设置 `EMBEDDING_MODEL` 后重新创建 API/Worker，作者在“检索索引”点击“重建检索索引”。首次准备从公开模型仓库下载；后续业务请求只读取本地文件。模型及清单位于忽略的 `.local/embeddings`，Compose 只读挂载到应用；本机可通过 `EMBEDDING_CACHE_DIR` 指定缓存目录。模型缺失、文件摘要不符或运行库版本变化会明确失败，不临时下载或混用旧索引。
+
+索引记录模型名、维度、文件摘要、FastEmbed/ONNX Runtime/分词器处理版本、原片段摘要与材料状态版本。原文按 256 字符窗口编码，最多 5000 个窗口；向量和任务成功状态一起提交。换模型、重新解析、新增材料或撤回/恢复后需重建；发布和查询返回前再次检查权限、规则和输入。语义检索需要项目允许“文献阅读”；审阅者可按已批准规则检索，不能构建索引或修改笔记。关键词检索与作者维护资料不调用模型。
+
+首版使用 pgvector 精确余弦距离，不引入近似索引与外部全文服务。检索返回最多 20 项，相关性不代表材料支持论点。后台索引失败可从索引区重试，取消可使用任务中心。
+
+参考：[FastEmbed 支持的模型](https://qdrant.github.io/fastembed/examples/Supported_Models/)、[本地嵌入说明](https://qdrant.tech/documentation/embeddings/fastembed/)。PR CI 仍只做检查、无服务单测和构建；显式运行完整 workflow 才准备两种模型、启动基础服务并执行集成与浏览器测试。
+
+## 阅读与检索验证（2026-11-05）
+
+- 后端完整测试 116 项通过，新增 11 项使用真实 PostgreSQL、SeaweedFS、pgvector 和本地模型；验证摘要范围、不可变摘录、笔记冲突、数据库关系约束、重复执行、提交回滚与重试、执行/检索中撤权、撤回恢复、512/384 维模型切换及小程序 token 笔记可由 Web 读取。补充题录关键词检索后，11 项用例重新通过。
+- 20 项桌面/手机尺寸浏览器测试通过；新流程使用真实 Worker 与本地中文模型，覆盖题录、摘要证据、笔记、原文上下文、语义检索和撤回后排除。初次失败来自测试对原生 select 的定位方式，改用可访问 combobox 角色后通过。
+- 小程序会话及证据页面共 5 项模拟测试、Web 6 项协议测试通过。模拟页面验证笔记 PUT、旧版本冲突保留草稿、撤权清空；真实微信开发者工具和真机未运行，Issue #7 保留这部分验收。
+- Ruff、双端类型检查、构建、迁移与遗漏检查、容器重建、五项依赖检查和真实 Worker 往返通过。模型仅显式下载公开文件，未使用真实论文或发送项目资料到外部模型服务。
 
 ## 材料解析验证（2026-11-05）
 

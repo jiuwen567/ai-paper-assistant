@@ -2,6 +2,7 @@ import uuid
 
 from django.conf import settings
 from django.db import models
+from pgvector.django import VectorField
 
 
 class Project(models.Model):
@@ -149,12 +150,25 @@ class WechatSession(models.Model):
 
 
 class Material(models.Model):
+    access_state = models.CharField(max_length=16, default="active")
+    state_version = models.PositiveIntegerField(default=1)
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="materials")
     title = models.CharField(max_length=200)
     category = models.CharField(max_length=24)
     revision = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(access_state__in=["active", "withdrawn"]),
+                name="material_access_state",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(state_version__gt=0), name="material_positive_state_version"
+            ),
+        ]
 
 
 class MaterialVersion(models.Model):
@@ -239,5 +253,99 @@ class SourceChunk(models.Model):
             ),
             models.CheckConstraint(
                 condition=models.Q(heading_level__lte=9), name="chunk_heading_range"
+            ),
+        ]
+
+
+class Bibliography(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    source_version = models.OneToOneField(
+        MaterialVersion, on_delete=models.CASCADE, related_name="bibliography"
+    )
+    revision = models.PositiveIntegerField(default=0)
+
+
+class BibliographyRevision(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    bibliography = models.ForeignKey(
+        Bibliography, on_delete=models.CASCADE, related_name="revisions"
+    )
+    number = models.PositiveIntegerField()
+    snapshot = models.JSONField()
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["bibliography", "number"], name="unique_bibliography_revision"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(number__gt=0), name="bibliography_positive_revision"
+            ),
+        ]
+
+
+class EvidenceCard(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    chunk = models.ForeignKey(SourceChunk, on_delete=models.CASCADE, related_name="evidence_cards")
+    bibliography_revision = models.ForeignKey(BibliographyRevision, on_delete=models.RESTRICT)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    request_key = models.CharField(max_length=128)
+    request_snapshot = models.JSONField()
+    revision = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["created_by", "request_key"], name="unique_evidence_request"
+            ),
+        ]
+
+
+class EvidenceNote(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    evidence = models.ForeignKey(EvidenceCard, on_delete=models.CASCADE, related_name="notes")
+    number = models.PositiveIntegerField()
+    text = models.TextField(blank=True)
+    tags = models.JSONField(default=list)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["evidence", "number"], name="unique_evidence_note"),
+            models.CheckConstraint(condition=models.Q(number__gt=0), name="note_positive_revision"),
+        ]
+
+
+class EmbeddingIndex(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    job = models.OneToOneField(Job, on_delete=models.CASCADE, related_name="embedding_index")
+    model_name = models.CharField(max_length=128)
+    dimension = models.PositiveIntegerField()
+    artifact_digest = models.CharField(max_length=64)
+    pipeline_version = models.CharField(max_length=64)
+    published_at = models.DateTimeField(null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class ChunkEmbedding(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    index = models.ForeignKey(EmbeddingIndex, on_delete=models.CASCADE, related_name="segments")
+    chunk = models.ForeignKey(SourceChunk, on_delete=models.CASCADE, related_name="embeddings")
+    start = models.PositiveIntegerField()
+    end = models.PositiveIntegerField()
+    text_sha256 = models.CharField(max_length=64)
+    vector = VectorField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["index", "chunk", "start"], name="unique_embedding_segment"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(end__gt=models.F("start")), name="embedding_nonempty_segment"
             ),
         ]

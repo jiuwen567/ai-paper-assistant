@@ -1,0 +1,34 @@
+<scroll-view scroll-y type="list" class="page-scroll"><view class="page">
+  <button bindtap="back">返回项目</button>
+  <view class="title">阅读与证据</view>
+  <view wx:if="{{error}}" class="error" role="alert">{{error}}</view>
+  <view wx:if="{{message}}">{{message}}</view>
+  <view wx:if="{{loading}}">处理中…</view>
+  <input placeholder="检索证据卡" aria-label="检索证据卡" value="{{query}}" maxlength="200" bindinput="changeQuery" />
+  <input placeholder="筛选标签" aria-label="筛选标签" value="{{tag}}" maxlength="30" bindinput="changeTag" />
+  <button disabled="{{loading}}" bindtap="refresh">刷新证据卡</button>
+  <view wx:if="{{project && !loading && !cards.length}}">暂无匹配的证据卡。</view>
+  <view wx:for="{{cards}}" wx:key="id" class="card">
+    <button disabled="{{loading}}" data-id="{{item.id}}" bindtap="select">{{item.bibliography.title}} · v{{item.source.number}}</button>
+    <view>{{item.scopeLabel}} {{item.source.access_state === 'withdrawn' ? '· 材料已撤回' : ''}}</view>
+    <view wx:for="{{item.note.tags}}" wx:for-item="tagItem" wx:key="*this">{{tagItem}}</view>
+  </view>
+  <view class="actions"><button wx:if="{{previous}}" disabled="{{loading}}" bindtap="previousPage">上一页</button><button wx:if="{{next}}" disabled="{{loading}}" bindtap="nextPage">下一页</button></view>
+  <view wx:if="{{selected}}" class="card">
+    <view class="title">{{selected.bibliography.title}}</view><view>{{selected.scopeLabel}}</view>
+    <view>原文摘录</view><text user-select class="source-text">{{selected.quote}}</text>
+    <view>作者笔记</view><textarea aria-label="作者笔记" value="{{note}}" maxlength="10000" bindinput="changeNote" disabled="{{loading || project.role !== 'author' || selected.source.access_state !== 'active'}}" />
+    <button wx:if="{{project.role === 'author' && selected.source.access_state === 'active'}}" disabled="{{loading}}" bindtap="save">保存笔记</button>
+    <button disabled="{{loading}}" bindtap="reload">重新加载证据</button>
+    <button disabled="{{loading}}" bindtap="locate">回查原文</button>
+    <button wx:if="{{canDownload}}" disabled="{{loading}}" bindtap="download">下载原件 v{{selected.source.number}}</button>
+    <view wx:if="{{context}}">
+      <view>{{selected.source.file_name}} · v{{selected.source.number}}</view>
+      <view wx:if="{{context.chunk.anchor.kind === 'pdf'}}">文件第 {{context.chunk.anchor.page}} 页；页码标签 {{context.chunk.anchor.page_label}} 不保证等于印刷页码。</view>
+      <view wx:elif="{{context.chunk.anchor.kind === 'docx'}}">第 {{context.chunk.anchor.paragraph}} 段</view>
+      <view wx:elif="{{context.chunk.anchor.kind === 'csv'}}">第 {{context.chunk.anchor.record}} 条记录</view>
+      <view wx:else>第 {{context.chunk.anchor.line}} 行</view>
+      <text wx:for="{{context.context}}" wx:key="id" class="source-text" user-select>{{item.text}}</text>
+    </view>
+  </view>
+</view></scroll-view>

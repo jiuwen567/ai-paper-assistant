@@ -59,7 +59,11 @@ class ParseListView(APIView):
     def post(self, request, project_id, version_id):
         project = require_project(request.user, project_id, write=True, lock=True)
         source = get_object_or_404(
-            MaterialVersion, pk=version_id, material__project=project, status="available"
+            MaterialVersion,
+            pk=version_id,
+            material__project=project,
+            material__access_state="active",
+            status="available",
         )
         key = validated(ParseInputSerializer, request)["idempotency_key"]
         existing = project.jobs.filter(created_by=request.user, idempotency_key=key).first()
@@ -79,6 +83,7 @@ class ParseListView(APIView):
             input_snapshot={
                 "source_version_id": str(source.pk),
                 "source_sha256": source.sha256,
+                "source_state_version": source.material.state_version,
                 "parse_run_id": str(run_id),
                 "parser_version": PARSER_VERSION,
             },

@@ -1,7 +1,8 @@
 {
   "pages": [
     "pages/index/index",
-    "pages/projects/projects"
+    "pages/projects/projects",
+    "pages/library/library"
   ],
   "window": {
     "navigationBarTitleText": "Paper Assistant",

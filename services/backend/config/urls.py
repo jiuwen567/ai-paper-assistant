@@ -2,6 +2,12 @@ from django.urls import path
 
 from core.accounts import LogoutView, SessionView
 from core.job_views import JobControlView, JobDetailView, JobListView
+from core.library_views import (
+    BibliographyView,
+    EvidenceDetailView,
+    EvidenceListView,
+    MaterialStateView,
+)
 from core.material_views import (
     MaterialDownloadView,
     MaterialListView,
@@ -19,6 +25,7 @@ from core.projects import (
     ProjectDetailView,
     ProjectListView,
 )
+from core.search_views import IndexListView, SearchView
 from core.views import LiveView, ReadyView
 from core.wechat_views import (
     WechatBindingView,
@@ -65,6 +72,21 @@ urlpatterns = [
     ),
     path("api/v1/projects/<uuid:project_id>/parses/<uuid:run_id>/chunks/", ChunkListView.as_view()),
     path("api/v1/projects/<uuid:project_id>/chunks/<uuid:chunk_id>/", ChunkDetailView.as_view()),
+    path(
+        "api/v1/projects/<uuid:project_id>/files/<uuid:version_id>/bibliography/",
+        BibliographyView.as_view(),
+    ),
+    path("api/v1/projects/<uuid:project_id>/evidence/", EvidenceListView.as_view()),
+    path(
+        "api/v1/projects/<uuid:project_id>/evidence/<uuid:evidence_id>/",
+        EvidenceDetailView.as_view(),
+    ),
+    path(
+        "api/v1/projects/<uuid:project_id>/materials/<uuid:material_id>/state/",
+        MaterialStateView.as_view(),
+    ),
+    path("api/v1/projects/<uuid:project_id>/indexes/", IndexListView.as_view()),
+    path("api/v1/projects/<uuid:project_id>/search/", SearchView.as_view()),
     path("api/v1/health/live/", LiveView.as_view(), name="health-live"),
     path("api/v1/health/ready/", ReadyView.as_view(), name="health-ready"),
 ]

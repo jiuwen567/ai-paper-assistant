@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from "vue";
 import { ApiError, request, type Page, type Project } from "./projects-api";
-import PdfPreview from "./PdfPreview.vue";
+import SourceContext from "./SourceContext.vue";
+import BibliographyEditor from "./BibliographyEditor.vue";
+import { anchorLabel, type Chunk, type SourceLocation as Location } from "./sources";
 type Job = { id: string; status: string; generation: number; progress: number; retryable: boolean; error_message: string };
 type Run = { id: string; number: number; parser_version: string; job: Job; published_at: string | null; warnings: string[]; coverage: string };
-type Anchor = { kind: string; page?: number; page_label?: string; paragraph?: number; record?: number; line?: number };
-type Chunk = { id: string; ordinal: number; text: string; anchor: Anchor; heading_level: number };
-type Location = { chunk: Chunk; context: Chunk[]; source_version: { id: string; number: number; file_name: string }; download_url: string; preview_url: string | null };
 const props = defineProps<{ project: Project; version: { id: string; number: number; file_name: string } }>();
 const emit = defineEmits<{ accessLost: [error: ApiError] }>();
 const runs = ref<Page<Run> | null>(null);
@@ -22,7 +21,7 @@ let mounted = true;
 let timer: ReturnType<typeof setTimeout> | undefined;
 const states: Record<string, string> = { queued: "等待解析", running: "解析中", succeeded: "解析成功", failed: "解析失败", cancelled: "已取消" };
 const base = () => `projects/${props.project.id}/`;
-const anchorLabel = (a: Anchor) => a.kind === "pdf" ? `文件第 ${a.page} 页（页码标签 ${a.page_label}）` : a.kind === "docx" ? `第 ${a.paragraph} 段` : a.kind === "csv" ? `第 ${a.record} 条记录` : `第 ${a.line} 行`;
+
 async function perform(action: () => Promise<void>) {
   if (busy.value || !mounted) return;
   busy.value = true; error.value = "";
@@ -82,6 +81,7 @@ onUnmounted(() => { mounted = false; clearTimeout(timer); });
 <template>
   <section class="source-reader" aria-label="原文定位" :aria-busy="busy">
     <h3>{{ version.file_name }} · v{{ version.number }}</h3>
+    <BibliographyEditor :key="version.id" :project="project" :version-id="version.id" />
     <p v-if="error" role="alert" class="error">{{ error }}</p>
     <p v-if="busy" role="status">加载中…</p>
     <div class="actions">
@@ -117,15 +117,6 @@ onUnmounted(() => { mounted = false; clearTimeout(timer); });
         <button :disabled="busy || !chunks.next" @click="perform(() => loadChunks(selected!, chunkPage + 1))">下一页片段</button>
       </div>
     </template>
-    <section v-if="location" aria-label="原文上下文">
-      <h4>{{ location.source_version.file_name }} · v{{ location.source_version.number }} · {{ anchorLabel(location.chunk.anchor) }}</h4>
-      <article v-for="chunk in location.context" :key="chunk.id" :class="{ 'located-chunk': chunk.id === location.chunk.id }">
-        <p>{{ anchorLabel(chunk.anchor) }}</p><pre class="source-text">{{ chunk.text }}</pre>
-      </article>
-      <template v-if="location.preview_url">
-        <a :href="location.preview_url" target="_blank" rel="noopener">打开 PDF 定位页</a>
-        <PdfPreview :key="location.preview_url" :url="location.preview_url" :page="location.chunk.anchor.page!" />
-      </template>
-    </section>
+    <SourceContext v-if="location" :key="location.chunk.id" :project="project" :location="location" />
   </section>
 </template>

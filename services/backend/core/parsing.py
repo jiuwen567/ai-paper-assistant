@@ -147,7 +147,9 @@ def parse_document(data, name, checkpoint=lambda progress: True):
                     or any("officeDocument/2006/math" in node.tag for node in root.iter())
                 ):
                     result.coverage = "partial"
-                    result.warnings.append("仅提取正文顶层段落与标题；表格、图片、公式及嵌套结构需查看原件。")
+                    result.warnings.append(
+                        "仅提取正文顶层段落与标题；表格、图片、公式及嵌套结构需查看原件。"
+                    )
         elif suffix == ".csv":
             reader = csv.reader(io.StringIO(data.decode("utf-8-sig")), strict=True)
             header = next(reader)

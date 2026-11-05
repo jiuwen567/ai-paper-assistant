@@ -22,6 +22,11 @@ def execute_job(job_id):
     if job is None:
         return
     try:
+        if job.kind == "index":
+            from core.index_jobs import execute_index
+
+            execute_index(job)
+            return
         if job.kind == "parse":
             from core.parse_jobs import execute_parse
 

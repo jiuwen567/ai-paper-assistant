@@ -44,6 +44,10 @@ def main():
     ]
     if any(not values.get(k) or values[k].startswith("replace-") for k in required):
         raise SystemExit(".env 包含占位值或缺失字段。请填写本地值，或移走示例副本后重跑。")
+    # 仅存放公开模型文件；提前建目录，避免 Compose 以 root 创建后阻止宿主机准备模型。
+    model_dir = ROOT / ".local" / "embeddings"
+    model_dir.mkdir(parents=True, exist_ok=True)
+    model_dir.chmod(0o755)
     config_dir = ROOT / ".local" / "seaweedfs"
     config_dir.mkdir(parents=True, exist_ok=True)
     config_dir.chmod(0o700)

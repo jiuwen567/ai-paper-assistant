@@ -7,7 +7,7 @@ type Attempt = { generation: number; status: JobStatus; error_message: string };
 type Job = {
   id: string; kind: string; status: JobStatus; progress: number; generation: number; retryable: boolean;
   error_code: string; error_message: string; created_at: string; attempts: Attempt[];
-  output: { characters?: number; source_version?: number; chunks?: number } | null;
+  output: { characters?: number; source_version?: number; chunks?: number; segments?: number } | null;
 };
 const props = defineProps<{ project: Project }>();
 const emit = defineEmits<{ accessLost: [error: ApiError] }>();
@@ -75,11 +75,12 @@ onUnmounted(() => { mounted = false; clearTimeout(timer); });
     <ul class="project-list">
       <li v-for="job in jobs?.results" :key="job.id">
         <details>
-          <summary>{{ job.kind === "parse" ? "材料解析" : "字数统计" }} · {{ labels[job.status] }} · {{ job.progress }}%</summary>
+          <summary>{{ job.kind === "parse" ? "材料解析" : job.kind === "index" ? "检索索引" : "字数统计" }} · {{ labels[job.status] }} · {{ job.progress }}%</summary>
           <p>{{ new Date(job.created_at).toLocaleString("zh-CN") }}</p>
           <p v-if="job.error_message" role="status">{{ job.error_message }}（{{ job.error_code }}）</p>
           <p v-if="job.output && job.kind === 'sample'">{{ job.output.characters }} 字 · 输入版本 {{ job.output.source_version }}</p>
           <p v-if="job.output && job.kind === 'parse'">{{ job.output.chunks }} 个片段</p>
+          <p v-if="job.output && job.kind === 'index'">{{ job.output.segments }} 个索引片段</p>
           <ul><li v-for="attempt in job.attempts" :key="attempt.generation">
             第 {{ attempt.generation }} 次 · {{ labels[attempt.status] }} {{ attempt.error_message }}
           </li></ul>

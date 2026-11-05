@@ -66,9 +66,9 @@ def require_project_resource(user, project_id, queryset, resource_id, *, write=F
     return get_object_or_404(queryset, pk=resource_id, project_id=project.pk)
 
 
-def require_ai_action(user, project_id, action, policy_version, *, lock=False):
+def require_ai_action(user, project_id, action, policy_version, *, lock=False, write=True):
     """任务入口、工具调用和发布结果分别调用；通过检查不构成持久授权。"""
-    project = require_project(user, project_id, write=True, lock=lock)
+    project = require_project(user, project_id, write=write, lock=lock)
     policy = project.policies.order_by("-version").first()
     if policy is None or policy.version != policy_version:
         raise VersionConflict("项目规则已更新，请重新核对。")

@@ -81,7 +81,10 @@ SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
-CELERY_BEAT_SCHEDULE = {"recover-jobs": {"task": "jobs.recover", "schedule": 15.0}}
+CELERY_BEAT_SCHEDULE = {
+    "recover-jobs": {"task": "jobs.recover", "schedule": 15.0},
+    "sync-graph": {"task": "graph.sync", "schedule": 15.0},
+}
 
 WECHAT_APP_ID = env("WECHAT_APP_ID", default="")
 WECHAT_APP_SECRET = env("WECHAT_APP_SECRET", default="")

@@ -12,7 +12,7 @@ import pytest
 from django.db import close_old_connections
 from django.test import override_settings
 
-from core.ai_jobs import AIRun, checkpoint
+from core.ai_jobs import AIRun, checkpoint, model_configuration
 from core.jobs import claim, recover_jobs
 from core.models import EvidenceNote, Job, Material, Project, ProjectMember, ProjectPolicy
 from core.parsing import ParseFailure
@@ -108,6 +108,21 @@ def create_ai(context, source, **changes):
         response = client.post(path(project, "ai-tasks/"), payload, format="json")
     assert response.status_code in [200, 201], response.data
     return Job.objects.get(pk=response.data["id"])
+
+
+def test_token_field_configuration_is_validated_and_frozen(context, source):
+    with provider(lambda *_: []) as requests:
+        with override_settings(AI_MAX_TOKENS_FIELD="unknown"):
+            with pytest.raises(ParseFailure, match="model_unconfigured"):
+                model_configuration()
+        with override_settings(AI_MAX_TOKENS_FIELD="max_tokens"):
+            job = create_ai(context, source)
+            assert job.input_snapshot["model"]["max_tokens_field"] == "max_tokens"
+        with override_settings(AI_MAX_TOKENS_FIELD="max_completion_tokens"):
+            execute_job(str(job.pk))
+        job.refresh_from_db()
+        assert job.status == "cancelled", job.error_code
+        assert not requests and job.model_calls.count() == 0
 
 
 def test_sdk_end_to_end_pending_results_trace_and_idempotency(context, source):

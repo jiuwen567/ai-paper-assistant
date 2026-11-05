@@ -30,13 +30,15 @@ async function rpc(type: string, payload: Record<string, unknown> = {}) {
 
 try {
   const config = await read();
+  const maxTokensField = config.max_tokens_field ?? "max_tokens";
+  if (!["max_tokens", "max_completion_tokens"].includes(maxTokensField)) throw new Error("config");
   const endpoint = new URL(config.base_url.replace(/\/$/, "") + "/chat/completions");
   const model: Model<"openai-completions"> = {
     id: config.model, name: config.model, provider: "paper", api: "openai-completions",
     baseUrl: config.base_url, reasoning: false, input: ["text"],
     contextWindow: 32768, maxTokens: config.max_tokens ?? 2048,
     cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-    compat: { supportsDeveloperRole: false, supportsReasoningEffort: false },
+    compat: { supportsDeveloperRole: false, supportsReasoningEffort: false, maxTokensField },
   };
   const references = Type.Array(Type.String({ format: "uuid" }), { minItems: 1, maxItems: 5, uniqueItems: true });
   const proposal = Type.Object({ text: Type.String({ minLength: 1, maxLength: 2000 }), chunk_ids: references }, { additionalProperties: false });

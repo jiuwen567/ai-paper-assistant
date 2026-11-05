@@ -1,0 +1,82 @@
+[
+  {
+    "request": {
+      "model": "qwen3:4b-instruct",
+      "messages": [
+        {
+          "role": "user",
+          "content": "按顺序列出从一到二十，每项一句中文解释。"
+        }
+      ],
+      "temperature": 0,
+      "max_completion_tokens": 8,
+      "stream": false
+    },
+    "response": {
+      "id": "chatcmpl-997",
+      "object": "chat.completion",
+      "created": 1793912935,
+      "model": "qwen3:4b-instruct",
+      "system_fingerprint": "fp_ollama",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "1. 一：表示数量的开始，是最基本的自然数，用于计数和表示最小的单位。  \n2. 二：表示两个，是自然数中的第二个数，常用于成对或成双的概念。  \n3. 三：表示三个，是自然数中的第三个数，常用于“三”这个数字在文化中的象征意义。  \n4. 四：表示四个，是自然数中的第四个数，常用于“四面八方”等表达。  \n5. 五：表示五个，是自然数中的第五个数，常用于“五指”“五湖”等文化意象。  \n6. 六：表示六个，是自然数中的第六个数，常用于“六六大顺”等吉祥说法。  \n7. 七：表示七个，是自然数中的第七个数，常用于“七上八下”“七窍”等表达。  \n8. 八：表示八个，是自然数中的第八个数，常用于“八面玲珑”“八仙过海”等成语。  \n9. 九：表示九个，是自然数中的第九个数，常用于“九九归一”“九天”等表达。  \n10. 十：表示十个，是自然数中的第十个数，常用于“十全十美”“十指连心”等说法。  \n11. 十一：表示十一，是十加一，常用于表示数量略多于十的场合。  \n12. 十二：表示十二，是十加二，常用于“十二生肖”“十二时辰”等文化概念。  \n13. 十三：表示十三，是十加三，常在文化中带有特殊含义，如“十三”有时被视为不吉利。  \n14. 十四：表示十四，是十加四，常用于表示数量中等偏上的数值。  \n15. 十五：表示十五，是十加五，常用于“十五夜”“十五岁”等节日或年龄表达。  \n16. 十六：表示十六，是十加六，常用于“十六岁”“十六岁生日”等年龄描述。  \n17. 十七：表示十七，是十加七，常用于“十七岁”“十七年”等时间或年龄表达。  \n1、十八：表示十八，是十加八，常用于“十八岁”“十八岁成年”等成年节点。  \n19. 十九：表示十九，是十加九，常用于表示接近二十的数值。  \n20. 二十：表示二十，是自然数中的第二十个数，常用于“二十岁”“二十周年”等表达。"
+          },
+          "finish_reason": "stop"
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 22,
+        "prompt_tokens_details": {
+          "cached_tokens": 1
+        },
+        "completion_tokens": 599,
+        "total_tokens": 621
+      }
+    },
+    "elapsed_seconds": 6.93
+  },
+  {
+    "request": {
+      "model": "qwen3:4b-instruct",
+      "messages": [
+        {
+          "role": "user",
+          "content": "按顺序列出从一到二十，每项一句中文解释。"
+        }
+      ],
+      "temperature": 0,
+      "max_tokens": 8,
+      "stream": false
+    },
+    "response": {
+      "id": "chatcmpl-623",
+      "object": "chat.completion",
+      "created": 1793912935,
+      "model": "qwen3:4b-instruct",
+      "system_fingerprint": "fp_ollama",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "1. 一：表示数量的"
+          },
+          "finish_reason": "length"
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 22,
+        "prompt_tokens_details": {
+          "cached_tokens": 21
+        },
+        "completion_tokens": 8,
+        "total_tokens": 30
+      }
+    },
+    "elapsed_seconds": 0.21
+  }
+]

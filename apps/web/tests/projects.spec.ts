@@ -36,8 +36,12 @@ test("依据路径双向回查、撤回重建和不可用状态", async ({ page,
   await page.goto("/"); await login(page, accounts.owner, accounts.password);
   await page.getByRole("button", { name: "创建项目" }).click();
   await page.getByLabel("项目名称", { exact: true }).fill("依据图验收");
-  await page.getByRole("button", { name: "创建", exact: true }).click();
-  const project = (await (await page.request.get("/api/v1/projects/")).json()).results[0];
+  const [created] = await Promise.all([
+    page.waitForResponse(response => response.url().endsWith("/api/v1/projects/") && response.request().method() === "POST"),
+    page.getByRole("button", { name: "创建", exact: true }).click(),
+  ]);
+  expect(created.status()).toBe(201);
+  const project = await created.json();
   const projectPath = `projects/${project.id}/`;
   const draft = { version: 0, request_key: randomUUID(), research: { question: "", method: "", result: "" }, blocks: [{ id: randomUUID(), text: "本次记录中，提高温度后反应速率增加。", heading_level: 0 }, { id: randomUUID(), text: "所有条件下均有效。", heading_level: 0 }] };
   expect((await mutate(page.request, projectPath + "manuscript/", "PUT", draft)).status()).toBe(200);
@@ -955,7 +959,7 @@ test("材料更正三处影响、处理冲突、模型候选与复查", async ({
   await card.getByRole("button", { name: "处理历史", exact: true }).click();
   await expect(card).toContainText("另一窗口更新处理记录");
   expect((await mutate(page.request, base + "policies/", "POST", { version: project.version, source: "自制规则", source_version: "v1", verified: true, notes: "", allowed_actions: ["review"] })).status()).toBe(201);
-  fixtureData("impact", accounts.prefix, { run_id: run.id, payload: { idempotency_key: randomUUID(), policy_version: 2, block_ids: draft.blocks.map(b => b.id) }, output: { summary: "协议样例：一处潜在关联。", candidates: [{ block_version_id: manuscript.blocks[3].version_id, body_quote: draft.blocks[3].text, reason: "可能受单位更正影响，请作者核对。", basis: "note", chunk_id: null, change_quote: "单位更正" }] } });
+  fixtureData("impact", accounts.prefix, { run_id: run.id, payload: { idempotency_key: randomUUID(), policy_version: 2, block_ids: draft.blocks.map(b => b.id) }, output: { candidates: [{ block_version_id: manuscript.blocks[3].version_id, body_quote: draft.blocks[3].text, reason: "可能受单位更正影响，请作者核对。", basis: "note", chunk_id: null, change_quote: "单位更正" }] } });
   await panel.getByRole("button", { name: "刷新变更区" }).click();
   await expect(panel.locator(".impact-item")).toHaveCount(4);
   await expect(panel.locator(".impact-item").filter({ hasText: "模型补充候选" })).toContainText("需要作者复核");

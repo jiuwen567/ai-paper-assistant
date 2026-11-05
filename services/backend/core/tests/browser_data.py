@@ -179,8 +179,9 @@ def main():
                 if response.status_code != 201:
                     raise ValueError("无法创建浏览器测试模型任务。")
                 execute_job(response.data["id"])
-                if Job.objects.get(pk=response.data["id"]).status != "succeeded":
-                    raise ValueError("浏览器测试模型任务失败。")
+                job = Job.objects.get(pk=response.data["id"])
+                if job.status != "succeeded":
+                    raise ValueError(f"浏览器测试模型任务失败：{job.status}/{job.error_code}。")
                 print(
                     json.dumps({"job_id": response.data["id"], "task": response.data}, default=str)
                 )

@@ -1,6 +1,6 @@
 # 开发说明
 
-本工程提供 [Issue #1](https://github.com/jiuwen567/ai-paper-assistant/issues/1) 的基础设施，以及 [Issue #2](https://github.com/jiuwen567/ai-paper-assistant/issues/2) 的账号、项目和权限实现。材料、稿件与业务任务仍由后续任务接入。
+本工程提供 [Issue #1](https://github.com/jiuwen567/ai-paper-assistant/issues/1) 的基础设施，以及 [Issue #2](https://github.com/jiuwen567/ai-paper-assistant/issues/2) 的账号、项目和权限实现。Issue #3 提供持久后台任务与字数统计样例；材料、稿件与模型任务由后续任务接入。
 
 ## 技术栈与版本
 
@@ -38,7 +38,7 @@ scripts/init_dev.py            生成本地凭据及 S3 配置
 compose.yaml                   基础服务与可选应用容器
 ```
 
-API 与 Worker 共用 Python 依赖和镜像，但分别启动进程。Redis 只承担任务传输与短期结果，不替代 PostgreSQL 的业务事实源。当前没有实现业务任务状态机、重试、取消或 outbox；这些由后续 Issue 承接。
+API 与 Worker 共用 Python 依赖和镜像，但分别启动进程。Redis 只承担任务传输与短期结果，不替代 PostgreSQL 的业务事实源。业务任务状态、输入快照、尝试、租约、进度和错误保存在 PostgreSQL。Celery Beat 每 15 秒扫描等待任务与过期租约；outbox 由关系同步任务接入。
 
 ## 方式一：全部使用容器
 
@@ -83,7 +83,7 @@ make migrate
 
 `make install` 分别运行 `uv sync --locked`、`pnpm install --frozen-lockfile`。不要混用 npm / yarn 产生其他锁文件，也不要在启动过程中自动升级依赖。
 
-然后在三个终端分别运行：
+然后分别运行 API、Worker、调度器和 Web：
 
 ```bash
 make api
@@ -91,6 +91,10 @@ make api
 
 ```bash
 make worker
+```
+
+```bash
+uv run --directory services/backend celery -A worker.app beat --loglevel=info --schedule=/tmp/paper-celerybeat-schedule
 ```
 
 ```bash
@@ -263,6 +267,27 @@ pnpm --filter @paper/web test:e2e
 覆盖桌面与手机尺寸、真实登录与 CSRF、项目编辑、规则变更、越权与撤权、真实 API 代理、503 依赖故障展示、断网重试恢复、`/wechat` 直接访问与横向溢出检查。账号场景要求 PostgreSQL 已启动并迁移；测试为每个用例生成随机账号与密码，结束时只清理对应随机前缀的专用数据。测试只在 DEBUG 环境运行，失败追踪可能包含测试会话，不公开发布。依赖未启动时可以验证环境页的真实 503 路径，但不代替成功路径的多服务联调。测试截图和失败追踪在 `apps/web/test-results/`，不进入 Git。
 
 GitHub Actions 的 `Engineering checks` 工作流包含上述检查、真实 Docker 基础服务、空库迁移、集成测试、浏览器测试及完整容器启动检查。工作流尚未在远端执行时，不应把它记作通过。
+
+
+## 后台任务
+
+项目页面可提交字数统计样例、查看进度和尝试记录、取消或重试。样例不调用模型。刷新或离开页面不会丢失任务；审阅者只能查看，任务输入不由客户端选定创建者或执行代次。
+
+- `POST /api/v1/projects/{project_id}/jobs/` 接收 `kind=sample`、`idempotency_key`、`policy_version` 和 `input_snapshot`（`text`、`source_version`、可选 `steps=1..10`）。同用户同项目同键且输入一致时返回同一任务，输入不同返回 409。
+- 任务详情与列表提供输入版本、状态、尝试记录和结果；`/{job_id}/cancel/`、`/{job_id}/retry/` 要求提交当前 `generation`。每项最多 3 次尝试，超时进入可重试失败，取消与成功结果不能重新运行。
+- Worker 领取时创建新执行代次，30 秒租约内通过心跳续期。每个步骤前和发布时重新校验租约、创建者权限及规则版本；迟到结果、撤权或规则变化均不会发布。后续模型适配也必须在每次工具或模型调用前使用该检查。
+- 队列发送失败保留 `queued/dispatch_failed`；调度器恢复后重新发送。重复消息由数据库领取锁拒绝。Worker 中断后，调度器将过期任务标记为 `failed/lease_expired`，作者可重试。错误只保存受控代码和文案，不保存底层异常正文。
+- 本地容器模式包含 `scheduler` 服务；本机模式需运行上述 Beat。调度器故障或停机恢复后可手动执行 `uv run python services/backend/manage.py recover_jobs`。恢复扫描每批最多 100 项，按更新时间轮转；任务量增加后再优化批量调度。
+
+任务测试：`uv run pytest services/backend/core/tests/test_jobs.py`。需要 PostgreSQL 和 Redis；真实 Worker 重启测试启动专用队列与独立测试库进程，结束时清理。只提供确定性的样例任务，上层解析、模型、导出实现随各自 Issue 接入，不把样例输出当作真实 AI 结果。
+
+## 后台任务验收（2026-11-05）
+
+- 14 项任务测试通过，使用真实 PostgreSQL；覆盖幂等、并发创建与领取、心跳、过期重试、取消、规则变化、撤权、跨项目访问、只读角色及次数上限。
+- 专用测试队列中强制终止真实 Celery Worker 后重新启动，旧代次保留失败，新代次成功；测试缩短了租约等待时间，未把该部分记录为真实 30 秒等待。
+- 28 项原有项目权限测试通过；桌面与手机尺寸共 8 项账号、项目及后台任务浏览器测试通过，刷新页面后可查回真实 Worker 输出。
+- Ruff、Django 系统检查、双端 TypeScript 检查、Web 构建和迁移遗漏检查通过。容器增加调度器并执行迁移；首次桌面测试因旧 API 镜像失败，重新创建应用容器后相关 8 项测试通过，未删除数据卷。
+- 取消和撤权针对任务状态及发布事务验证；样例不调用模型，真实模型调用中断与输入资源有效性由后续模块联调。
 
 ## 账号与项目验收（2026-11-05）
 

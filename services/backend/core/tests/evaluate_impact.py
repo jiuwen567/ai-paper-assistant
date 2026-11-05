@@ -22,6 +22,7 @@ from rest_framework.test import APIClient  # noqa: E402
 
 from core.ai_jobs import AIRun  # noqa: E402
 from core.models import (  # noqa: E402
+    ImpactDecision,
     ImpactItem,
     Job,
     Material,
@@ -111,11 +112,24 @@ def main():
             with patch("core.jobs.dispatch"):
                 job = create_model(context, run, manuscript)
             events = []
+            tools = []
             handle = AIRun.handle
 
             def trace(runner, event):
                 events.append(event)
-                return handle(runner, event)
+                entry = None
+                if event.get("type") == "tool":
+                    entry = {"name": event["name"], "args": event.get("args")}
+                    tools.append(entry)
+                try:
+                    result = handle(runner, event)
+                except Exception as exc:
+                    if entry is not None:
+                        entry["error_code"] = getattr(exc, "code", type(exc).__name__)
+                    raise
+                if entry is not None:
+                    entry["response"] = result
+                return result
 
             with patch.object(AIRun, "handle", trace):
                 execute_job(str(job.pk))
@@ -124,9 +138,17 @@ def main():
         positions = {b["version_id"]: index + 1 for index, b in enumerate(manuscript["blocks"])}
         for candidate in candidates:
             candidate["position"] = positions[candidate["block_version_id"]]
+        current_manuscript = project.manuscript
+        current_manuscript.refresh_from_db()
+        revision = current_manuscript.current_revision
+        current_texts = list(
+            revision.items.order_by("position").values_list("block_version__text", flat=True)
+        )
         report = {
             "case": "self-authored-temperature-correction-v1",
             "events": events,
+            "tools": tools,
+            "input_manuscript": texts,
             "model": args.model,
             "prompt_version": job.input_snapshot["model"]["prompt_version"],
             "expected": "三处登记依赖由SQL查到；模型补充第4块，勿误报第5块；正文始终不变。",
@@ -139,7 +161,8 @@ def main():
             "calls": list(
                 job.model_calls.order_by("number").values("number", "status", "usage", "elapsed_ms")
             ),
-            "manuscript_unchanged": project.manuscript.current_revision.number == 1,
+            "manuscript_unchanged": revision.number == 1 and current_texts == list(texts),
+            "author_decision_count": ImpactDecision.objects.filter(item__run_id=run["id"]).count(),
         }
         Path(args.output).write_text(json.dumps(report, ensure_ascii=False, indent=2))
         print(
@@ -152,6 +175,7 @@ def main():
                         "elapsed_seconds",
                         "registered_positions",
                         "manuscript_unchanged",
+                        "author_decision_count",
                     ]
                 }
             ),

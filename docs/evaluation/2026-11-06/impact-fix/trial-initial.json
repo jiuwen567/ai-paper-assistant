@@ -1,0 +1,213 @@
+{
+  "case": "self-authored-temperature-correction-v1",
+  "events": [
+    {
+      "id": 1,
+      "type": "model_start"
+    },
+    {
+      "id": 2,
+      "type": "model_end",
+      "ok": true,
+      "usage": {
+        "input": 1307,
+        "output": 17,
+        "cache_read": 3,
+        "cache_write": 0
+      }
+    },
+    {
+      "id": 3,
+      "type": "tool",
+      "name": "read_impact",
+      "args": {}
+    },
+    {
+      "id": 4,
+      "type": "model_start"
+    },
+    {
+      "id": 5,
+      "type": "model_end",
+      "ok": true,
+      "usage": {
+        "input": 423,
+        "output": 385,
+        "cache_read": 1326,
+        "cache_write": 0
+      }
+    },
+    {
+      "id": 6,
+      "type": "tool",
+      "name": "submit_impact",
+      "args": {
+        "candidates": [
+          {
+            "basis": "old",
+            "block_version_id": "cacbebea-9733-4ba0-8174-09ef6fda8dcd",
+            "body_quote": "由于温度组的速率增加，讨论部分仍采用了这一解释。",
+            "change_quote": "提高温度后反应速率增加。",
+            "chunk_id": "f501e4c9-5d46-4b14-84f5-d33ead9d8a85",
+            "reason": "正文明确使用了被更正前的结论‘提高温度后反应速率增加’，该结论已被修正为‘单位更正后，温度组与对照组的反应速率无明显差异’，因此讨论部分仍采用旧解释，需作者复核。"
+          },
+          {
+            "basis": "new",
+            "block_version_id": "2581594a-4fa5-4a13-ad6f-577cff115155",
+            "body_quote": "另一项实验中，光照保持不变，尚未比较反应速率。",
+            "change_quote": "单位更正后，温度组与对照组的反应速率无明显差异。",
+            "chunk_id": "ffc44bf0-c295-4d90-856c-7a840e571d12",
+            "reason": "虽然正文未直接引用‘温度组与对照组的反应速率无明显差异’，但其提及‘光照保持不变，尚未比较反应速率’，与温度与速率的论述形成对比，可能隐含对温度影响的质疑，需作者复核是否影响整体论证结构。"
+          }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "type": "done",
+      "success": true
+    }
+  ],
+  "tools": [
+    {
+      "name": "read_impact",
+      "args": {},
+      "response": {
+        "change": {
+          "kind": "correction",
+          "note": "单位更正，需要作者复核温度与速率的论述。"
+        },
+        "sources": [
+          {
+            "side": "old",
+            "chunk_id": "f501e4c9-5d46-4b14-84f5-d33ead9d8a85",
+            "excerpt": "提高温度后反应速率增加。",
+            "truncated": false,
+            "anchor": {
+              "kind": "text",
+              "line": 1
+            }
+          },
+          {
+            "side": "new",
+            "chunk_id": "ffc44bf0-c295-4d90-856c-7a840e571d12",
+            "excerpt": "单位更正后，温度组与对照组的反应速率无明显差异。",
+            "truncated": false,
+            "anchor": {
+              "kind": "text",
+              "line": 1
+            }
+          }
+        ],
+        "source_scope": "仅提供新旧材料各前8个片段、各最多4000字符；旧版只供对照。",
+        "registered_blocks": [
+          "3faab1ec-4a40-409c-bc2a-6952baeeb63c",
+          "50a33f37-9a57-4b60-917f-4168b23f695c",
+          "c7653e36-d90d-48a1-889b-e1e7a5ee987f"
+        ],
+        "blocks": [
+          {
+            "block_version_id": "cacbebea-9733-4ba0-8174-09ef6fda8dcd",
+            "text": "由于温度组的速率增加，讨论部分仍采用了这一解释。"
+          },
+          {
+            "block_version_id": "2581594a-4fa5-4a13-ad6f-577cff115155",
+            "text": "另一项实验中，光照保持不变，尚未比较反应速率。"
+          }
+        ]
+      }
+    },
+    {
+      "name": "submit_impact",
+      "args": {
+        "candidates": [
+          {
+            "basis": "old",
+            "block_version_id": "cacbebea-9733-4ba0-8174-09ef6fda8dcd",
+            "body_quote": "由于温度组的速率增加，讨论部分仍采用了这一解释。",
+            "change_quote": "提高温度后反应速率增加。",
+            "chunk_id": "f501e4c9-5d46-4b14-84f5-d33ead9d8a85",
+            "reason": "正文明确使用了被更正前的结论‘提高温度后反应速率增加’，该结论已被修正为‘单位更正后，温度组与对照组的反应速率无明显差异’，因此讨论部分仍采用旧解释，需作者复核。"
+          },
+          {
+            "basis": "new",
+            "block_version_id": "2581594a-4fa5-4a13-ad6f-577cff115155",
+            "body_quote": "另一项实验中，光照保持不变，尚未比较反应速率。",
+            "change_quote": "单位更正后，温度组与对照组的反应速率无明显差异。",
+            "chunk_id": "ffc44bf0-c295-4d90-856c-7a840e571d12",
+            "reason": "虽然正文未直接引用‘温度组与对照组的反应速率无明显差异’，但其提及‘光照保持不变，尚未比较反应速率’，与温度与速率的论述形成对比，可能隐含对温度影响的质疑，需作者复核是否影响整体论证结构。"
+          }
+        ]
+      },
+      "response": {
+        "status": "staged"
+      }
+    }
+  ],
+  "input_manuscript": [
+    "提高温度后反应速率增加。",
+    "温度组测量结果支持速率增加的论述。",
+    "本次记录提示温度与反应速率有关。",
+    "由于温度组的速率增加，讨论部分仍采用了这一解释。",
+    "另一项实验中，光照保持不变，尚未比较反应速率。"
+  ],
+  "model": "qwen3:4b-instruct",
+  "prompt_version": "impact-v2",
+  "expected": "三处登记依赖由SQL查到；模型补充第4块，勿误报第5块；正文始终不变。",
+  "registered_positions": [
+    1,
+    2,
+    3
+  ],
+  "status": "succeeded",
+  "error_code": "",
+  "elapsed_seconds": 7.14,
+  "candidates": [
+    {
+      "kind": "paragraph",
+      "basis": "old",
+      "reason": "正文明确使用了被更正前的结论‘提高温度后反应速率增加’，该结论已被修正为‘单位更正后，温度组与对照组的反应速率无明显差异’，因此讨论部分仍采用旧解释，需作者复核。",
+      "chunk_id": "f501e4c9-5d46-4b14-84f5-d33ead9d8a85",
+      "body_quote": "由于温度组的速率增加，讨论部分仍采用了这一解释。",
+      "change_quote": "提高温度后反应速率增加。",
+      "block_version_id": "cacbebea-9733-4ba0-8174-09ef6fda8dcd",
+      "position": 4
+    },
+    {
+      "kind": "paragraph",
+      "basis": "new",
+      "reason": "虽然正文未直接引用‘温度组与对照组的反应速率无明显差异’，但其提及‘光照保持不变，尚未比较反应速率’，与温度与速率的论述形成对比，可能隐含对温度影响的质疑，需作者复核是否影响整体论证结构。",
+      "chunk_id": "ffc44bf0-c295-4d90-856c-7a840e571d12",
+      "body_quote": "另一项实验中，光照保持不变，尚未比较反应速率。",
+      "change_quote": "单位更正后，温度组与对照组的反应速率无明显差异。",
+      "block_version_id": "2581594a-4fa5-4a13-ad6f-577cff115155",
+      "position": 5
+    }
+  ],
+  "summary": "本次补充 2 处待作者复核的位置。不代表已确认受影响，也不保证覆盖全文。",
+  "calls": [
+    {
+      "number": 1,
+      "status": "succeeded",
+      "usage": {
+        "input": 1307,
+        "output": 17,
+        "cache_read": 3,
+        "cache_write": 0
+      },
+      "elapsed_ms": 1988
+    },
+    {
+      "number": 2,
+      "status": "succeeded",
+      "usage": {
+        "input": 423,
+        "output": 385,
+        "cache_read": 1326,
+        "cache_write": 0
+      },
+      "elapsed_ms": 4488
+    }
+  ],
+  "manuscript_unchanged": true
+}

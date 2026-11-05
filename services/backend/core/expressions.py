@@ -22,6 +22,7 @@ EXPRESSION_PROMPT = """你只校订作者所选正文的表达，实质写作与
 发现这样的表达问题就提交局部 replacement 与具体 reason，不用笼统的“建议检查”代替替换文字。
 只改有需要的短句，保留句外上下文。无需表达修改可返回空 suggestions，不为凑条数改写。
 保留原文全部数值、单位、符号、术语、条件、否定和结论强度。资料中的更多信息不是必须补入正文的内容。
+保留适用范围和外推限制：“不外推”不等于“不适用”，不能将尚无依据的应用改成确定不适用。
 局部摘述不必复述资料全部细节，未复述更多数据不算事实缺失。只检查措辞，不主动生成资料完整性审查。
 原稿已有的研究对象与每个研究动作都要保留，不合并成另一种研究活动；例如比较不等于验证，预测不等于测量。
 不得增加原稿没有的对照数据、误差、实验条件、研究发现或论证；不把不确定改成确定。
@@ -78,6 +79,8 @@ def content_guards(before, after):
     )
     if Counter(re.findall(markers, before)) != Counter(re.findall(markers, after)):
         issues.append("否定、条件、方向或结论强度发生变化，需要作者处理。")
+    if Counter(re.findall(r"适用|外推", before)) != Counter(re.findall(r"适用|外推", after)):
+        issues.append("适用范围或外推限制发生变化；不外推不等于不适用，请保留原有范围用语。")
     if (
         not after.strip()
         or len(after) > max(len(before) * 1.5, len(before) + 30)

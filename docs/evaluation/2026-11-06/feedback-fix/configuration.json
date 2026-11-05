@@ -135,7 +135,7 @@
     "services/backend/core/tests/evaluate_review.py": "946010855ceff0ed92249c5f203251d532faabe90d30531854e4672d0554b871",
     "services/backend/core/tests/evaluation_cases.py": "d93ad5358f53a54d05456722aae3307b63fc388c75121a50dba776a256e968db",
     "services/backend/core/tests/evaluation_cleanup.py": "6bf05996e497da44a1b6817b1b8c323f710205d52d3ffded379fa9b70a9cc532",
-    "services/backend/core/tests/evaluation_direct.py": "3f132b36d00533d09bd4877d12f089e6b0aa3ba91dc19c9c7b4c3ba3895ea5fc",
+    "services/backend/core/tests/evaluation_direct.py": "977d2fd1f0b5ef5b2e810687f2ef040d29a4ff7e343db48c72c0f58c9e3927a1",
     "services/backend/core/tests/evaluation_metrics.py": "631288634b13298d0564e3e066ad3656f30582eddc1d06e0f1ad72ab12734a6e",
     "services/backend/core/tests/evaluation_review.py": "5856f8d10fa36c6909d77cdb68df563fa84f1293e0bf43ba9929d8214c105429",
     "services/backend/core/tests/parse_samples.py": "afe7d1ebd30c321fd906b2ec9c501ecc3596ec9dd92dee7039c3b709bec21510",
@@ -183,10 +183,13 @@
   },
   "artifacts": {
     "baseline-v1.json": "c958553a6ed0917695395b04a44293f4f62ee0058eea7fb32e6d24214362f5d3",
-    "direct-final.json": "91e49da9c92bfe9a08346a2be8979a563834dfdcfc413dc7aec0fb10ee0629dc",
+    "direct-final.json": "f3421b75877b13480d018f9e8cc51baf4aa86c381482ad70a6eb65026faaf53b",
+    "direct-trial-items.json": "d97f694b90bede48020e54a07fbd8e6b840158e9a745f8eac29dd0fbf6042823",
+    "direct-trial-location.json": "91e49da9c92bfe9a08346a2be8979a563834dfdcfc413dc7aec0fb10ee0629dc",
     "direct-trial.json": "a4a833ab962b42050ed3ff873b08f0d811dab5a5c43315cad52de8b5aec83e8d",
     "system-final.json": "fbf664c488e15a4da08d6c2b8f38479a41e27a740c8259e0112879e809779cb9",
     "trial-expanded.json": "cd6d3c832cb1fbf0a60333fbd4378f5f84c4dc6999b25e393d7d8d92559efacc",
     "trial-initial.json": "34a4f694533bbc98f79f4ae8c64c416b4c5ffa6c57d99793040533a0a1a82942"
-  }
+  },
+  "direct_note": "只针对反馈去除无关空正文/资料字段，当前 direct-final 请求与最终提示逐字一致。位置要求试验和仅写条数试验均保留；后者未修复漏项且额外拆开纳入/排除条件，已撤回。当前混合样例只在总述提到单位任务，items 仍为空，不算修复。"
 }

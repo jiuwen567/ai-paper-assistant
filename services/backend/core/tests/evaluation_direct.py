@@ -66,6 +66,9 @@ def prompt(case):
     data["blocks"] = [
         {"position": pos, "text": text} for pos, text in zip(positions, case["blocks"], strict=True)
     ]
+    if case["purpose"] == "feedback":
+        # 空正文/资料不是反馈提取的前置条件，不用无关空字段遮蔽原始意见。
+        data = {key: value for key, value in data.items() if key == "feedback" or value}
     instructions = {
         "reading": "每份资料分别列研究对象、方法、结果、局限、条件、适用范围六项，"
         "明确未取得的信息。",

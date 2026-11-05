@@ -149,6 +149,7 @@ def main():
                     "case": name,
                     "selected_sources": {pk: f"source-{versions.index(pk) + 1}" for pk in selected},
                     "model": args.model,
+                    "reasoning_effort": job.input_snapshot["model"]["reasoning_effort"],
                     "prompt_version": job.input_snapshot["model"]["prompt_version"],
                     "input_samples": [
                         {"id": f"source-{i + 1}", "title": title, "scope": scope, "text": text}

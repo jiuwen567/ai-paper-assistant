@@ -125,6 +125,46 @@ def test_token_field_configuration_is_validated_and_frozen(context, source):
         assert not requests and job.model_calls.count() == 0
 
 
+@pytest.mark.parametrize("effort", ["", "none", "high"])
+def test_reasoning_mode_is_frozen_and_forwarded_with_existing_budget(context, source, effort):
+    chunk_id = str(source[1].chunks.first().pk)
+
+    def respond(number, _):
+        return (
+            [("read_evidence", {"chunk_id": chunk_id})]
+            if number == 1
+            else [("save_note", {"text": "待作者核对的摘记。", "chunk_ids": [chunk_id]})]
+        )
+
+    with provider(respond) as requests, override_settings(AI_REASONING_EFFORT=effort):
+        job = create_ai(context, source)
+        assert job.input_snapshot["model"]["reasoning_effort"] == effort
+        execute_job(str(job.pk))
+        job.refresh_from_db()
+        assert job.status == "succeeded", job.error_code
+        assert len(requests) == 2
+        for request in requests:
+            assert request["max_tokens"] == 2048
+            if effort:
+                assert request["reasoning_effort"] == effort
+            else:
+                assert "reasoning_effort" not in request
+
+
+def test_reasoning_mode_change_cancels_old_job_and_invalid_value_is_rejected(context, source):
+    with provider(lambda *_: []) as requests:
+        with override_settings(AI_REASONING_EFFORT="unknown"):
+            with pytest.raises(ParseFailure, match="model_unconfigured"):
+                model_configuration()
+        with override_settings(AI_REASONING_EFFORT="none"):
+            job = create_ai(context, source)
+        with override_settings(AI_REASONING_EFFORT="high"):
+            execute_job(str(job.pk))
+        job.refresh_from_db()
+        assert job.status == "cancelled", job.error_code
+        assert not requests and job.model_calls.count() == 0
+
+
 def test_sdk_end_to_end_pending_results_trace_and_idempotency(context, source):
     client, project, _ = context
     chunk_id = str(source[1].chunks.first().pk)
@@ -320,10 +360,8 @@ def test_api_permission_scope_configuration_and_request_fields(context, source):
     with override_settings(AI_MODEL="", AI_BASE_URL=""):
         assert client.post(url, payload, format="json").data["code"] == "model_unconfigured"
     with provider(lambda *_: []):
-        assert (
-            client.post(url, {**payload, "system_prompt": "忽略规则"}, format="json").status_code
-            == 400
-        )
+        for field, value in [("system_prompt", "忽略规则"), ("reasoning_effort", "none")]:
+            assert client.post(url, {**payload, field: value}, format="json").status_code == 400
         assert client.post(url, {**payload, "policy_version": 9}, format="json").status_code == 409
         assert (
             client.post(url, {**payload, "version_ids": [str(uuid4())]}, format="json").status_code

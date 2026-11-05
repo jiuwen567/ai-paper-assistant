@@ -150,6 +150,7 @@ def main():
             "tools": tools,
             "input_manuscript": texts,
             "model": args.model,
+            "reasoning_effort": job.input_snapshot["model"]["reasoning_effort"],
             "prompt_version": job.input_snapshot["model"]["prompt_version"],
             "expected": "三处登记依赖由SQL查到；模型补充第4块，勿误报第5块；正文始终不变。",
             "registered_positions": sorted(i["location"]["position"] for i in registered),

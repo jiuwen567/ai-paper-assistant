@@ -445,6 +445,8 @@ uv run python services/backend/manage.py prepare_embeddings --model BAAI/bge-sma
 
 在服务端 `.env` 配置 `AI_MODEL`、`AI_BASE_URL`、`AI_API_KEY`。端点须兼容 OpenAI Chat Completions 的流式工具调用，`AI_BASE_URL` 通常以 `/v1` 结尾；不自动选择供应商或读取其他客户端的账号配置。未配置时返回 `model_unconfigured`，不创建任务。容器中的本地模型地址须能从 Worker 访问；不要把密钥放入客户端或提交到仓库。配置后重建 API、Worker 和 scheduler。`AI_MAX_TOKENS_FIELD` 默认 `max_tokens`（包括本机 Ollama 0.40.14）；供应商要求新字段时显式改为 `max_completion_tokens`。只接受这两个值，不按端口猜供应商。该选择进入任务快照，变化后旧任务取消，须按新配置重新创建；不改写既有调用记录。
 
+`AI_REASONING_EFFORT` 留空时不发送该字段，沿用服务默认；可显式设为 `none`、`low`、`medium` 或 `high`，须先验证供应商与模型支持该值。模式会进入任务快照，变化后旧任务取消。Pi 的本地模型元信息 `reasoning=false` 不等于请求关闭服务端推理；本机 Ollama 0.40.14 已验证 `reasoning_effort=none` 关闭推理内容，其他级别含义由供应商决定。调用次数、输出 token 上限、总时限和工具权限独立保持，不能据此假定内容更准确。接口和模型均不能修改管理员选择。
+
 作者先启用当前规则的 `reading`，上传并解析材料，再在阅读区选择资料或在原文面板选择“AI 阅读”。后台任务显示取消、重试、待核对摘记、原文回查和调用记录。审阅者只能查看；来源的摘要/全文/未知范围来自题录版本，模型不能自行提升。当前 Web 入口使用下述结构化阅读任务；旧短摘记接口保留执行框架协议。两者均不提供整篇论文写作。
 
 - `POST /api/v1/projects/{project_id}/ai-tasks/`：提交 `idempotency_key`、`policy_version` 和 1–5 个 `version_ids`。不接受提示词、模型、工具或身份字段。同一键和输入返回原任务，不同输入返回 409。
@@ -701,7 +703,9 @@ PYTHONPATH=services/backend uv run python services/backend/core/tests/evaluate_c
 
 目标目录必须是新目录。系统组使用真实 Pi 执行器和业务 API，通过同步派发完成专用任务；直接组使用同一模型的单次请求，协议参见 [Ollama 官方兼容接口说明](https://docs.ollama.com/api/openai-compatibility)。系统最多四次调用，直接组一次；两组每次输出上限相同，但工具读取、校验和返回结构不同。固定先运行系统组再运行直接组，没有平衡模型冷启动和缓存，不能据此推断普遍效率提升。格式不合格时保留原始文本与失败状态，不把空结果当作正确判断。
 
-`run.json` 保存整轮结果，`system-*.json` 保存分模块原始记录，`review-template.json` 是待填写复核表。中断后可加 `--resume` 续写已确认完整的分组与尚未发出的直接请求；代码、模型或样例变化时拒绝续写。部分执行的系统分组需先检查保留的日志，不自动重跑掩盖原失败。专用项目使用永久清理流程移除文件及派生数据，失败时保留清理账本。
+对支持该字段的服务，可加 `--reasoning-effort none`（或 `low/medium/high`）；不传时两组都省略字段，不继承应用的推理模式。系统子进程与直接提问使用同一显式设置，每份结果记录模式，配置改变不能混入同一轮。该参数只用于本机自制评测，不修改 `.env`。
+
+`run.json` 保存整轮结果，`system-*.json` 保存分模块原始记录，`review-template.json` 是待填写复核表。中断后可加 `--resume` 续写已确认完整的分组与尚未发出的直接请求；代码、模型、推理模式或样例变化时拒绝续写。部分执行的系统分组需先检查保留的日志，不自动重跑掩盖原失败。专用项目使用永久清理流程移除文件及派生数据，失败时保留清理账本。
 
 复核者应先检查样例预期，再逐项填写 `correct/incorrect/partial/neutral`、对应预期 ID 与理由，并核对阴性条件。正确项只匹配一个预期；重复正确输出计为误报，部分正确单列且不消耗预期，失败任务的内部草稿不算交付。`assistant_draft` 与 `human` 分开报告；前者不能填写人类核验用时或操作量。未测值保留 null，不能用推测数字补齐。完成复核后：
 

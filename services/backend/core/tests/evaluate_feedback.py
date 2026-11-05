@@ -81,6 +81,7 @@ def main():
                     "feedback": text,
                     "expected": expected,
                     "model": args.model,
+                    "reasoning_effort": job.input_snapshot["model"]["reasoning_effort"],
                     "prompt_version": job.input_snapshot["model"]["prompt_version"],
                     "status": job.status,
                     "error_code": job.error_code,

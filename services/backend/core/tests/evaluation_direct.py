@@ -102,8 +102,10 @@ def prompt(case):
     )
 
 
-def execute(case, base_url, model):
+def execute(case, base_url, model, *, reasoning_effort=""):
     endpoint, _ = local_endpoint(base_url)
+    if reasoning_effort not in {"", "none", "low", "medium", "high"}:
+        raise ValueError("推理模式配置无效。")
     submitted = {
         "model": model,
         "messages": [{"role": "user", "content": prompt(case)}],
@@ -111,6 +113,8 @@ def execute(case, base_url, model):
         "max_tokens": 4096 if case["purpose"] in {"feedback", "impact"} else 8192,
         "stream": False,
     }
+    if reasoning_effort:
+        submitted["reasoning_effort"] = reasoning_effort
     started = time.monotonic()
     result = {"status": "failed", "error_code": "", "raw": None, "items": [], "usage": None}
     try:

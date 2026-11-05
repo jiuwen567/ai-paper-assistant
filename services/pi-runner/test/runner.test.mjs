@@ -24,14 +24,32 @@ test("不支持的 token 字段在调用供应商前拒绝", async t => {
   assert.equal(result.requests, 0);
 });
 
+for (const effort of ["none", "high"]) {
+  test(`管理员推理模式进入真实 Pi 请求：${effort}`, async t => {
+    const result = await exercise(t, [
+      [["save_note", { text: "自制摘记", chunk_ids: [chunk] }]],
+    ], 200, { reasoning_effort: effort, max_tokens: 8 });
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(result.payloads[0].reasoning_effort, effort);
+    assert.equal(result.payloads[0].max_tokens, 8);
+  });
+}
+
+test("无效推理模式在调用供应商前拒绝", async t => {
+  const result = await exercise(t, [], 200, { reasoning_effort: "unknown" });
+  assert.notEqual(result.code, 0);
+  assert.equal(result.requests, 0);
+});
+
 test("诊断请求声明使用工具，空问题列表也通过提交工具", async t => {
   const result = await exercise(t, [
     [["read_manuscript", {}]],
     [["submit_review", { findings: [] }]],
-  ], 200, { purpose: "review", version_ids: [], block_version_ids: [chunk] });
+  ], 200, { purpose: "review", version_ids: [], block_version_ids: [chunk], reasoning_effort: "none" });
   assert.equal(result.code, 0, result.stderr);
   assert.equal(result.requests, 2);
   assert.ok(result.payloads.every(payload => payload.tool_choice === "required"));
+  assert.ok(result.payloads.every(payload => payload.reasoning_effort === "none"));
   assert.equal(result.events.at(-1).success, true);
 });
 
@@ -84,6 +102,7 @@ test("真实 Pi SDK 按白名单读取并提交，保留用量且不自动继续
   assert.equal(result.code, 0, result.stderr);
   assert.equal(result.requests, 2);
   assert.deepEqual(result.payloads[0].tools.map(tool => tool.function.name), ["project_search", "read_evidence", "save_note", "submit_suggestion"]);
+  assert.ok(result.payloads.every(payload => !("reasoning_effort" in payload)));
   assert.deepEqual(result.events.filter(event => event.type === "tool").map(event => event.name), ["read_evidence", "save_note"]);
   assert.equal(result.events.at(-1).success, true);
   assert.deepEqual(result.events.find(event => event.type === "model_end").usage, { input: 20, output: 10, cache_read: 0, cache_write: 0 });
@@ -120,10 +139,11 @@ test("阅读请求声明单次工具调用，提交后不再请求模型", { tim
   const result = await exercise(t, [
     [["read_evidence", { chunk_ids: [chunk] }]],
     [["submit_reading", output], ["submit_reading", output]],
-  ], 200, { purpose: "reading", version_ids: [version] });
+  ], 200, { purpose: "reading", version_ids: [version], reasoning_effort: "high" });
   assert.equal(result.code, 0, result.stderr);
   assert.equal(result.requests, 2);
   assert.ok(result.payloads.every(payload => payload.parallel_tool_calls === false));
+  assert.ok(result.payloads.every(payload => payload.reasoning_effort === "high"));
   // 供应商仍可能忽略约束返回多个调用；全部交业务端校验，不隐瞒第二次提交。
   assert.equal(result.events.filter(event => event.type === "tool" && event.name === "submit_reading").length, 2);
   assert.equal(result.events.at(-1).success, true);

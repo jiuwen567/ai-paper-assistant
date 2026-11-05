@@ -46,6 +46,7 @@ def main():
         raise SystemExit(".env 包含占位值或缺失字段。请填写本地值，或移走示例副本后重跑。")
     config_dir = ROOT / ".local" / "seaweedfs"
     config_dir.mkdir(parents=True, exist_ok=True)
+    config_dir.chmod(0o700)
     config = {
         "identities": [
             {
@@ -57,7 +58,10 @@ def main():
             }
         ]
     }
-    (config_dir / "s3.json").write_text(json.dumps(config, indent=2) + "\n")
+    config_path = config_dir / "s3.json"
+    config_path.write_text(json.dumps(config, indent=2) + "\n")
+    # 仅文件被只读挂载。容器 UID 可能不同，宿主机的访问由上层私有目录限制。
+    config_path.chmod(0o644)
     print("已同步 .local/seaweedfs/s3.json；已有 .env 不会被覆盖")
 
 

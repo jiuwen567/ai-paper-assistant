@@ -65,6 +65,7 @@ JavaScript 使用 pnpm workspace，Python 使用 uv；依赖由锁文件固定�
 - [测试与验收](docs/testing.md)
 - [开发计划](docs/roadmap.md)
 - [开发说明](docs/development.md)
+- [部署、恢复与升级](docs/deployment.md)
 - [看板设置](docs/project-setup.md)
 - [参与开发](CONTRIBUTING.md)
 

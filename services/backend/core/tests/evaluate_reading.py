@@ -25,6 +25,7 @@ from core.ai_jobs import AIRun  # noqa: E402
 from core.library import default_bibliography  # noqa: E402
 from core.models import Job, MaterialVersion, Project, ProjectPolicy, ReadingRecord  # noqa: E402
 from core.tests.evaluation_cleanup import remove_project  # noqa: E402
+from core.tests.reading_regression_samples import SAMPLES as EXTRA_SAMPLES  # noqa: E402
 from core.tests.reading_samples import SAMPLES  # noqa: E402
 from worker.tasks import execute_job  # noqa: E402
 
@@ -34,6 +35,7 @@ def main():
     parser.add_argument("--model", required=True)
     parser.add_argument("--base-url", required=True)
     parser.add_argument("--output", required=True)
+    parser.add_argument("--expanded", action="store_true", help="增加访谈摘要与同条件比较自制样例")
     args = parser.parse_args()
     if not settings.DEBUG:
         raise SystemExit("评测只允许在 DEBUG 开发环境运行。")
@@ -67,7 +69,8 @@ def main():
             patch("core.reading_views.dispatch"),
         ):
             versions = []
-            for title, scope, text in SAMPLES:
+            samples = [*SAMPLES, *(EXTRA_SAMPLES if args.expanded else [])]
+            for title, scope, text in samples:
                 content = text.encode()
                 data = post(
                     "uploads/",
@@ -97,11 +100,17 @@ def main():
                 execute_job(parsed["job"]["id"])
                 assert Job.objects.get(pk=parsed["job"]["id"]).status == "succeeded"
                 versions.append(str(version.pk))
-            for name, purpose, selected in [
+            cases = [
                 ("single", "reading", versions[:1]),
                 ("different_conditions", "comparison", versions[:2]),
-                ("abstract_only", "reading", versions[2:]),
-            ]:
+                ("abstract_only", "reading", versions[2:3]),
+            ]
+            if args.expanded:
+                cases += [
+                    ("qualitative_abstract", "reading", versions[3:4]),
+                    ("same_conditions", "comparison", versions[4:6]),
+                ]
+            for name, purpose, selected in cases:
                 start = time.monotonic()
                 # 专用任务提交与同步执行共用事务，避免开发 scheduler 抢先领取。
                 with transaction.atomic():
@@ -118,9 +127,19 @@ def main():
                     original_handle = AIRun.handle
 
                     def traced_handle(run, event):
+                        entry = None
                         if event.get("type") == "tool":
-                            tool_calls.append({"name": event["name"], "args": event.get("args")})
-                        return original_handle(run, event)
+                            entry = {"name": event["name"], "args": event.get("args")}
+                            tool_calls.append(entry)
+                        try:
+                            response = original_handle(run, event)
+                        except Exception as exc:
+                            if entry is not None:
+                                entry["error_code"] = getattr(exc, "code", type(exc).__name__)
+                            raise
+                        if entry is not None:
+                            entry["response"] = response
+                        return response
 
                     with patch.object(AIRun, "handle", traced_handle):
                         execute_job(task["id"])
@@ -130,6 +149,12 @@ def main():
                     "case": name,
                     "selected_sources": {pk: f"source-{versions.index(pk) + 1}" for pk in selected},
                     "model": args.model,
+                    "prompt_version": job.input_snapshot["model"]["prompt_version"],
+                    "input_samples": [
+                        {"id": f"source-{i + 1}", "title": title, "scope": scope, "text": text}
+                        for i, (title, scope, text) in enumerate(samples)
+                        if versions[i] in selected
+                    ],
                     "status": job.status,
                     "error_code": job.error_code,
                     "elapsed_seconds": round(time.monotonic() - start, 2),

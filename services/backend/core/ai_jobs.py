@@ -54,8 +54,8 @@ def model_configuration(purpose="note"):
         "model": settings.AI_MODEL,
         "endpoint_digest": digest(settings.AI_BASE_URL),
         "prompt_version": {
-            "reading": "reading-v1",
-            "comparison": "reading-v1",
+            "reading": "reading-v2",
+            "comparison": "reading-v2",
             "review": "review-v1",
             "expression": "expression-v1",
             "feedback": "feedback-v1",
@@ -397,7 +397,20 @@ class AIRun:
             elif is_reading and name == "submit_reading":
                 from core.reading import validate_reading
 
-                candidate = validate_reading(job, message.get("args"), self.read_ids)
+                try:
+                    candidate = validate_reading(job, message.get("args"), self.read_ids)
+                except ParseFailure as exc:
+                    if self.reading is not None or exc.code not in {
+                        "reading_citation_invalid",
+                        "reading_number_mismatch",
+                    }:
+                        raise
+                    job.ai_events.create(
+                        generation=self.generation,
+                        kind="validation_error",
+                        details={"code": exc.code, "number": self.tools},
+                    )
+                    return {"status": "rejected", "code": exc.code, "message": exc.message}
                 if self.reading is not None and self.reading != candidate:
                     raise ParseFailure("reading_duplicate", "模型重复提交了阅读结果。")
                 self.reading = candidate
@@ -601,7 +614,9 @@ def execute_ai(job):
             version_ids=job.input_snapshot["version_ids"],
             system_prompt=READING_PROMPT,
             max_tokens=8192,
-            request_timeout_ms=60_000,
+            # 比较需在一个响应中提交多篇资料；单请求预算与 8192 token 输出匹配。
+            # 总任务仍受 run_pi 的 180 秒期限和 MAX_CALLS 限制。
+            request_timeout_ms=120_000 if purpose == "comparison" else 60_000,
             prompt=(
                 "请先直接调用 read_evidence 批量读取下面目录中的 chunk_ids，不要先检索。"
                 "读完后调用 submit_reading。documents 必须包含下列每个 version_id，"

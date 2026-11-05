@@ -1,0 +1,187 @@
+{
+  "case": "self-authored-temperature-correction-v1",
+  "events": [
+    {
+      "id": 1,
+      "type": "model_start"
+    },
+    {
+      "id": 2,
+      "type": "model_end",
+      "ok": true,
+      "usage": {
+        "input": 1223,
+        "output": 17,
+        "cache_read": 152,
+        "cache_write": 0
+      }
+    },
+    {
+      "id": 3,
+      "type": "tool",
+      "name": "read_impact",
+      "args": {}
+    },
+    {
+      "id": 4,
+      "type": "model_start"
+    },
+    {
+      "id": 5,
+      "type": "model_end",
+      "ok": true,
+      "usage": {
+        "input": 428,
+        "output": 200,
+        "cache_read": 1391,
+        "cache_write": 0
+      }
+    },
+    {
+      "id": 6,
+      "type": "tool",
+      "name": "submit_impact",
+      "args": {
+        "candidates": [
+          {
+            "basis": "old",
+            "block_version_id": "621adbaa-54b9-4880-86e2-b8c521732a47",
+            "body_quote": "由于温度组的速率增加，讨论部分仍采用了这一解释。",
+            "change_quote": "提高温度后反应速率增加。",
+            "chunk_id": "960c3b45-17ae-49be-b1c5-755a506c2453",
+            "reason": "正文明确使用了被更正的‘提高温度后反应速率增加’这一结论作为讨论部分的依据，该结论已被修正为‘单位更正后，温度组与对照组的反应速率无明显差异’，因此讨论部分的解释存在依赖关系。"
+          }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "type": "done",
+      "success": true
+    }
+  ],
+  "tools": [
+    {
+      "name": "read_impact",
+      "args": {},
+      "response": {
+        "change": {
+          "kind": "correction",
+          "note": "单位更正，需要作者复核温度与速率的论述。"
+        },
+        "sources": [
+          {
+            "side": "old",
+            "chunk_id": "960c3b45-17ae-49be-b1c5-755a506c2453",
+            "excerpt": "提高温度后反应速率增加。",
+            "truncated": false,
+            "anchor": {
+              "kind": "text",
+              "line": 1
+            }
+          },
+          {
+            "side": "new",
+            "chunk_id": "9be7766e-5bd2-4389-b298-9f53b00065ee",
+            "excerpt": "单位更正后，温度组与对照组的反应速率无明显差异。",
+            "truncated": false,
+            "anchor": {
+              "kind": "text",
+              "line": 1
+            }
+          }
+        ],
+        "source_scope": "仅提供新旧材料各前8个片段、各最多4000字符；旧版只供对照。",
+        "registered_blocks": [
+          "69e0bab3-6548-4a6a-8cb8-125a29b6a694",
+          "7ba8b4a8-97b2-4585-924b-834a591534c6",
+          "843b08c8-107a-45ca-bc5d-49fce52f0934"
+        ],
+        "blocks": [
+          {
+            "block_version_id": "621adbaa-54b9-4880-86e2-b8c521732a47",
+            "text": "由于温度组的速率增加，讨论部分仍采用了这一解释。"
+          },
+          {
+            "block_version_id": "41e983c8-ed8a-4c71-9ebf-8bfee1ea6158",
+            "text": "另一项实验中，光照保持不变，尚未比较反应速率。"
+          }
+        ]
+      }
+    },
+    {
+      "name": "submit_impact",
+      "args": {
+        "candidates": [
+          {
+            "basis": "old",
+            "block_version_id": "621adbaa-54b9-4880-86e2-b8c521732a47",
+            "body_quote": "由于温度组的速率增加，讨论部分仍采用了这一解释。",
+            "change_quote": "提高温度后反应速率增加。",
+            "chunk_id": "960c3b45-17ae-49be-b1c5-755a506c2453",
+            "reason": "正文明确使用了被更正的‘提高温度后反应速率增加’这一结论作为讨论部分的依据，该结论已被修正为‘单位更正后，温度组与对照组的反应速率无明显差异’，因此讨论部分的解释存在依赖关系。"
+          }
+        ]
+      },
+      "response": {
+        "status": "staged"
+      }
+    }
+  ],
+  "input_manuscript": [
+    "提高温度后反应速率增加。",
+    "温度组测量结果支持速率增加的论述。",
+    "本次记录提示温度与反应速率有关。",
+    "由于温度组的速率增加，讨论部分仍采用了这一解释。",
+    "另一项实验中，光照保持不变，尚未比较反应速率。"
+  ],
+  "model": "qwen3:4b-instruct",
+  "prompt_version": "impact-v2",
+  "expected": "三处登记依赖由SQL查到；模型补充第4块，勿误报第5块；正文始终不变。",
+  "registered_positions": [
+    1,
+    2,
+    3
+  ],
+  "status": "succeeded",
+  "error_code": "",
+  "elapsed_seconds": 4.08,
+  "candidates": [
+    {
+      "kind": "paragraph",
+      "basis": "old",
+      "reason": "正文明确使用了被更正的‘提高温度后反应速率增加’这一结论作为讨论部分的依据，该结论已被修正为‘单位更正后，温度组与对照组的反应速率无明显差异’，因此讨论部分的解释存在依赖关系。",
+      "chunk_id": "960c3b45-17ae-49be-b1c5-755a506c2453",
+      "body_quote": "由于温度组的速率增加，讨论部分仍采用了这一解释。",
+      "change_quote": "提高温度后反应速率增加。",
+      "block_version_id": "621adbaa-54b9-4880-86e2-b8c521732a47",
+      "position": 4
+    }
+  ],
+  "summary": "本次补充 1 处待作者复核的位置。不代表已确认受影响，也不保证覆盖全文。",
+  "calls": [
+    {
+      "number": 1,
+      "status": "succeeded",
+      "usage": {
+        "input": 1223,
+        "output": 17,
+        "cache_read": 152,
+        "cache_write": 0
+      },
+      "elapsed_ms": 937
+    },
+    {
+      "number": 2,
+      "status": "succeeded",
+      "usage": {
+        "input": 428,
+        "output": 200,
+        "cache_read": 1391,
+        "cache_write": 0
+      },
+      "elapsed_ms": 2437
+    }
+  ],
+  "manuscript_unchanged": true
+}

@@ -308,7 +308,6 @@ def create_model(context, run, manuscript):
 
 def output(manuscript):
     return {
-        "summary": "一处可能相关位置待作者复核。",
         "candidates": [
             {
                 "block_version_id": manuscript["blocks"][2]["version_id"],
@@ -336,6 +335,7 @@ def test_real_pi_candidate_scope_and_no_automatic_confirmation(context, source, 
         job.refresh_from_db()
     assert job.status == "succeeded", job.error_code
     assert job.model_calls.count() == 2
+    assert "1 处" in job.output["summary"] and "不代表已确认" in job.output["summary"]
     usage = context[0].get(path(context[1], f"usage/{job.pk}/")).data
     assert len(usage["impact_candidates"]) == 1
     assert usage["input"]["impact_run_id"] == run["id"]
@@ -369,6 +369,94 @@ def test_model_rejects_unread_fabricated_and_registered_quotes(context, source, 
         with pytest.raises(ParseFailure):
             validate_output(job, value, read)
     assert not ImpactItem.objects.filter(origin="model").exists()
+
+
+def test_evidence_side_and_identifier_must_match_without_automatic_conversion(
+    context, source, manuscript
+):
+    from core.impact_ai import read_impact, validate_output
+
+    corrected, _ = change(context, source, new_source(context, source))
+    run, _ = scan(context, corrected)
+    with provider(lambda *_: []):
+        job = create_model(context, run, manuscript)
+        content = read_impact(job)
+        references = {
+            side: next(c for c in content["sources"] if c["side"] == side)
+            for side in ["old", "new"]
+        }
+        for side in ["old", "new", "note"]:
+            valid = output(manuscript)
+            if side != "note":
+                valid["candidates"][0].update(
+                    basis=side,
+                    chunk_id=references[side]["chunk_id"],
+                    change_quote=references[side]["excerpt"],
+                )
+            assert validate_output(job, valid, True)["candidates"][0]["basis"] == side
+        for side, cid in [
+            ("old", None),
+            ("new", None),
+            ("old", references["new"]["chunk_id"]),
+            ("new", references["old"]["chunk_id"]),
+            ("note", references["new"]["chunk_id"]),
+        ]:
+            invalid = output(manuscript)
+            invalid["candidates"][0].update(basis=side, chunk_id=cid)
+            with pytest.raises(ParseFailure, match="impact_anchor_invalid") as error:
+                validate_output(job, invalid, True)
+            if side in references:
+                assert references[side]["chunk_id"] in error.value.message
+        assert not ImpactItem.objects.filter(origin="model").exists()
+
+
+def test_sdk_new_basis_null_is_rejected_then_repaired_in_original_budget(
+    context, source, manuscript
+):
+    from core.impact_ai import read_impact
+
+    corrected, _ = change(context, source, new_source(context, source))
+    run, _ = scan(context, corrected)
+    selected = {}
+
+    def respond(number, _):
+        if number == 1:
+            return [("read_impact", {})]
+        if number == 3:
+            assert not ImpactItem.objects.filter(origin="model").exists()
+        data = output(manuscript)
+        data["candidates"][0].update(
+            basis="new",
+            chunk_id=None if number == 2 else selected["chunk_id"],
+            change_quote=selected["excerpt"],
+        )
+        return [("submit_impact", data)]
+
+    with provider(respond) as requests:
+        job = create_model(context, run, manuscript)
+        selected.update(next(c for c in read_impact(job)["sources"] if c["side"] == "new"))
+        execute_job(str(job.pk))
+        job.refresh_from_db()
+        assert job.status == "succeeded", job.error_code
+        assert len(requests) == 3
+        item = ImpactItem.objects.get(job=job)
+        assert item.snapshot["basis"] == "new" and item.snapshot["chunk_id"] == selected["chunk_id"]
+        assert job.ai_events.filter(kind="validation_error").exists()
+        assert not ImpactDecision.objects.exists()
+        assert Manuscript.objects.get(project=context[1]).current_revision.number == 1
+
+
+def test_old_impact_prompt_is_cancelled_without_model_request(context, source, manuscript):
+    corrected, _ = change(context, source, new_source(context, source))
+    run, _ = scan(context, corrected)
+    with provider(lambda *_: []) as requests:
+        job = create_model(context, run, manuscript)
+        job.input_snapshot["model"]["prompt_version"] = "impact-v1"
+        job.save(update_fields=["input_snapshot"])
+        execute_job(str(job.pk))
+        job.refresh_from_db()
+        assert job.status == "cancelled", job.error_code
+        assert not requests and not ImpactItem.objects.filter(origin="model").exists()
 
 
 def test_withdrawn_source_not_sent_and_running_model_cancelled(context, source, manuscript):
@@ -527,11 +615,7 @@ def test_model_empty_result_with_all_selected_blocks_registered(context, source,
     run, _ = scan(context, corrected)
     with provider(
         lambda number, _: (
-            [("read_impact", {})]
-            if number == 1
-            else [
-                ("submit_impact", {"summary": "所选位置均已登记，无新增候选。", "candidates": []})
-            ]
+            [("read_impact", {})] if number == 1 else [("submit_impact", {"candidates": []})]
         )
     ):
         from core.impact_ai import read_impact

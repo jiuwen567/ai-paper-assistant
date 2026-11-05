@@ -61,7 +61,7 @@ def model_configuration(purpose="note"):
             "review": "review-v2",
             "expression": "expression-v2",
             "feedback": "feedback-v2",
-            "impact": "impact-v1",
+            "impact": "impact-v2",
         }.get(purpose, PROMPT_VERSION),
         "runtime": "pi-1.5.0",
         "max_tokens_field": settings.AI_MAX_TOKENS_FIELD,
@@ -296,6 +296,7 @@ class AIRun:
                 except ParseFailure as exc:
                     if self.impact is not None or exc.code not in {
                         "impact_quote_invalid",
+                        "impact_anchor_invalid",
                         "impact_duplicate",
                     }:
                         raise
@@ -304,7 +305,11 @@ class AIRun:
                         kind="validation_error",
                         details={"code": exc.code, "number": self.tools},
                     )
-                    return {"status": "rejected", "code": exc.code, "message": exc.message}
+                    return {
+                        "status": "rejected",
+                        "code": exc.code,
+                        "message": exc.message + " 请直接修正 submit_impact，不重复读取已有内容。",
+                    }
                 if self.impact is not None and self.impact != candidate:
                     raise ParseFailure("impact_resubmitted", "重复提交了不同候选。")
                 self.impact = candidate

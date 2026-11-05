@@ -1,0 +1,6 @@
+{
+  "stage": "补充全文与作者决定检查后的首次运行",
+  "error": "评测脚本将 scan 返回的字典当作 ImpactRun 实例传给查询，触发 ValidationError。",
+  "effect": "模型调用后报告未保存；合成项目按 finally 清理，无法恢复该轮输出，不计为通过。",
+  "correction": "使用 run[\"id\"] 查询；之后重新执行完整固定案例。"
+}

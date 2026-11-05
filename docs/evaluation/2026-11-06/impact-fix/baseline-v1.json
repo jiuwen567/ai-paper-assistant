@@ -1,0 +1,201 @@
+{
+  "case": "self-authored-temperature-correction-v1",
+  "events": [
+    {
+      "id": 1,
+      "type": "model_start"
+    },
+    {
+      "id": 2,
+      "type": "model_end",
+      "ok": true,
+      "usage": {
+        "input": 793,
+        "output": 17,
+        "cache_read": 1,
+        "cache_write": 0
+      }
+    },
+    {
+      "id": 3,
+      "type": "tool",
+      "name": "read_impact",
+      "args": {}
+    },
+    {
+      "id": 4,
+      "type": "model_start"
+    },
+    {
+      "id": 5,
+      "type": "model_end",
+      "ok": true,
+      "usage": {
+        "input": 424,
+        "output": 314,
+        "cache_read": 810,
+        "cache_write": 0
+      }
+    },
+    {
+      "id": 6,
+      "type": "tool",
+      "name": "submit_impact",
+      "args": {
+        "summary": "单位更正后，温度组与对照组的反应速率无明显差异，需复核原论述中关于温度与反应速率关系的推断是否仍成立。",
+        "candidates": [
+          {
+            "basis": "new",
+            "block_version_id": "00b06f7d-5772-40ca-82dc-1e29e3be7013",
+            "body_quote": "由于温度组的速率增加，讨论部分仍采用了这一解释。",
+            "change_quote": "单位更正后，温度组与对照组的反应速率无明显差异。",
+            "chunk_id": null,
+            "reason": "原论述基于温度提升导致速率增加，但更正后实际无显著差异，需复核讨论部分是否仍合理。"
+          },
+          {
+            "basis": "new",
+            "block_version_id": "240bd8a1-e340-4cad-8814-ca075927ffcb",
+            "body_quote": "另一项实验中，光照保持不变，尚未比较反应速率。",
+            "change_quote": "单位更正后，温度组与对照组的反应速率无明显差异。",
+            "chunk_id": null,
+            "reason": "原实验未比较速率，更正后温度组与对照组无差异，需复核光照与温度的交互影响是否需补充讨论。"
+          }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "type": "validation_error"
+    },
+    {
+      "id": 8,
+      "type": "model_start"
+    },
+    {
+      "id": 9,
+      "type": "model_end",
+      "ok": true,
+      "usage": {
+        "input": 41,
+        "output": 17,
+        "cache_read": 1547,
+        "cache_write": 0
+      }
+    },
+    {
+      "id": 10,
+      "type": "tool",
+      "name": "read_impact",
+      "args": {}
+    },
+    {
+      "id": 11,
+      "type": "model_start"
+    },
+    {
+      "id": 12,
+      "type": "model_end",
+      "ok": true,
+      "usage": {
+        "input": 424,
+        "output": 314,
+        "cache_read": 1604,
+        "cache_write": 0
+      }
+    },
+    {
+      "id": 13,
+      "type": "tool",
+      "name": "submit_impact",
+      "args": {
+        "summary": "单位更正后，温度组与对照组的反应速率无明显差异，需复核原论述中关于温度与反应速率关系的推断是否仍成立。",
+        "candidates": [
+          {
+            "basis": "new",
+            "block_version_id": "00b06f7d-5772-40ca-82dc-1e29e3be7013",
+            "body_quote": "由于温度组的速率增加，讨论部分仍采用了这一解释。",
+            "change_quote": "单位更正后，温度组与对照组的反应速率无明显差异。",
+            "chunk_id": null,
+            "reason": "原论述基于温度提升导致速率增加，但更正后实际无显著差异，需复核讨论部分是否仍合理。"
+          },
+          {
+            "basis": "new",
+            "block_version_id": "240bd8a1-e340-4cad-8814-ca075927ffcb",
+            "body_quote": "另一项实验中，光照保持不变，尚未比较反应速率。",
+            "change_quote": "单位更正后，温度组与对照组的反应速率无明显差异。",
+            "chunk_id": null,
+            "reason": "原实验未比较速率，更正后温度组与对照组无差异，需复核光照与温度的交互影响是否需补充讨论。"
+          }
+        ]
+      }
+    },
+    {
+      "id": 14,
+      "type": "validation_error"
+    },
+    {
+      "id": 15,
+      "type": "model_start"
+    }
+  ],
+  "model": "qwen3:4b-instruct",
+  "prompt_version": "impact-v1",
+  "expected": "三处登记依赖由SQL查到；模型补充第4块，勿误报第5块；正文始终不变。",
+  "registered_positions": [
+    1,
+    2,
+    3
+  ],
+  "status": "failed",
+  "error_code": "model_call_limit",
+  "elapsed_seconds": 11.01,
+  "candidates": [],
+  "summary": null,
+  "calls": [
+    {
+      "number": 1,
+      "status": "succeeded",
+      "usage": {
+        "input": 793,
+        "output": 17,
+        "cache_read": 1,
+        "cache_write": 0
+      },
+      "elapsed_ms": 566
+    },
+    {
+      "number": 2,
+      "status": "succeeded",
+      "usage": {
+        "input": 424,
+        "output": 314,
+        "cache_read": 810,
+        "cache_write": 0
+      },
+      "elapsed_ms": 3217
+    },
+    {
+      "number": 3,
+      "status": "succeeded",
+      "usage": {
+        "input": 41,
+        "output": 17,
+        "cache_read": 1547,
+        "cache_write": 0
+      },
+      "elapsed_ms": 334
+    },
+    {
+      "number": 4,
+      "status": "succeeded",
+      "usage": {
+        "input": 424,
+        "output": 314,
+        "cache_read": 1604,
+        "cache_write": 0
+      },
+      "elapsed_ms": 4791
+    }
+  ],
+  "manuscript_unchanged": true
+}

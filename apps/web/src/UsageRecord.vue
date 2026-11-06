@@ -58,7 +58,7 @@ onUnmounted(() => { mounted = false; });
     <p v-if="error" role="alert" class="error">{{ error }}</p><p v-if="busy" role="status">读取中…</p>
     <template v-if="detail">
       <p>执行器 {{ detail.model.runtime || detail.embedding.runtime || '未记录' }} · {{ detail.model.prompt_version || detail.embedding.pipeline_version || '未记录版本' }} · 项目规则 v{{ detail.policy_version }}</p>
-      <p v-if="detail.kind === 'index'">本地向量索引任务，未计入生成模型调用；检索时的查询向量不在任务清单内。</p>
+      <p v-if="detail.kind === 'index'">向量索引任务，未计入生成模型调用；检索时的查询向量不在任务清单内。</p>
       <p>输入范围：<span v-if="detail.kind === 'ai'">{{ detail.input.version_ids.length }} 个文件版本、</span>{{ detail.input.source_count }} 个资料片段<span v-if="detail.input.manuscript_version">，原稿 v{{ detail.input.manuscript_version }} 的块 {{ detail.input.blocks.map(block => block.position).join('、') }}</span>。</p>
       <button v-if="detail.input.manuscript_version" :disabled="busy" @click="perform(() => loadManuscript(detail!.input.manuscript_version!))">查看输入稿件版本</button>
       <details v-if="detail.sources?.length"><summary>输入资料片段</summary><button v-for="(source, index) in detail.sources" :key="source.chunk_id || source.id" :disabled="busy" @click="perform(() => loadSource((source.chunk_id || source.id)!))">片段 {{ index + 1 }}</button></details>

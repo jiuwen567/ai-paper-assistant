@@ -93,7 +93,9 @@ onUnmounted(() => { mounted = false; clearTimeout(timer); });
       <label>检索方式<select v-model="mode"><option value="keyword">关键词</option><option value="semantic">语义检索</option></select></label>
       <button type="submit">检索材料</button>
     </fieldset></form>
+    <p v-if="mode === 'semantic'">语义检索会将检索词发送至配置的嵌入服务。</p>
     <details><summary>检索索引</summary>
+      <p>重建时将有效资料片段发送至配置的嵌入服务。</p>
       <button v-if="project.role === 'author'" :disabled="busy" @click="perform(createIndex)">重建检索索引</button>
       <button :disabled="busy" @click="perform(loadIndexes)">刷新索引</button>
       <p v-if="indexes?.count === 0">尚无索引。</p>

@@ -20,7 +20,7 @@ dc exec -T api python manage.py check_worker
 
 此例 Web 为 `http://localhost:25173`、API 为 `http://localhost:28000`，数据库、图、对象存储和队列端口也整体偏移 20000。初始化同时更新客户端地址和 CSRF 来源；重复执行不覆盖已有 `.env`，也不会重新套用端口偏移。改端口时需要同时调整对应地址和 CSRF 来源。
 
-三个隔离设置都要保留：`COMPOSE_PROJECT_NAME` 隔离网络/卷，`PAPER_ENV_FILE` 选择应用凭据，`PAPER_STATE_DIR` 选择 SeaweedFS 凭据文件。只改 Compose 项目名不会自动更换配置。默认不传这些变量时仍使用原有 `.env` 和 `.local`。`PAPER_EMBEDDING_CACHE` 可指定只读的公开模型缓存，默认是仓库 `.local/embeddings`；首次索引前按开发说明准备模型，不共享用户资料目录。
+三个隔离设置都要保留：`COMPOSE_PROJECT_NAME` 隔离网络/卷，`PAPER_ENV_FILE` 选择应用凭据，`PAPER_STATE_DIR` 选择 SeaweedFS 凭据文件。只改 Compose 项目名不会自动更换配置。默认不传这些变量时仍使用原有 `.env` 和 `.local`。向量编码使用外部嵌入 API，各环境在自己的配置文件中填写 `EMBEDDING_BASE_URL`、`EMBEDDING_API_KEY`、`EMBEDDING_MODEL` 和 `EMBEDDING_DIMENSION`。不挂载或部署本地向量模型；首次索引前按开发说明检查 API。
 
 管理员维护配置文件，通过 `dc exec api python manage.py shell` 按[账号说明](development.md#账号与项目)创建普通账号，密码使用隐藏输入；当前没有自助注册或密码找回。迁移不创建演示账号。`migrate` 容器成功退出后才启动 API、Worker 和 scheduler。查看 `dc ps` 与 `dc logs --tail=80 服务名` 定位失败，日志可能含运行资料，不公开上传。`check_services` 检查迁移和实际依赖，`check_worker` 验证任务投递/执行/结果往返；仅 API 存活不能代表可用。
 

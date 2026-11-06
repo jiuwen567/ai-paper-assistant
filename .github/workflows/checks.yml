@@ -15,6 +15,8 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    env:
+      COMPOSE_FILE: compose.yaml:compose.test.yaml
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -33,8 +35,6 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         run: |
           docker compose --profile app config --quiet
-          uv run python services/backend/manage.py prepare_embeddings
-          uv run python services/backend/manage.py prepare_embeddings --model BAAI/bge-small-en-v1.5
           make up
           uv run python services/backend/manage.py makemigrations --check --dry-run
       - run: make integration

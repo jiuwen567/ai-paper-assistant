@@ -289,11 +289,11 @@ def facts_for(project):
 
 def draft_for(facts):
     lines = [f"本清单对应稿件 v{facts['manuscript_version']}，由作者核对和补充。"]
-    labels = {**AI_ACTIONS, "note": "阅读摘记", "index": "本地资料向量索引"}
+    labels = {**AI_ACTIONS, "note": "阅读摘记", "index": "资料向量索引"}
     for purpose, counts in facts["purposes"].items():
         if purpose == "index":
             lines.append(
-                f"本地资料向量索引：创建 {counts['tasks']} 个任务，"
+                f"资料向量索引：创建 {counts['tasks']} 个任务，"
                 f"完成 {counts['published_tasks']} 个；未计入生成模型调用。"
             )
         elif purpose == "impact":

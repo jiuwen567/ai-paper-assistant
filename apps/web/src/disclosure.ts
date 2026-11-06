@@ -22,5 +22,5 @@ export type Usage = {
   feedback_candidates: { id: string; decision: string | null; task_id: string | null; task_version: number | null; status: string | null }[];
   sources?: { chunk_id?: string; id?: string; source_version_id?: string; source_scope?: string }[];
 };
-export const purposeLabels: Record<string, string> = { impact: "材料变更补查", note: "阅读摘记", reading: "文献阅读", comparison: "文献比较", review: "原稿诊断", expression: "表达建议", feedback: "反馈拆分", index: "本地向量索引" };
+export const purposeLabels: Record<string, string> = { impact: "材料变更补查", note: "阅读摘记", reading: "文献阅读", comparison: "文献比较", review: "原稿诊断", expression: "表达建议", feedback: "反馈拆分", index: "向量索引" };
 export const statusLabels: Record<string, string> = { queued: "等待执行", running: "执行中", succeeded: "成功", failed: "失败", cancelled: "已取消" };

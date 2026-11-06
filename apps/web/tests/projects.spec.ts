@@ -809,7 +809,7 @@ test("真实 Worker 解析 PDF、DOCX、CSV 并定位固定文件版本", async 
 });
 
 
-test("摘要证据、作者笔记、真实语义检索与材料撤回", async ({ page, accounts }, testInfo) => {
+test("摘要证据、作者笔记、嵌入 API 检索链路与材料撤回", async ({ page, accounts }, testInfo) => {
   test.setTimeout(90000);
   await page.goto("/"); await login(page, accounts.owner, accounts.password);
   await page.getByRole("button", { name: "创建项目" }).click();
@@ -866,7 +866,7 @@ test("摘要证据、作者笔记、真实语义检索与材料撤回", async ({
   await expect(library.getByRole("region", { name: "原文上下文" }).getByRole("heading")).toContainText("abstract.txt · v1");
   await library.locator("summary").filter({ hasText: "检索索引" }).click();
   await library.getByRole("button", { name: "重建检索索引", exact: true }).click();
-  await expect(library.getByText(/512 维 · 成功/)).toBeVisible({ timeout: 30000 });
+  await expect(library.getByText(/\d+ 维 · 成功/)).toBeVisible({ timeout: 30000 });
   await library.getByLabel("项目内检索", { exact: true }).fill("升温与反应速率");
   await library.getByRole("combobox", { name: "检索方式", exact: true }).selectOption("semantic");
   await library.getByRole("button", { name: "检索材料", exact: true }).click();

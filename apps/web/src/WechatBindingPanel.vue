@@ -24,19 +24,19 @@ onMounted(() => perform());
 </script>
 
 <template>
-  <details class="editor">
-    <summary>微信账号{{ bound ? ' · 已绑定' : '' }}</summary>
-    <p v-if="error" class="error" role="alert">{{ error }}</p>
+  <UiDisclosure class="editor">
+    <template #header>微信账号{{ bound ? ' · 已绑定' : '' }}</template>
+    <NAlert type="error" :show-icon="false" v-if="error" role="alert">{{ error }}</NAlert>
     <p v-if="busy" role="status">处理中…</p>
-    <button v-if="bound === null" :disabled="busy" @click="perform()">刷新绑定状态</button>
+    <NButton v-if="bound === null" @click="perform()" :disabled="(busy)">刷新绑定状态</NButton>
     <template v-else-if="bound">
       <p>解绑后小程序登录立即失效，项目资料保留。</p>
-      <button :disabled="busy" @click="perform('DELETE')">解除微信绑定</button>
+      <NButton @click="perform('DELETE')" :disabled="(busy)">解除微信绑定</NButton>
     </template>
     <form v-else @submit.prevent="perform('POST')">
-      <label>绑定码<input v-model="code" required pattern="[a-fA-F0-9]{24}" maxlength="24" autocomplete="off" /></label>
+      <label>绑定码<UiInput v-model="code" required pattern="[a-fA-F0-9]{24}" maxlength="24" autocomplete="off" :aria-label="'绑定码'" /></label>
       <p>仅输入自己小程序显示的绑定码。</p>
-      <button :disabled="busy" type="submit">确认绑定当前账号</button>
+      <NButton attr-type="submit" :disabled="(busy)" type="primary">确认绑定当前账号</NButton>
     </form>
-  </details>
+  </UiDisclosure>
 </template>

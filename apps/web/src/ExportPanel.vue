@@ -100,52 +100,52 @@ onUnmounted(() => { mounted = false; clearTimeout(timer); window.removeEventList
 <template>
   <section aria-label="Word 导出" :aria-busy="busy">
     <h2>Word 导出</h2>
-    <p v-if="error" role="alert" class="error">{{ error }}</p><p v-if="message" role="status">{{ message }}</p><p v-if="busy" role="status">处理中…</p>
-    <button :disabled="busy" @click="perform(refresh)">刷新导出资料</button>
+    <NAlert type="error" :show-icon="false" v-if="error" role="alert">{{ error }}</NAlert><p v-if="message" role="status">{{ message }}</p><p v-if="busy" role="status">处理中…</p>
+    <NButton @click="perform(refresh)" :disabled="(busy)">刷新导出资料</NButton>
     <form v-if="editable && manuscript && disclosure" @submit.prevent="perform(makePreview)">
       <p v-if="!ready">请先保存原稿，并在“AI 使用与披露”核实当前清单，再刷新导出资料。</p>
       <fieldset :disabled="busy">
-        <label>交付标题<input v-model="title" maxlength="200" required /></label>
-        <label>署名<input v-model="author" maxlength="200" /></label>
-        <label>导出模板<select v-model="templateId" required><option v-for="item in templates" :key="item.id" :value="item.id">{{ item.name }} v{{ item.number }}</option></select></label>
+        <label>交付标题<UiInput v-model="title" maxlength="200" required :disabled="(busy)" :aria-label="'交付标题'" /></label>
+        <label>署名<UiInput v-model="author" maxlength="200" :disabled="(busy)" :aria-label="'署名'" /></label>
+        <label>导出模板<UiSelect v-model="templateId" required :disabled="(busy)" :options="[...(templates ?? []).map((item) => ({ value: item.id, label: String(item.name) + ' v' + String(item.number) }))]" :aria-label="'导出模板'" /></label>
         <p v-if="chosenTemplate">{{ chosenTemplate.source_label }}</p>
-        <details v-if="manuscript.blocks.length"><summary>图表题注</summary>
+        <UiDisclosure v-if="manuscript.blocks.length"><template #header>图表题注</template>
           <p>选择原稿中的单行题注标题，导出时分别顺序编号。正文导入仅保留文本，不恢复原文件的图表。</p>
           <label v-for="block in manuscript.blocks.filter(b => !b.heading_level && b.text.trim() && !b.text.includes('\n'))" :key="block.id" class="caption-option">
-            <span>{{ block.text }}</span><select v-model="captions[block.id]" aria-label="题注类型"><option value="">正文</option><option value="figure">图题</option><option value="table">表题</option></select>
+            <span>{{ block.text }}</span><UiSelect v-model="captions[block.id]" aria-label="题注类型" :disabled="(busy)" :options="[({ value: '', label: '正文' }), ({ value: 'figure', label: '图题' }), ({ value: 'table', label: '表题' })]" />
           </label>
-        </details>
-        <button :disabled="!ready || !templateId">预览导出</button>
+        </UiDisclosure>
+        <NButton :disabled="(busy) || (!ready || !templateId)" attr-type="submit">预览导出</NButton>
       </fieldset>
     </form>
     <div v-if="preview">
       <ExportContent :content="preview.content" />
-      <label class="check-label"><input v-model="confirmed" type="checkbox" :disabled="busy" />已核对正文、引用、模板和 AI 使用说明</label>
-      <button :disabled="busy || !confirmed || !ready" @click="perform(create)">确认并生成 Word</button>
+      <UiCheckbox v-model="confirmed" :disabled="(busy)" :aria-label="'已核对正文、引用、模板和 AI 使用说明'" class="check-label">已核对正文、引用、模板和 AI 使用说明</UiCheckbox>
+      <NButton @click="perform(create)" :disabled="(busy || !confirmed || !ready)">确认并生成 Word</NButton>
     </div>
     <h3>导出记录</h3>
     <p v-if="records && !records.count">暂无导出。</p>
-    <ul v-if="records?.count"><li v-for="item in records.results" :key="item.id"><button :disabled="busy" @click="perform(() => detail(item.id))">{{ item.title }} · 稿件 v{{ item.manuscript_version }} · {{ statusLabels[item.job.status] }} · {{ new Date(item.created_at).toLocaleString() }}</button></li></ul>
-    <button v-if="records?.previous" :disabled="busy" @click="perform(() => loadRecords(page - 1))">上一页导出</button><button v-if="records?.next" :disabled="busy" @click="perform(() => loadRecords(page + 1))">下一页导出</button>
+    <ul v-if="records?.count"><li v-for="item in records.results" :key="item.id"><NButton @click="perform(() => detail(item.id))" :disabled="(busy)">{{ item.title }} · 稿件 v{{ item.manuscript_version }} · {{ statusLabels[item.job.status] }} · {{ new Date(item.created_at).toLocaleString() }}</NButton></li></ul>
+    <NButton v-if="records?.previous" @click="perform(() => loadRecords(page - 1))" :disabled="(busy)">上一页导出</NButton><NButton v-if="records?.next" @click="perform(() => loadRecords(page + 1))" :disabled="(busy)">下一页导出</NButton>
     <article v-if="selected" aria-label="导出记录详情">
       <p role="status">{{ statusLabels[selected.job.status] }} · {{ selected.job.progress }}%</p>
-      <p v-if="selected.job.error_message" role="alert">{{ selected.job.error_message }}（{{ selected.job.error_code }}）</p>
+      <NAlert type="error" :show-icon="false" v-if="selected.job.error_message" role="alert">{{ selected.job.error_message }}（{{ selected.job.error_code }}）</NAlert>
       <p v-if="selected.sources_changed">来源状态已变化，旧导出不可下载。</p>
       <ExportContent v-if="selected.content" :content="selected.content" />
-      <button :disabled="busy" @click="perform(() => detail(selected!.id))">刷新此导出</button>
-      <button v-if="editable && ['queued', 'running'].includes(selected.job.status)" :disabled="busy" @click="perform(() => control('cancel'))">取消导出</button>
-      <button v-if="editable && selected.job.status === 'failed' && selected.job.retryable" :disabled="busy" @click="perform(() => control('retry'))">重试此快照</button>
-      <button v-if="selected.downloadable" :disabled="busy" @click="perform(download)">下载 Word</button>
+      <NButton @click="perform(() => detail(selected!.id))" :disabled="(busy)">刷新此导出</NButton>
+      <NButton v-if="editable && ['queued', 'running'].includes(selected.job.status)" @click="perform(() => control('cancel'))" :disabled="(busy)">取消导出</NButton>
+      <NButton v-if="editable && selected.job.status === 'failed' && selected.job.retryable" @click="perform(() => control('retry'))" :disabled="(busy)">重试此快照</NButton>
+      <NButton v-if="selected.downloadable" @click="perform(download)" :disabled="(busy)">下载 Word</NButton>
       <p>在 Word 中打开后，更新整个目录并检查分页、题注和引用编号。</p>
-      <details><summary>版本与下载记录</summary><p class="digest">快照 {{ selected.digest }}<br />导出器 {{ selected.renderer_version }}<br />模板摘要 {{ selected.template.digest }}<br />文件摘要 {{ selected.file?.sha256 || '尚未生成' }}</p>
+      <UiDisclosure><template #header>版本与下载记录</template><p class="digest">快照 {{ selected.digest }}<br />导出器 {{ selected.renderer_version }}<br />模板摘要 {{ selected.template.digest }}<br />文件摘要 {{ selected.file?.sha256 || '尚未生成' }}</p>
         <p>以下记录表示服务端已校验并发出文件，不代表客户端已保存。最多显示最近 100 次。</p>
         <ul><li v-for="item in selected.downloads" :key="item.id">用户 {{ item.created_by_id }} · 文件 {{ item.file_id }} · {{ new Date(item.created_at).toLocaleString() }}</li></ul>
-      </details>
+      </UiDisclosure>
     </article>
   </section>
 </template>
 <style scoped>
 button { white-space: normal; overflow-wrap: anywhere; max-width: 100%; }
 p { overflow-wrap: anywhere; }
-fieldset { border: 0; padding: 0; } .caption-option { display: flex; gap: 1rem; align-items: start; } .caption-option span { flex: 1; overflow-wrap: anywhere; } .caption-option select { width: auto; } .digest { overflow-wrap: anywhere; }
+fieldset { border: 0; padding: 0; } .caption-option { display: flex; gap: 1rem; align-items: start; } .caption-option > span { flex: 1; min-width: 0; overflow-wrap: anywhere; } .caption-option > .select-field { flex: 0 0 120px; } .digest { overflow-wrap: anywhere; }
 </style>

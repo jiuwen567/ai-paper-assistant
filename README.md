@@ -45,7 +45,7 @@ make up
 
 | 组件 | 用途 |
 | --- | --- |
-| Vue 3 + TypeScript + Vite | Web 工作台与公众号 H5 入口 |
+| Vue 3 + TypeScript + Vite + Naive UI | Web 工作台与公众号 H5 入口 |
 | 微信原生 TypeScript + Skyline + glass-easel | 小程序 |
 | Django 5.2 LTS + Django REST framework | 统一业务 API |
 | Celery + Redis | 独立 Worker、任务消息与诊断结果 |
@@ -60,6 +60,7 @@ JavaScript 使用 pnpm workspace，Python 使用 uv；依赖由锁文件固定�
 
 - [产品需求](docs/requirements.md)
 - [双端使用流程](docs/workflows.md)
+- [Web 界面与组件约定](docs/ui.md)
 - [技术架构](docs/architecture.md)
 - [数据库设计](docs/database.md)
 - [测试与验收](docs/testing.md)

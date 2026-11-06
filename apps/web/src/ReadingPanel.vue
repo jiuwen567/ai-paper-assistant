@@ -102,62 +102,60 @@ onUnmounted(() => { mounted = false; clearTimeout(timer); });
 <template>
   <section aria-label="阅读摘记与比较" :aria-busy="busy">
     <h2>阅读摘记与比较</h2>
-    <p v-if="error" role="alert" class="error">{{ error }}</p>
+    <NAlert type="error" :show-icon="false" v-if="error" role="alert">{{ error }}</NAlert>
     <p v-if="message" role="status">{{ message }}</p>
     <p v-if="busy" role="status">处理中…</p>
-    <div class="actions"><button :disabled="busy" @click="perform(async () => { await loadSources(); await loadRecords(); })">刷新阅读区</button></div>
+    <div class="actions"><NButton @click="perform(async () => { await loadSources(); await loadRecords(); })" :disabled="(busy)">刷新阅读区</NButton></div>
     <form v-if="project.role === 'author'" class="editor" @submit.prevent="perform(create)">
       <fieldset :disabled="busy">
-        <details><summary>选择已解析资料（{{ selectedSources.length }}/5）</summary>
+        <UiDisclosure><template #header>选择已解析资料（{{ selectedSources.length }}/5）</template>
           <p v-if="sources?.count === 0">暂无可阅读的已解析资料。</p>
-          <label v-for="source in sources?.results" :key="source.id" class="check-label">
-            <input type="checkbox" :checked="selectedSources.some(item => item.id === source.id)" :disabled="selectedSources.length >= 5 && !selectedSources.some(item => item.id === source.id)" @change="toggle(source)" />
-            {{ source.title }} · v{{ source.number }} · {{ scopeLabels[source.source_scope] }}
-          </label>
+          <UiCheckbox :checked="selectedSources.some(item => item.id === source.id)" @change="toggle(source)" :disabled="(busy) || (selectedSources.length >= 5 && !selectedSources.some(item => item.id === source.id))" :aria-label="' ' + String(source.title) + ' · v' + String(source.number) + ' · ' + String(scopeLabels[source.source_scope])" v-for="source in sources?.results" :key="source.id" class="check-label">
+            {{ source.title }} · v{{ source.number }} · {{ scopeLabels[source.source_scope] }}</UiCheckbox>
           <div v-if="sources && (sources.previous || sources.next)" class="actions">
-            <button type="button" :disabled="!sources.previous" @click="perform(() => loadSources(sourcePage - 1))">上一页资料</button>
-            <button type="button" :disabled="!sources.next" @click="perform(() => loadSources(sourcePage + 1))">下一页资料</button>
+            <NButton attr-type="button" @click="perform(() => loadSources(sourcePage - 1))" :disabled="(busy) || (!sources.previous)">上一页资料</NButton>
+            <NButton attr-type="button" @click="perform(() => loadSources(sourcePage + 1))" :disabled="(busy) || (!sources.next)">下一页资料</NButton>
           </div>
-        </details>
-        <div v-if="selectedSources.length" class="actions"><button v-for="source in selectedSources" :key="source.id" type="button" @click="toggle(source)">移除 {{ source.title }} v{{ source.number }}</button></div>
-        <label>阅读问题<textarea v-model="question" maxlength="500" rows="2" /></label>
-        <button type="submit" :disabled="!canCreate || !selectedSources.length">{{ purpose === 'comparison' ? '开始比较' : '开始阅读' }}</button>
+        </UiDisclosure>
+        <div v-if="selectedSources.length" class="actions"><NButton v-for="source in selectedSources" :key="source.id" attr-type="button" @click="toggle(source)" :disabled="(busy)">移除 {{ source.title }} v{{ source.number }}</NButton></div>
+        <label>阅读问题<UiInput v-model="question" maxlength="500" rows="2" :disabled="(busy)" type="textarea" :aria-label="'阅读问题'" /></label>
+        <NButton attr-type="submit" :disabled="(busy) || (!canCreate || !selectedSources.length)" type="primary">{{ purpose === 'comparison' ? '开始比较' : '开始阅读' }}</NButton>
         <p v-if="!canCreate">当前规则未允许{{ purpose === 'comparison' ? '文献比较' : '文献阅读' }}。</p>
       </fieldset>
     </form>
     <div v-if="task" role="status">
       {{ states[task.status] }}<p v-if="task.error_message">{{ task.error_message }}</p>
-      <button v-if="['queued', 'running'].includes(task.status)" :disabled="busy" @click="perform(() => control('cancel'))">取消阅读任务</button>
-      <button v-if="task.status === 'failed' && task.retryable" :disabled="busy" @click="perform(() => control('retry'))">重试阅读任务</button>
+      <NButton v-if="['queued', 'running'].includes(task.status)" @click="perform(() => control('cancel'))" :disabled="(busy)">取消阅读任务</NButton>
+      <NButton v-if="task.status === 'failed' && task.retryable" @click="perform(() => control('retry'))" :disabled="(busy)">重试阅读任务</NButton>
     </div>
     <p v-if="records?.count === 0">暂无阅读结果。</p>
     <ul class="project-list"><li v-for="record in records?.results" :key="record.id">
-      <button :disabled="busy" :aria-pressed="selected?.id === record.id" @click="perform(() => open(record.id))">
+      <NButton :aria-pressed="selected?.id === record.id" @click="perform(() => open(record.id))" :disabled="(busy)">
         {{ record.model_output.documents.map(document => document.title).join(' / ') }} · {{ record.purpose === 'comparison' ? '比较' : '阅读' }} · {{ record.sources_changed ? '来源已变化' : record.author_revision?.verified ? '作者已核对' : '待核对' }}
-      </button>
+      </NButton>
     </li></ul>
     <div v-if="records && (records.previous || records.next)" class="actions">
-      <button :disabled="busy || !records.previous" @click="perform(() => loadRecords(recordPage - 1))">上一页阅读结果</button>
-      <button :disabled="busy || !records.next" @click="perform(() => loadRecords(recordPage + 1))">下一页阅读结果</button>
+      <NButton @click="perform(() => loadRecords(recordPage - 1))" :disabled="(busy || !records.previous)">上一页阅读结果</NButton>
+      <NButton @click="perform(() => loadRecords(recordPage + 1))" :disabled="(busy || !records.next)">下一页阅读结果</NButton>
     </div>
     <article v-if="selected" aria-label="阅读结果">
       <h3>{{ selected.purpose === 'comparison' ? '文献比较' : '阅读摘记' }}</h3>
       <p>{{ selected.question }}</p>
       <p v-if="selected.sources_changed" role="status">来源已变化，需重新阅读并核对。</p>
-      <button :disabled="busy" @click="perform(() => open(selected!.id))">重新加载结果</button>
+      <NButton @click="perform(() => open(selected!.id))" :disabled="(busy)">重新加载结果</NButton>
       <div class="reading-table-wrap" tabindex="0" aria-label="按资料比较提取结果">
         <table class="reading-table"><thead><tr><th scope="col">项目</th><th v-for="document in selected.model_output.documents" :key="document.version_id" scope="col">{{ document.title }} · v{{ document.source_number }}<br />{{ scopeLabels[document.source_scope] }}</th></tr></thead>
           <tbody><tr v-for="(label, field) in readingFields" :key="field"><th scope="row">{{ label }}</th>
             <td v-for="document in selected.model_output.documents" :key="document.version_id">
               <p>{{ drafts[fieldKey(document.version_id, field)] || document.fields[field].text }}</p>
               <p v-if="drafts[fieldKey(document.version_id, field)]">作者修订</p>
-              <details v-if="document.fields[field].citations.length"><summary>原文依据</summary>
-                <div v-for="(citation, index) in document.fields[field].citations" :key="index"><blockquote>{{ citation.quote }}</blockquote><button :disabled="busy" @click="perform(() => locate(citation.chunk_id))">回查原文 {{ index + 1 }}</button></div>
-              </details>
-              <details v-if="project.role === 'author'"><summary>修订此项</summary>
+              <UiDisclosure v-if="document.fields[field].citations.length"><template #header>原文依据</template>
+                <div v-for="(citation, index) in document.fields[field].citations" :key="index"><blockquote>{{ citation.quote }}</blockquote><NButton @click="perform(() => locate(citation.chunk_id))" :disabled="(busy)">回查原文 {{ index + 1 }}</NButton></div>
+              </UiDisclosure>
+              <UiDisclosure v-if="project.role === 'author'"><template #header>修订此项</template>
                 <p>模型提取：{{ document.fields[field].text }}</p>
-                <label>{{ document.title }} · {{ label }} · 作者修订<textarea v-model="drafts[fieldKey(document.version_id, field)]" :disabled="busy" maxlength="2000" rows="3" @input="verified = false" /></label>
-              </details>
+                <label>{{ document.title }} · {{ label }} · 作者修订<UiInput v-model="drafts[fieldKey(document.version_id, field)]" maxlength="2000" rows="3" @input="verified = false" :disabled="(busy)" type="textarea" :aria-label="String(document.title) + ' · ' + String(label) + ' · 作者修订'" /></label>
+              </UiDisclosure>
             </td>
           </tr></tbody>
         </table>
@@ -165,12 +163,12 @@ onUnmounted(() => { mounted = false; clearTimeout(timer); });
       <div v-if="selected.model_output.comparison">
         <p>{{ { comparable: '条件可比（待核对）', not_comparable: '条件不可比', uncertain: '可比性不确定' }[selected.model_output.comparison.status] }}</p>
         <p>{{ selected.model_output.comparison.reason }}</p>
-        <details v-if="selected.model_output.comparison.citations.length"><summary>比较依据</summary><div v-for="(citation, index) in selected.model_output.comparison.citations" :key="index"><blockquote>{{ citation.quote }}</blockquote><button :disabled="busy" @click="perform(() => locate(citation.chunk_id))">回查比较依据 {{ index + 1 }}</button></div></details>
+        <UiDisclosure v-if="selected.model_output.comparison.citations.length"><template #header>比较依据</template><div v-for="(citation, index) in selected.model_output.comparison.citations" :key="index"><blockquote>{{ citation.quote }}</blockquote><NButton @click="perform(() => locate(citation.chunk_id))" :disabled="(busy)">回查比较依据 {{ index + 1 }}</NButton></div></UiDisclosure>
       </div>
       <form v-if="project.role === 'author'" class="editor" @submit.prevent="perform(save)"><fieldset :disabled="busy">
-        <label>作者理解<textarea v-model="note" maxlength="5000" rows="3" @input="verified = false" /></label>
-        <label class="check-label"><input v-model="verified" type="checkbox" :disabled="selected.sources_changed" />已逐项核对原文</label>
-        <button type="submit">保存作者修订与核对状态</button>
+        <label>作者理解<UiInput v-model="note" maxlength="5000" rows="3" @input="verified = false" :disabled="(busy)" type="textarea" :aria-label="'作者理解'" /></label>
+        <UiCheckbox v-model="verified" :disabled="(busy) || (selected.sources_changed)" :aria-label="'已逐项核对原文'" class="check-label">已逐项核对原文</UiCheckbox>
+        <NButton attr-type="submit" :disabled="(busy)" type="primary">保存作者修订与核对状态</NButton>
       </fieldset></form>
       <p v-else-if="selected.author_revision?.note">作者理解：{{ selected.author_revision.note }}</p>
       <SourceContext v-if="location" :key="location.chunk.id" :project="project" :location="location" />
@@ -181,9 +179,9 @@ onUnmounted(() => { mounted = false; clearTimeout(timer); });
 <style scoped>
 .reading-table-wrap { overflow-x: auto; margin-block: 1rem; }
 .reading-table { border-collapse: collapse; width: 100%; }
-.reading-table th, .reading-table td { vertical-align: top; text-align: left; padding: .65rem; border-bottom: 1px solid #d9e2d2; }
+.reading-table th, .reading-table td { vertical-align: top; text-align: left; padding: .65rem; border-bottom: 1px solid var(--border); }
 .reading-table td, .reading-table th:not(:first-child) { min-width: 14rem; max-width: 24rem; }
 .reading-table th:first-child { min-width: 5rem; }
 .reading-table textarea { width: 100%; box-sizing: border-box; }
-blockquote { margin: .5rem 0; padding-left: .5rem; border-left: 3px solid #a6b99b; white-space: pre-wrap; }
+blockquote { margin: .5rem 0; padding-left: .5rem; border-left: 3px solid #8b98a6; white-space: pre-wrap; }
 </style>

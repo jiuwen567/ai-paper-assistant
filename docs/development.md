@@ -7,7 +7,7 @@
 | 部分 | 选择 | 版本依据 |
 | --- | --- | --- |
 | JavaScript 运行时 / 包管理 | Node.js 24、pnpm 10.32.1 | `.node-version`、根 `package.json` |
-| Web / 公众号 H5 | Vue 3.5.44、Vite 8.3.5、TypeScript 5.9.3 | `apps/web/package.json`、`pnpm-lock.yaml` |
+| Web / 公众号 H5 | Vue 3.5.44、Vite 8.3.5、TypeScript 5.9.3、Naive UI 2.45.3 | `apps/web/package.json`、`pnpm-lock.yaml` |
 | 小程序 | 微信原生 TypeScript、Skyline、glass-easel | 微信开发者工具 2.02.2609240，基础库 3.17.6，类型库 `miniprogram-api-typings` 5.2.3 |
 | Python / 包管理 | Python 3.12、uv 0.9.26 | `.python-version`、`uv.lock` |
 | API | Django 5.2.19 LTS、DRF 3.18.3 | `pyproject.toml` 声明兼容范围，`uv.lock` 固定完整依赖 |
@@ -16,7 +16,7 @@
 | 图投影 | Neo4j 5.26.27 Community LTS | `compose.yaml` |
 | 文件存储 | SeaweedFS 4.52，S3 兼容接口 | `compose.yaml` |
 
-Web 与小程序使用已锁定的 TypeScript 5.9，避免编辑器和小程序编译器同步升级问题。Django 选择维护中的 LTS 系列；不因初始化任务额外引入 UI 组件库或业务状态管理。公众号共用 Web 的响应式 H5，服务端接入后续复用 Django。
+Web 与小程序使用已锁定的 TypeScript 5.9，避免编辑器和小程序编译器同步升级问题。Django 选择维护中的 LTS 系列；Web 统一使用 Naive UI，组件和布局约定见 [界面说明](ui.md)。公众号共用 Web 的响应式 H5，服务端接入后续复用 Django。
 
 `apps/miniapp/project.config.json` 固定模拟器验收使用的基础库版本。升级基础库时同步修改 `libVersion`，并重跑小程序验收。
 

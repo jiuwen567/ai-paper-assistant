@@ -51,29 +51,29 @@ onUnmounted(() => { mounted = false; });
   <article :aria-label="`表达建议：${suggestion.model_output.quote}`" class="suggestion">
     <h3>原稿 v{{ suggestion.manuscript_version }} · {{ suggestion.decision ? decisionLabels[suggestion.decision.action] : '待审阅' }}</h3>
     <h4>原句</h4><blockquote>{{ suggestion.model_output.quote }}</blockquote>
-    <details><summary>查看固定版本原稿</summary><p class="plain-text">{{ segment(0, suggestion.model_output.start) }}<mark>{{ segment(suggestion.model_output.start, suggestion.model_output.end) }}</mark>{{ segment(suggestion.model_output.end) }}</p></details>
+    <UiDisclosure><template #header>查看固定版本原稿</template><p class="plain-text">{{ segment(0, suggestion.model_output.start) }}<mark>{{ segment(suggestion.model_output.start, suggestion.model_output.end) }}</mark>{{ segment(suggestion.model_output.end) }}</p></UiDisclosure>
     <template v-if="suggestion.model_output.kind === 'expression'"><h4>建议</h4><p class="plain-text">{{ suggestion.model_output.replacement }}</p><TextChanges :parts="suggestion.diff" /></template>
     <p>{{ suggestion.model_output.reason }}</p>
     <p v-for="guard in suggestion.model_output.guard_reasons" :key="guard" role="status">{{ guard }}</p>
-    <details v-if="suggestion.model_output.citations.length"><summary>相关依据</summary><div v-for="(citation, index) in suggestion.model_output.citations" :key="index"><blockquote>{{ citation.quote }}</blockquote><button :disabled="busy" @click="perform(() => locate(citation.chunk_id))">回查表达依据 {{ index + 1 }}</button></div></details>
+    <UiDisclosure v-if="suggestion.model_output.citations.length"><template #header>相关依据</template><div v-for="(citation, index) in suggestion.model_output.citations" :key="index"><blockquote>{{ citation.quote }}</blockquote><NButton @click="perform(() => locate(citation.chunk_id))" :disabled="(busy)">回查表达依据 {{ index + 1 }}</NButton></div></UiDisclosure>
     <p v-if="suggestion.input_changed && !suggestion.decision" role="status">原稿或依据已变化，旧建议不能覆盖新稿。</p>
-    <p v-if="error" role="alert" class="error">{{ error }}</p><p v-if="message" role="status">{{ message }}</p><p v-if="busy" role="status">处理中…</p>
+    <NAlert type="error" :show-icon="false" v-if="error" role="alert">{{ error }}</NAlert><p v-if="message" role="status">{{ message }}</p><p v-if="busy" role="status">处理中…</p>
     <div v-if="suggestion.decision"><p v-if="suggestion.decision.manuscript_version">已生成原稿 v{{ suggestion.decision.manuscript_version }}</p><p v-if="suggestion.decision.action === 'edited'" class="plain-text">作者采用：{{ suggestion.decision.text }}</p><p v-if="suggestion.decision.reason">作者原因：{{ suggestion.decision.reason }}</p></div>
     <fieldset v-else-if="project.role === 'author'" :disabled="busy" class="editor">
       <template v-if="allowed">
-        <button type="button" @click="editing = !editing">{{ editing ? '取消编辑建议' : '编辑建议' }}</button>
-        <template v-if="editing"><label>作者编辑<textarea v-model="text" maxlength="1200" rows="4" /></label><button type="button" @click="perform(checkEdit)">查看编辑差异</button><template v-if="preview"><TextChanges :parts="preview.diff" /><p v-for="guard in preview.guard_reasons" :key="guard" role="status">{{ guard }}</p></template></template>
-        <label class="check-label"><input v-model="confirmed" type="checkbox" />已核对原意、数据、条件和依据，确认只是表达修改</label>
+        <NButton attr-type="button" @click="editing = !editing" :disabled="(busy)">{{ editing ? '取消编辑建议' : '编辑建议' }}</NButton>
+        <template v-if="editing"><label>作者编辑<UiInput v-model="text" maxlength="1200" rows="4" :disabled="(busy)" type="textarea" :aria-label="'作者编辑'" /></label><NButton attr-type="button" @click="perform(checkEdit)" :disabled="(busy)">查看编辑差异</NButton><template v-if="preview"><TextChanges :parts="preview.diff" /><p v-for="guard in preview.guard_reasons" :key="guard" role="status">{{ guard }}</p></template></template>
+        <UiCheckbox v-model="confirmed" :disabled="(busy)" :aria-label="'已核对原意、数据、条件和依据，确认只是表达修改'" class="check-label">已核对原意、数据、条件和依据，确认只是表达修改</UiCheckbox>
       </template>
-      <label>决定原因<textarea v-model="reason" maxlength="2000" rows="2" /></label>
-      <div class="actions"><button v-if="!editing" type="button" :disabled="!allowed || !confirmed || !!suggestion.model_output.guard_reasons.length" @click="perform(() => decide('accepted'))">接受建议</button><button v-else type="button" :disabled="!allowed || !confirmed || !preview || preview.text !== text || !!preview.guard_reasons.length" @click="perform(() => decide('edited'))">编辑后接受</button><button type="button" @click="perform(() => decide('rejected'))">拒绝建议</button></div>
+      <label>决定原因<UiInput v-model="reason" maxlength="2000" rows="2" :disabled="(busy)" type="textarea" :aria-label="'决定原因'" /></label>
+      <div class="actions"><NButton v-if="!editing" attr-type="button" @click="perform(() => decide('accepted'))" :disabled="(busy) || (!allowed || !confirmed || !!suggestion.model_output.guard_reasons.length)">接受建议</NButton><NButton v-else attr-type="button" @click="perform(() => decide('edited'))" :disabled="(busy) || (!allowed || !confirmed || !preview || preview.text !== text || !!preview.guard_reasons.length)">编辑后接受</NButton><NButton attr-type="button" @click="perform(() => decide('rejected'))" :disabled="(busy)">拒绝建议</NButton></div>
     </fieldset>
-    <button :disabled="busy" @click="perform(reload)">重新加载建议</button>
+    <NButton @click="perform(reload)" :disabled="(busy)">重新加载建议</NButton>
     <SourceContext v-if="location" :key="location.chunk.id" :project="project" :location="location" />
   </article>
 </template>
 <style scoped>
-.suggestion { border-top: 1px solid #d9e2d2; padding-block: .75rem; }
+.suggestion { border-top: 1px solid var(--border); padding-block: .75rem; }
 .plain-text, blockquote { white-space: pre-wrap; overflow-wrap: anywhere; }
-blockquote { margin-inline: 0; padding-left: .75rem; border-left: 3px solid #a6b99b; }
+blockquote { margin-inline: 0; padding-left: .75rem; border-left: 3px solid #8b98a6; }
 </style>

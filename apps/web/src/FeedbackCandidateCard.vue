@@ -28,9 +28,9 @@ async function decide(action: "accepted" | "rejected") {
     <p v-if="candidate.input_changed">拆分时的原稿或来源已变化，请重新拆分或手动登记核对后的任务。</p>
     <p v-if="candidate.decision">{{ candidate.decision.action === 'accepted' ? '作者已确认并加入待办' : '作者已拒绝' }} · {{ candidate.decision.reason }}</p>
     <form v-else-if="project.role === 'author'" class="editor" @submit.prevent="decide('accepted')"><fieldset :disabled="busy">
-      <label>候选任务标题<input v-model="title" required maxlength="200" /></label><label>候选任务要求<textarea v-model="instruction" required maxlength="2000" rows="2" /></label><label>候选决定原因<textarea v-model="reason" maxlength="2000" rows="2" /></label>
-      <label class="check-label"><input v-model="confirmed" type="checkbox" />已核对任务与原始意见</label>
-      <button type="submit" :disabled="!confirmed || candidate.input_changed || !project.policy.allowed_actions.includes('feedback')">确认加入待办</button><button type="button" @click="decide('rejected')">拒绝候选</button>
-    </fieldset></form><p v-if="busy" role="status">保存中…</p><p v-if="error" role="alert" class="error">{{ error }}</p>
+      <label>候选任务标题<UiInput v-model="title" required maxlength="200" :disabled="(busy)" :aria-label="'候选任务标题'" /></label><label>候选任务要求<UiInput v-model="instruction" required maxlength="2000" rows="2" :disabled="(busy)" type="textarea" :aria-label="'候选任务要求'" /></label><label>候选决定原因<UiInput v-model="reason" maxlength="2000" rows="2" :disabled="(busy)" type="textarea" :aria-label="'候选决定原因'" /></label>
+      <UiCheckbox v-model="confirmed" :disabled="(busy)" :aria-label="'已核对任务与原始意见'" class="check-label">已核对任务与原始意见</UiCheckbox>
+      <NButton attr-type="submit" :disabled="(busy) || (!confirmed || candidate.input_changed || !project.policy.allowed_actions.includes('feedback'))" type="primary">确认加入待办</NButton><NButton attr-type="button" @click="decide('rejected')" :disabled="(busy)">拒绝候选</NButton>
+    </fieldset></form><p v-if="busy" role="status">保存中…</p><NAlert type="error" :show-icon="false" v-if="error" role="alert">{{ error }}</NAlert>
   </article>
 </template>

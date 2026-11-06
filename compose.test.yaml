@@ -1,0 +1,33 @@
+# 仅供软件验收：固定向量 HTTP 夹具，不运行模型、不连接真实供应商。
+x-embedding-test: &embedding-test
+  EMBEDDING_BASE_URL: http://embedding-fixture:8766/v1
+  EMBEDDING_API_KEY: synthetic-embedding-key
+  EMBEDDING_MODEL: fixture-embedding
+  EMBEDDING_DIMENSION: '512'
+  EMBEDDING_MODEL_REVISION: fixture-v1
+  EMBEDDING_SEND_DIMENSIONS: 'true'
+
+services:
+  embedding-fixture:
+    profiles: [app]
+    build:
+      context: .
+      dockerfile: services/backend/Dockerfile
+    command: [python, core/tests/embedding_provider.py]
+    healthcheck:
+      test: [CMD, python, -c, "import socket; socket.create_connection(('127.0.0.1',8766),2).close()"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+  api:
+    environment: *embedding-test
+    depends_on:
+      embedding-fixture:
+        condition: service_healthy
+  worker:
+    environment: *embedding-test
+    depends_on:
+      embedding-fixture:
+        condition: service_healthy
+  scheduler:
+    environment: *embedding-test

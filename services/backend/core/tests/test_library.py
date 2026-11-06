@@ -5,7 +5,7 @@ import pytest
 from core.embeddings import configuration
 from core.library import default_bibliography
 from core.models import Bibliography, EmbeddingIndex, EvidenceCard, ProjectPolicy
-from core.parsing import ParseFailure
+from core.tests.embedding_provider import provider
 from core.tests.test_materials import context as material_context
 from core.tests.test_materials import intent, path, upload
 from core.tests.test_parse_jobs import create
@@ -69,11 +69,14 @@ def test_bibliography_evidence_notes_and_scope(context, source):
     assert card.notes.count() == 2
 
 
-def test_real_local_model_pgvector_search_and_withdrawal(context, source):
-    try:
-        configuration()
-    except ParseFailure:
-        pytest.skip("需先显式运行 prepare_embeddings；不在测试中下载模型。")
+@pytest.fixture(autouse=True)
+def embedding_api():
+    # 真实 HTTP 适配器与数据库，供应商返回固定向量，不评价模型语义质量。
+    with provider() as requests:
+        yield requests
+
+
+def test_embedding_api_pgvector_search_and_withdrawal(context, source):
     client, project, user = context
     version, run = source
     ProjectPolicy.objects.filter(project=project).update(
@@ -121,16 +124,9 @@ def test_real_local_model_pgvector_search_and_withdrawal(context, source):
     )
 
 
-def require_model():
-    try:
-        return configuration()
-    except ParseFailure:
-        pytest.skip("需显式准备对应嵌入模型。")
-
-
 def index_job(context, key="index-test"):
     client, project, _ = context
-    require_model()
+    configuration()
     ProjectPolicy.objects.filter(project=project).update(
         verified=True, source="自制规则", source_version="v1", allowed_actions=["reading"]
     )
@@ -148,8 +144,8 @@ def test_incompatible_model_rebuild_never_mixes_spaces(context, source):
     client, project, _ = context
     first = index_job(context)
     execute_job(str(first.job_id))
-    with override_settings(EMBEDDING_MODEL="BAAI/bge-small-en-v1.5"):
-        require_model()
+    with override_settings(EMBEDDING_MODEL="another-api-model", EMBEDDING_DIMENSION=384):
+        configuration()
         assert client.get(path(project, "search/?mode=semantic&q=温度")).status_code == 409
         second = index_job(context, "index-en")
         execute_job(str(second.job_id))
@@ -363,3 +359,54 @@ def test_mini_token_notes_are_visible_to_web(context, source):
             == 200
         )
         assert web.get(url).data["note"]["text"] == "手机补充短笔记"
+
+
+def test_api_partial_batch_failure_retry_does_not_publish_partial_index(context, source):
+    # 超过一批，第一批已调用成功也不得在第二批失败时发布。
+    from core.tests.embedding_provider import response_for
+
+    source[1].chunks.filter(ordinal=source[1].chunks.first().ordinal).update(
+        text="自制温度记录。" * 400
+    )
+    calls = []
+
+    def respond(payload):
+        calls.append(payload)
+        return (429, {}, {}) if len(calls) == 2 else (200, response_for(payload), {})
+
+    with provider(respond):
+        index = index_job(context)
+        execute_job(str(index.job_id))
+        index.refresh_from_db()
+        assert index.job.status == "failed" and index.job.retryable
+        assert index.job.error_code == "embedding_http_429"
+        assert not index.segments.exists() and index.published_at is None
+        with patch("core.job_views.dispatch"):
+            response = context[0].post(
+                path(context[1], f"jobs/{index.job_id}/retry/"), {"generation": 1}
+            )
+        assert response.status_code == 200
+        execute_job(str(index.job_id))
+        index.refresh_from_db()
+        assert index.job.status == "succeeded" and index.segments.count() > 8
+        count = index.segments.count()
+        execute_job(str(index.job_id))
+        assert index.segments.count() == count
+
+
+def test_old_local_index_job_is_cancelled_without_api_call(context, source, embedding_api):
+    from core.models import Job
+
+    index = index_job(context)
+    snapshot = dict(index.job.input_snapshot)
+    snapshot["embedding"] = {
+        "model_name": "BAAI/bge-small-zh-v1.5",
+        "dimension": 512,
+        "artifact_digest": "old-local-weights",
+        "pipeline_version": "char256-v1/fastembed-old",
+    }
+    Job.objects.filter(pk=index.job_id).update(input_snapshot=snapshot)
+    execute_job(str(index.job_id))
+    index.refresh_from_db()
+    assert index.job.status == "cancelled" and not index.segments.exists()
+    assert not embedding_api

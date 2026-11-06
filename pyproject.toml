@@ -14,7 +14,6 @@ dependencies = [
   "gunicorn>=23,<24",
   "pypdf>=6,<7",
   "defusedxml>=0.7,<0.8",
-  "fastembed>=0.8,<0.9",
   "pgvector>=0.4,<0.5",
   "python-docx>=1.2,<1.3",
 ]

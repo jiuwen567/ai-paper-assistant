@@ -53,16 +53,16 @@ onMounted(refresh);
       </nav>
     </aside>
     <main>
-      <h1>{{ isWechat ? "微信接入" : "本地开发环境" }}</h1>
+      <div class="section-heading"><h1>{{ isWechat ? "微信接入" : "本地开发环境" }}</h1><NButton tag="a" href="/">返回工作台</NButton></div>
       <section class="status-panel" aria-live="polite">
         <div>
           <h2>{{ state }}</h2>
           <p v-if="error">{{ error }}</p>
           <small>最近检查：{{ checkedAt }}</small>
         </div>
-        <button :disabled="loading" @click="refresh">
+        <NButton @click="refresh" :disabled="(loading)">
           {{ loading ? "检查中…" : "重新检查" }}
-        </button>
+        </NButton>
       </section>
 
       <template v-if="!isWechat">
@@ -73,7 +73,7 @@ onMounted(refresh);
             <dd :class="{ ready: health?.checks[key] === 'ok' }">{{ serviceStatus(key) }}</dd>
           </div>
         </dl>
-        <p class="notice">材料管理、AI 阅读、原稿审阅与导出尚未接入。</p>
+        <p class="notice">服务状态用于排查连接问题。论文与材料请在工作台中管理。</p>
       </template>
       <template v-else>
         <h2>微信小程序</h2>

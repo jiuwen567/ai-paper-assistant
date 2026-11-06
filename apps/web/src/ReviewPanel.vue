@@ -107,37 +107,37 @@ onUnmounted(() => { mounted = false; clearTimeout(timer); });
 <template>
   <section aria-label="原稿诊断" :aria-busy="busy">
     <h2>原稿诊断</h2>
-    <p v-if="error" role="alert" class="error">{{ error }}</p><p v-if="message" role="status">{{ message }}</p><p v-if="busy" role="status">处理中…</p>
-    <button :disabled="busy" @click="perform(refresh)">刷新审阅区</button>
+    <NAlert type="error" :show-icon="false" v-if="error" role="alert">{{ error }}</NAlert><p v-if="message" role="status">{{ message }}</p><p v-if="busy" role="status">处理中…</p>
+    <NButton @click="perform(refresh)" :disabled="(busy)">刷新审阅区</NButton>
     <form v-if="project.role === 'author'" class="editor" @submit.prevent="perform(create)"><fieldset :disabled="busy">
-      <details><summary>选择原稿 v{{ manuscript?.version ?? 0 }}（{{ selectedBlocks.length }}/20）</summary>
+      <UiDisclosure><template #header>选择原稿 v{{ manuscript?.version ?? 0 }}（{{ selectedBlocks.length }}/20）</template>
         <p v-if="!manuscript?.blocks.length">暂无已保存正文，请先保存作者原稿。</p>
-        <label v-for="(block, index) in manuscript?.blocks" :key="block.id" class="check-label"><input v-model="selectedBlocks" type="checkbox" :value="block.id" :disabled="selectedBlocks.length >= 20 && !selectedBlocks.includes(block.id)" />块 {{ index + 1 }}：{{ block.text.slice(0, 80) || '空正文' }}</label>
-      </details>
-      <details><summary>选择依据（{{ selectedSources.length }}/5）</summary>
+        <UiCheckbox v-model="selectedBlocks" :value="block.id" :disabled="(busy) || (selectedBlocks.length >= 20 && !selectedBlocks.includes(block.id))" :aria-label="'块 ' + String(index + 1) + '：' + String(block.text.slice(0, 80) || '空正文')" v-for="(block, index) in manuscript?.blocks" :key="block.id" class="check-label">块 {{ index + 1 }}：{{ block.text.slice(0, 80) || '空正文' }}</UiCheckbox>
+      </UiDisclosure>
+      <UiDisclosure><template #header>选择依据（{{ selectedSources.length }}/5）</template>
         <p v-if="sources?.count === 0">尚无已解析资料；只能检查所选原稿与研究说明。</p>
-        <label v-for="source in sources?.results" :key="source.id" class="check-label"><input type="checkbox" :checked="selectedSources.some(item => item.id === source.id)" :disabled="selectedSources.length >= 5 && !selectedSources.some(item => item.id === source.id)" @change="toggleSource(source)" />{{ source.title }} · v{{ source.number }} · {{ scopeLabels[source.source_scope] }}</label>
-        <div v-if="sources && (sources.previous || sources.next)" class="actions"><button type="button" :disabled="!sources.previous" @click="perform(() => loadSources(sourcePage - 1))">上一页审阅依据</button><button type="button" :disabled="!sources.next" @click="perform(() => loadSources(sourcePage + 1))">下一页审阅依据</button></div>
-      </details>
-      <div class="actions"><button v-for="source in selectedSources" :key="source.id" type="button" @click="toggleSource(source)">移除依据 {{ source.title }} v{{ source.number }}</button></div>
-      <label>核对重点<textarea v-model="question" maxlength="500" rows="2" /></label>
-      <div class="actions"><button type="submit" :disabled="!canCreate || !selectedBlocks.length">{{ previousId ? '开始复查' : '开始诊断' }}</button><button v-if="previousId" type="button" @click="previousId = null">取消复查关联</button></div>
+        <UiCheckbox :checked="selectedSources.some(item => item.id === source.id)" @change="toggleSource(source)" :disabled="(busy) || (selectedSources.length >= 5 && !selectedSources.some(item => item.id === source.id))" :aria-label="String(source.title) + ' · v' + String(source.number) + ' · ' + String(scopeLabels[source.source_scope])" v-for="source in sources?.results" :key="source.id" class="check-label">{{ source.title }} · v{{ source.number }} · {{ scopeLabels[source.source_scope] }}</UiCheckbox>
+        <div v-if="sources && (sources.previous || sources.next)" class="actions"><NButton attr-type="button" @click="perform(() => loadSources(sourcePage - 1))" :disabled="(busy) || (!sources.previous)">上一页审阅依据</NButton><NButton attr-type="button" @click="perform(() => loadSources(sourcePage + 1))" :disabled="(busy) || (!sources.next)">下一页审阅依据</NButton></div>
+      </UiDisclosure>
+      <div class="actions"><NButton v-for="source in selectedSources" :key="source.id" attr-type="button" @click="toggleSource(source)" :disabled="(busy)">移除依据 {{ source.title }} v{{ source.number }}</NButton></div>
+      <label>核对重点<UiInput v-model="question" maxlength="500" rows="2" :disabled="(busy)" type="textarea" :aria-label="'核对重点'" /></label>
+      <div class="actions"><NButton attr-type="submit" :disabled="(busy) || (!canCreate || !selectedBlocks.length)" type="primary">{{ previousId ? '开始复查' : '开始诊断' }}</NButton><NButton v-if="previousId" attr-type="button" @click="previousId = null" :disabled="(busy)">取消复查关联</NButton></div>
       <p v-if="!canCreate">当前规则未允许原稿诊断。</p>
     </fieldset></form>
-    <div v-if="task" role="status">{{ taskLabels[task.status] }}<p v-if="task.error_message">{{ task.error_message }}</p><button v-if="['queued','running'].includes(task.status)" :disabled="busy" @click="perform(() => control('cancel'))">取消诊断任务</button><button v-if="task.status === 'failed' && task.retryable" :disabled="busy" @click="perform(() => control('retry'))">重试诊断任务</button></div>
+    <div v-if="task" role="status">{{ taskLabels[task.status] }}<p v-if="task.error_message">{{ task.error_message }}</p><NButton v-if="['queued','running'].includes(task.status)" @click="perform(() => control('cancel'))" :disabled="(busy)">取消诊断任务</NButton><NButton v-if="task.status === 'failed' && task.retryable" @click="perform(() => control('retry'))" :disabled="(busy)">重试诊断任务</NButton></div>
     <p v-if="records?.count === 0">暂无诊断记录。</p>
-    <ul class="project-list"><li v-for="record in records?.results" :key="record.id"><button :disabled="busy" :aria-pressed="selected?.id === record.id" @click="perform(() => open(record.id))">原稿 v{{ record.manuscript_version }} · {{ record.findings_count }} 项建议{{ record.input_changed ? ' · 输入已变化' : '' }}{{ record.previous_review_id ? ' · 复查' : '' }}</button></li></ul>
-    <div v-if="records && (records.previous || records.next)" class="actions"><button :disabled="busy || !records.previous" @click="perform(() => loadRecords(recordPage - 1))">上一页诊断</button><button :disabled="busy || !records.next" @click="perform(() => loadRecords(recordPage + 1))">下一页诊断</button></div>
+    <ul class="project-list"><li v-for="record in records?.results" :key="record.id"><NButton :aria-pressed="selected?.id === record.id" @click="perform(() => open(record.id))" :disabled="(busy)">原稿 v{{ record.manuscript_version }} · {{ record.findings_count }} 项建议{{ record.input_changed ? ' · 输入已变化' : '' }}{{ record.previous_review_id ? ' · 复查' : '' }}</NButton></li></ul>
+    <div v-if="records && (records.previous || records.next)" class="actions"><NButton @click="perform(() => loadRecords(recordPage - 1))" :disabled="(busy || !records.previous)">上一页诊断</NButton><NButton @click="perform(() => loadRecords(recordPage + 1))" :disabled="(busy || !records.next)">下一页诊断</NButton></div>
     <article v-if="selected" aria-label="诊断结果">
       <h3>原稿 v{{ selected.manuscript_version }} · 模型建议</h3>
       <p>{{ selected.summary }}</p><p>仅覆盖所选原稿和已读取依据，需作者核对，不作为学术合规认证。</p>
       <p v-if="selected.input_changed" role="status">原稿或依据已变化，请复查后再确认。</p>
       <p v-if="selected.research_limited">作者研究说明仅提供各字段前 1000 字符，未检查剩余部分。</p>
-      <div class="actions"><button :disabled="busy" @click="perform(() => open(selected!.id))">重新加载诊断</button><button v-if="project.role === 'author'" :disabled="busy || !canCreate" @click="perform(prepareRecheck)">按当前原稿复查</button></div>
-      <p v-if="selected.previous_review_id"><button :disabled="busy" @click="perform(() => open(selected!.previous_review_id!))">查看前次诊断</button></p>
-      <p v-for="recheck in selected.recheck_tasks" :key="recheck.id">复查任务：{{ taskLabels[recheck.status] }} <button v-if="recheck.output?.review_id" :disabled="busy" @click="perform(() => open(recheck.output!.review_id!))">查看复查结果</button></p>
-      <details><summary>资料与全文范围</summary><p v-if="!selected.source_checks.length">本次未提供文献或研究资料，不能核验外部引用。</p><div v-for="source in selected.source_checks" :key="source.version_id"><h4>{{ source.title }} · v{{ source.source_number }}</h4><p>项目内有原件 · {{ source.bibliography_registered ? '已登记题录' : '未登记题录' }} · 出版真实性未核验</p><p>{{ scopeLabels[source.source_scope] }}{{ source.source_scope === 'abstract' ? '；未提供全文' : '' }}</p></div></details>
-      <form class="actions" @submit.prevent="perform(loadFindings)"><label>处理状态<select v-model="filterStatus" aria-label="处理状态" :disabled="busy"><option value="">全部状态</option><option v-for="(label, value) in decisionLabels" :key="value" :value="value">{{ label }}</option></select></label><label>问题类型<select v-model="filterCategory" aria-label="问题类型" :disabled="busy"><option value="">全部类型</option><option v-for="(label, value) in reviewCategories" :key="value" :value="value">{{ label }}</option></select></label><button :disabled="busy" type="submit">筛选问题</button></form>
+      <div class="actions"><NButton @click="perform(() => open(selected!.id))" :disabled="(busy)">重新加载诊断</NButton><NButton v-if="project.role === 'author'" @click="perform(prepareRecheck)" :disabled="(busy || !canCreate)">按当前原稿复查</NButton></div>
+      <p v-if="selected.previous_review_id"><NButton @click="perform(() => open(selected!.previous_review_id!))" :disabled="(busy)">查看前次诊断</NButton></p>
+      <p v-for="recheck in selected.recheck_tasks" :key="recheck.id">复查任务：{{ taskLabels[recheck.status] }} <NButton v-if="recheck.output?.review_id" @click="perform(() => open(recheck.output!.review_id!))" :disabled="(busy)">查看复查结果</NButton></p>
+      <UiDisclosure><template #header>资料与全文范围</template><p v-if="!selected.source_checks.length">本次未提供文献或研究资料，不能核验外部引用。</p><div v-for="source in selected.source_checks" :key="source.version_id"><h4>{{ source.title }} · v{{ source.source_number }}</h4><p>项目内有原件 · {{ source.bibliography_registered ? '已登记题录' : '未登记题录' }} · 出版真实性未核验</p><p>{{ scopeLabels[source.source_scope] }}{{ source.source_scope === 'abstract' ? '；未提供全文' : '' }}</p></div></UiDisclosure>
+      <form class="actions" @submit.prevent="perform(loadFindings)"><label>处理状态<UiSelect v-model="filterStatus" aria-label="处理状态" :disabled="(busy)" :options="[({ value: '', label: '全部状态' }), ...Object.entries(decisionLabels).map(([value, label]) => ({ value: value, label: String(label) }))]" /></label><label>问题类型<UiSelect v-model="filterCategory" aria-label="问题类型" :disabled="(busy)" :options="[({ value: '', label: '全部类型' }), ...Object.entries(reviewCategories).map(([value, label]) => ({ value: value, label: String(label) }))]" /></label><NButton attr-type="submit" :disabled="(busy)" type="primary">筛选问题</NButton></form>
       <p v-if="findings?.count === 0">当前范围没有问题卡；不代表全文无误。</p>
       <ReviewFindingCard v-for="finding in findings?.results" :key="finding.id" :project="project" :finding="finding" :input-changed="selected.input_changed" @saved="updateFinding" @access-lost="cause => perform(async () => { throw cause; })" />
     </article>

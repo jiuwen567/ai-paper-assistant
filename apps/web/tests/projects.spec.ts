@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { expect, test as base, type APIRequestContext, type Page } from "@playwright/test";
+import { expect, test as base, type APIRequestContext, type Page, type Locator } from "@playwright/test";
 
 type Accounts = { prefix: string; owner: string; reviewer: string; reviewerId: number; password: string; otherId: string };
 const root = fileURLToPath(new URL("../../..", import.meta.url));
@@ -21,6 +21,7 @@ const test = base.extend<{ accounts: Accounts }>({
   },
 });
 async function login(page: Page, username: string, password: string) {
+  await expect(page.getByLabel("密码", { exact: true })).toHaveAttribute("type", "password");
   await page.getByLabel("用户名", { exact: true }).fill(username);
   await page.getByLabel("密码", { exact: true }).fill(password);
   await page.getByRole("button", { name: "登录", exact: true }).click();
@@ -29,6 +30,35 @@ async function login(page: Page, username: string, password: string) {
 async function mutate(api: APIRequestContext, path: string, method: string, data: unknown) {
   const session = await (await api.get("/api/v1/auth/session/")).json();
   return api.fetch(`/api/v1/${path}`, { method, data, headers: { "X-CSRFToken": session.csrf_token } });
+}
+
+
+// 通过产品导航切换工作区；不强制点击隐藏控件。
+const sections: Record<string, [string, string?]> = {
+  '作者原稿': ['原稿写作'], '材料': ['材料与阅读', '文件材料'], '阅读与证据': ['材料与阅读', '检索与证据卡'],
+  '阅读摘记与比较': ['材料与阅读', 'AI 阅读'], '原稿诊断': ['审阅与修订', '原稿诊断'], '表达建议': ['审阅与修订', '表达建议'],
+  '导师反馈与修改待办': ['导师反馈'], '依据关系': ['依据与变更', '依据关系'], '材料变更与影响': ['依据与变更', '变更影响'],
+  'Word 导出': ['导出与披露', '导出文档'], 'AI 使用与披露': ['导出与披露', 'AI 使用说明'], '后台任务': ['后台任务'], '删除与清理': ['项目设置'],
+};
+async function activate(page: Page, section: string) {
+  const [menu, tab] = sections[section] ?? [section];
+  if (await page.getByRole('heading', { name: menu, exact: true }).count() === 0) {
+    const mobile = page.getByRole('button', { name: '打开导航' });
+    if (await mobile.isVisible()) await mobile.click();
+    await page.getByRole('menuitem', { name: menu, exact: true }).filter({ visible: true }).click();
+  }
+  if (tab) await page.getByRole('tab', { name: tab, exact: true }).click();
+}
+async function select(page: Page, field: Locator, value: string | { label: string }) {
+  await field.click();
+  const menu = page.locator(`[id="${await field.getAttribute('aria-controls')}"]`);
+  if (typeof value === 'string') await menu.locator(`[data-option-value="${value}"]`).click();
+  else await menu.getByText(value.label, { exact: true }).click();
+}
+async function returnToList(page: Page) {
+  const mobile = page.getByRole('button', { name: '打开导航' });
+  if (await mobile.isVisible()) { await mobile.click(); await page.getByRole('button', { name: '返回列表', exact: true }).filter({ visible: true }).click(); }
+  else await page.getByRole('button', { name: '我的论文', exact: true }).click();
 }
 
 test("依据路径双向回查、撤回重建和不可用状态", async ({ page, accounts }, testInfo) => {
@@ -46,6 +76,7 @@ test("依据路径双向回查、撤回重建和不可用状态", async ({ page,
   const draft = { version: 0, request_key: randomUUID(), research: { question: "", method: "", result: "" }, blocks: [{ id: randomUUID(), text: "本次记录中，提高温度后反应速率增加。", heading_level: 0 }, { id: randomUUID(), text: "所有条件下均有效。", heading_level: 0 }] };
   expect((await mutate(page.request, projectPath + "manuscript/", "PUT", draft)).status()).toBe(200);
   const materials = page.getByRole("region", { name: "材料", exact: true });
+  await activate(page, '材料');
   await materials.getByLabel("材料名称", { exact: true }).fill("自制温度记录");
   await materials.locator('input[type="file"]').setInputFiles({ name: "graph-sample.txt", mimeType: "text/plain", buffer: Buffer.from("自制记录：提高温度后反应速率增加。") });
   await materials.getByRole("button", { name: "上传材料", exact: true }).click();
@@ -57,9 +88,10 @@ test("依据路径双向回查、撤回重建和不可用状态", async ({ page,
   await reader.getByRole("region", { name: "原文上下文" }).getByRole("button", { name: "保存当前片段为证据卡" }).click();
   await expect(reader.getByText("证据卡已保存。")).toBeVisible();
   const panel = page.getByRole("region", { name: "依据关系", exact: true });
+  await activate(page, '依据关系');
   await panel.getByRole("button", { name: "刷新依据关系" }).click();
-  await panel.locator("summary").filter({ hasText: "登记作者核对的依据" }).click();
-  await panel.getByLabel("选择原稿正文", { exact: true }).selectOption(draft.blocks[0].id);
+  await panel.locator(".n-collapse-item__header-main").filter({ hasText: "登记作者核对的依据" }).click();
+  await select(page, panel.getByLabel("选择原稿正文", { exact: true }), draft.blocks[0].id);
   await panel.getByLabel("原稿中的主张", { exact: true }).fill("提高温度后反应速率增加。");
   await panel.getByRole("button", { name: /graph-sample.txt ·/ }).click();
   await panel.getByLabel("来源原话", { exact: true }).fill("提高温度后反应速率增加。");
@@ -73,8 +105,8 @@ test("依据路径双向回查、撤回重建和不可用状态", async ({ page,
   await waitGraph();
   const route = panel.getByRole("article", { name: "依据路径：提高温度后反应速率增加。", exact: true });
   await expect(route).toContainText("作者已核对");
-  await panel.getByLabel("按正文查依据", { exact: true }).selectOption(draft.blocks[0].id);
-  await panel.getByLabel("按材料查正文", { exact: true }).selectOption({ label: "自制温度记录" });
+  await select(page, panel.getByLabel("按正文查依据", { exact: true }), draft.blocks[0].id);
+  await select(page, panel.getByLabel("按材料查正文", { exact: true }), { label: "自制温度记录" });
   await panel.getByRole("button", { name: "查询路径", exact: true }).click();
   await expect(route).toBeVisible();
   await route.getByRole("button", { name: "回查固定正文" }).click();
@@ -86,17 +118,17 @@ test("依据路径双向回查、撤回重建和不可用状态", async ({ page,
   expect((await mutate(page.request, projectPath + "policies/", "POST", { version: project.version, source: "自制图验收规则", source_version: "v1", verified: true, notes: "", allowed_actions: ["review"] })).status()).toBe(201);
   const material = (await (await page.request.get(`/api/v1/${projectPath}materials/`)).json()).results[0];
   fixtureData("review", accounts.prefix, { payload: { idempotency_key: randomUUID(), policy_version: 2, manuscript_version: 1, block_ids: [draft.blocks[1].id], version_ids: [material.latest_version.id] } });
-  await panel.getByLabel("按正文查依据", { exact: true }).selectOption("");
+  await select(page, panel.getByLabel("按正文查依据", { exact: true }), "");
   await waitGraph();
   const candidate = panel.getByRole("article", { name: "依据路径：所有条件下均有效。", exact: true });
   await expect(candidate).toContainText("模型候选");
   await candidate.getByRole("button", { name: "回查诊断记录" }).click();
   await expect(panel.getByRole("region", { name: "路径诊断记录" })).toContainText("现有记录不足以支持");
-  await panel.getByLabel("按正文查依据", { exact: true }).selectOption(draft.blocks[0].id);
+  await select(page, panel.getByLabel("按正文查依据", { exact: true }), draft.blocks[0].id);
   await panel.getByRole("button", { name: "查询路径", exact: true }).click();
   await route.getByRole("button", { name: "查看关系决定" }).click();
   const editor = panel.getByRole("region", { name: "作者关系决定", exact: true });
-  await editor.getByLabel("决定状态", { exact: true }).selectOption("withdrawn");
+  await select(page, editor.getByLabel("决定状态", { exact: true }), "withdrawn");
   await editor.getByLabel("关系决定说明", { exact: true }).fill("作者核对后撤回，仅用于图验证。");
   const stored = (await (await page.request.get(`/api/v1/${projectPath}evidence-links/`)).json()).results[0];
   expect((await mutate(page.request, projectPath + `evidence-links/${stored.id}/`, "POST", { request_key: randomUUID(), version: 1, state: "confirmed", kind: "context", note: "另一窗口仅确认背景关系", confirmed: true })).status()).toBe(200);
@@ -143,8 +175,9 @@ test("导师反馈候选确认、实际修改和导师回复版本分离", async
   const draft = { version: 0, request_key: randomUUID(), research: { question: "", method: "", result: "" }, blocks: [{ id: randomUUID(), text: "方法", heading_level: 1 }, { id: randomUUID(), text: "作者原始说明。", heading_level: 0 }] };
   expect((await mutate(page.request, projectPath + "manuscript/", "PUT", draft)).status()).toBe(200);
   const panel = page.getByRole("region", { name: "导师反馈与修改待办", exact: true });
+  await activate(page, '导师反馈与修改待办');
   await panel.getByRole("button", { name: "刷新反馈区" }).click();
-  await panel.getByLabel("反馈关联正文", { exact: true }).selectOption(draft.blocks[1].id);
+  await select(page, panel.getByLabel("反馈关联正文", { exact: true }), draft.blocks[1].id);
   await panel.getByLabel("原始意见", { exact: true }).fill("请补充样本条件，并解释指标选择。");
   await panel.getByLabel("意见来源", { exact: true }).fill("自制会议记录");
   await panel.getByRole("button", { name: "保存原始意见" }).click();
@@ -159,9 +192,8 @@ test("导师反馈候选确认、实际修改和导师回复版本分离", async
   await expect(candidate).toBeVisible();
   await expect(candidate.getByRole("button", { name: "确认加入待办" })).toBeDisabled();
   await candidate.getByLabel("候选决定原因", { exact: true }).fill("已核对自制会议记录");
-  const cancelled = page.waitForEvent("dialog").then(async dialog => { expect(dialog.message()).toContain("未保存"); await dialog.dismiss(); });
   await panel.getByRole("button", { name: "请补充样本条件，并解释指标选择。", exact: true }).click();
-  await cancelled;
+  await page.getByRole("button", { name: "继续编辑", exact: true }).click();
   await expect(candidate.getByLabel("候选决定原因", { exact: true })).toHaveValue("已核对自制会议记录");
   await candidate.getByLabel("已核对任务与原始意见").check();
   await candidate.getByRole("button", { name: "确认加入待办" }).click();
@@ -170,8 +202,8 @@ test("导师反馈候选确认、实际修改和导师回复版本分离", async
   await expect(task).toContainText("当前处理版本尚未登记导师回复");
   expect((await mutate(page.request, projectPath + "manuscript/", "PUT", { ...draft, version: 1, request_key: randomUUID(), blocks: draft.blocks.map((block, index) => ({ ...block, text: index ? "作者补充样本条件后的说明。" : block.text })) })).status()).toBe(200);
   await task.getByLabel("处理说明", { exact: true }).fill("已查原始记录，补充样本条件。");
-  await task.getByLabel("作者进度", { exact: true }).selectOption("completed");
-  await task.getByLabel("处理结果", { exact: true }).selectOption("modified");
+  await select(page, task.getByLabel("作者进度", { exact: true }), "completed");
+  await select(page, task.getByLabel("处理结果", { exact: true }), "modified");
   await task.getByRole("button", { name: "保存处理记录", exact: true }).click();
   await expect(task.getByRole("alert")).toContainText("原稿已有新版本");
   await task.getByRole("button", { name: "刷新待办与原稿" }).click();
@@ -184,7 +216,7 @@ test("导师反馈候选确认、实际修改和导师回复版本分离", async
   await task.getByLabel("回复来源", { exact: true }).fill("会议记录，作者转录");
   await task.getByRole("button", { name: "保存转录回复" }).click();
   await expect(task).toContainText("确认本次处理：自制回复");
-  await task.getByLabel("作者进度", { exact: true }).selectOption("doing");
+  await select(page, task.getByLabel("作者进度", { exact: true }), "doing");
   await task.getByRole("button", { name: "保存处理记录", exact: true }).click();
   await expect(task).toContainText("处理 v3");
   await expect(task).toContainText("当前处理版本尚未登记导师回复");
@@ -202,6 +234,7 @@ test("AI 使用区分调用与采纳，披露历史和冲突保留草稿", async
   await page.getByLabel("项目名称", { exact: true }).fill("披露验收");
   await page.getByRole("button", { name: "创建", exact: true }).click();
   const panel = page.getByRole("region", { name: "AI 使用与披露", exact: true });
+  await activate(page, 'AI 使用与披露');
   await expect(panel.getByLabel("AI 使用说明", { exact: true })).toHaveValue(/暂无系统内模型任务记录/);
   const project = (await (await page.request.get("/api/v1/projects/")).json()).results[0];
   const projectPath = `projects/${project.id}/`;
@@ -225,7 +258,7 @@ test("AI 使用区分调用与采纳，披露历史和冲突保留草稿", async
   await panel.getByLabel("已核对使用记录、实际采纳和系统外补充").check();
   await panel.getByRole("button", { name: "保存披露新版本" }).click();
   await expect(panel).toContainText("已保存清单 v1 · 作者已核对");
-  await panel.locator("summary").filter({ hasText: "逐项回查使用记录" }).click();
+  await panel.locator(".n-collapse-item__header-main").filter({ hasText: "逐项回查使用记录" }).click();
   await panel.getByRole("button", { name: "查看使用详情", exact: true }).click();
   await expect(panel).toContainText("执行器 pi-1.5.0");
   await expect(panel).toContainText("原稿 v1 的块 1、2");
@@ -234,9 +267,9 @@ test("AI 使用区分调用与采纳，披露历史和冲突保留草稿", async
   await expect(change).toContainText("作者决定：已接受");
   await expect(change.getByLabel("文字差异").locator("del").first()).toBeVisible();
   await change.getByRole("button", { name: "查看修改前稿件" }).click();
-  await expect(panel.locator("summary").filter({ hasText: /^稿件 v1$/ })).toBeVisible();
+  await expect(panel.locator(".n-collapse-item__header-main").filter({ hasText: /^稿件 v1$/ })).toBeVisible();
   await change.getByRole("button", { name: "查看采纳后稿件" }).click();
-  await expect(panel.locator("summary").filter({ hasText: /^稿件 v2$/ })).toBeVisible();
+  await expect(panel.locator(".n-collapse-item__header-main").filter({ hasText: /^稿件 v2$/ })).toBeVisible();
   await panel.getByLabel("AI 使用说明", { exact: true }).fill("当前窗口的披露草稿");
   await expect(panel.getByLabel("已核对使用记录、实际采纳和系统外补充")).not.toBeChecked();
   expect((await mutate(page.request, projectPath + "manuscript/", "PUT", { ...draft, version: 2, request_key: randomUUID(), blocks: draft.blocks.map(block => ({ ...block, text: "作者自行修订的新稿。" })) })).status()).toBe(200);
@@ -248,7 +281,7 @@ test("AI 使用区分调用与采纳，披露历史和冲突保留草稿", async
   await expect(panel).toContainText("记录或稿件已变化，需重新核对");
   await panel.getByRole("button", { name: "保存披露新版本" }).click();
   await expect(panel).toContainText("已保存清单 v2 · 待作者核对");
-  await panel.locator("summary").filter({ hasText: "披露修改历史" }).click();
+  await panel.locator(".n-collapse-item__header-main").filter({ hasText: "披露修改历史" }).click();
   await panel.getByRole("button", { name: "清单 v1 · 当时已核对", exact: true }).click();
   await expect(panel.getByRole("article", { name: "披露历史版本" })).toContainText("作者核对：仅采纳一次表达修改。");
   await expect(panel.getByRole("article", { name: "披露历史版本" })).toContainText("自报工具 v1");
@@ -269,7 +302,8 @@ test("AI 使用区分调用与采纳，披露历史和冲突保留草稿", async
   expect((await mutate(page.request, projectPath + "members/", "POST", { version: currentProject.version, username: accounts.reviewer, role: "reviewer" })).status()).toBe(200);
   await page.getByRole("button", { name: "退出", exact: true }).click();
   await login(page, accounts.reviewer, accounts.password);
-  await page.getByRole("button", { name: "披露验收 审阅者" }).click();
+  await page.getByRole("button", { name: /披露验收.*审阅者/ }).click();
+  await activate(page, "AI 使用与披露");
   await expect(panel.getByLabel("AI 使用说明", { exact: true })).toHaveValue("不覆盖另一窗口的新版本");
   await expect(panel.getByLabel("AI 使用说明", { exact: true })).toBeDisabled();
   await expect(panel.getByRole("button", { name: "保存披露新版本" })).toHaveCount(0);
@@ -288,6 +322,7 @@ test("表达建议差异、编辑采纳、引用和旧稿冲突", async ({ page,
   await page.getByRole("button", { name: "保存规则新版本" }).click();
   await expect(page.getByRole("heading", { name: "AI 辅助规则 · v2" })).toBeVisible();
   const manuscript = page.getByRole("region", { name: "作者原稿", exact: true });
+  await activate(page, '作者原稿');
   await manuscript.getByRole("button", { name: "添加章节", exact: true }).click();
   await manuscript.getByLabel("标题 1", { exact: true }).fill("方法");
   await manuscript.getByRole("button", { name: "添加正文块", exact: true }).click();
@@ -295,6 +330,7 @@ test("表达建议差异、编辑采纳、引用和旧稿冲突", async ({ page,
   await manuscript.getByRole("button", { name: "保存原稿新版本", exact: true }).click();
   await expect(manuscript.getByRole("heading", { name: "作者原稿 · v1", exact: true })).toBeVisible();
   const materials = page.getByRole("region", { name: "材料", exact: true });
+  await activate(page, '材料');
   await materials.getByLabel("材料名称", { exact: true }).fill("表达自制依据");
   await materials.locator('input[type="file"]').setInputFiles({ name: "expression.txt", mimeType: "text/plain", buffer: Buffer.from("软件验收用记录：观察样本，未外推结论。") });
   await materials.getByRole("button", { name: "上传材料", exact: true }).click();
@@ -303,9 +339,10 @@ test("表达建议差异、编辑采纳、引用和旧稿冲突", async ({ page,
   await reader.getByRole("button", { name: "解析材料", exact: true }).click();
   await expect(reader.getByRole("button", { name: "解析 #1 · 解析成功", exact: true })).toBeVisible();
   const panel = page.getByRole("region", { name: "表达建议", exact: true });
+  await activate(page, '表达建议');
   await panel.getByRole("button", { name: "刷新表达区" }).click();
-  await panel.getByLabel("建议原稿块", { exact: true }).selectOption({ label: "块 2：本研究对样本进行了观察。" });
-  await panel.locator("summary").filter({ hasText: "选择表达依据" }).click();
+  await select(page, panel.getByLabel("建议原稿块", { exact: true }), { label: "块 2：本研究对样本进行了观察。" });
+  await panel.locator(".n-collapse-item__header-main").filter({ hasText: "选择表达依据" }).click();
   await panel.getByRole("checkbox", { name: /表达自制依据/ }).check();
   await panel.getByRole("button", { name: "生成表达建议", exact: true }).click();
   await expect(panel.getByRole("alert")).toContainText("配置生成模型");
@@ -318,7 +355,7 @@ test("表达建议差异、编辑采纳、引用和旧稿冲突", async ({ page,
   await expect(card).toBeVisible();
   await expect(card.getByLabel("文字差异").locator("del").first()).toBeVisible();
   await expect(card.getByRole("button", { name: "接受建议", exact: true })).toBeDisabled();
-  await card.locator("summary").filter({ hasText: "相关依据" }).click();
+  await card.locator(".n-collapse-item__header-main").filter({ hasText: "相关依据" }).click();
   await card.getByRole("button", { name: "回查表达依据 1" }).click();
   await expect(card.getByRole("region", { name: "原文上下文" })).toContainText("未外推结论");
   await card.getByRole("button", { name: "编辑建议", exact: true }).click();
@@ -328,8 +365,10 @@ test("表达建议差异、编辑采纳、引用和旧稿冲突", async ({ page,
   await card.getByRole("button", { name: "编辑后接受", exact: true }).click();
   await expect(card.getByRole("heading", { name: "原稿 v1 · 编辑后接受", exact: true })).toBeVisible();
   await expect(card).toContainText("已生成原稿 v2");
+  await activate(page, '作者原稿');
   await manuscript.getByRole("button", { name: "加载最新原稿" }).click();
   await expect(manuscript.getByLabel("正文块 2", { exact: true })).toHaveValue("本研究已观察样本。");
+  await activate(page, '表达建议');
   await panel.getByRole("button", { name: "生成表达建议", exact: true }).click();
   const stale = panel.getByRole("article", { name: "表达建议：本研究已观察样本。", exact: true });
   await expect(stale).toBeVisible();
@@ -366,6 +405,7 @@ test("原稿诊断固定位置、来源范围、作者判断与修改后复查",
   await page.getByRole("button", { name: "保存规则新版本" }).click();
   await expect(page.getByRole("heading", { name: "AI 辅助规则 · v2" })).toBeVisible();
   const manuscript = page.getByRole("region", { name: "作者原稿", exact: true });
+  await activate(page, '作者原稿');
   await manuscript.getByRole("button", { name: "添加章节", exact: true }).click();
   await manuscript.getByLabel("标题 1", { exact: true }).fill("结论");
   await manuscript.getByRole("button", { name: "添加正文块", exact: true }).click();
@@ -373,6 +413,7 @@ test("原稿诊断固定位置、来源范围、作者判断与修改后复查",
   await manuscript.getByRole("button", { name: "保存原稿新版本", exact: true }).click();
   await expect(manuscript.getByRole("heading", { name: "作者原稿 · v1", exact: true })).toBeVisible();
   const materials = page.getByRole("region", { name: "材料", exact: true });
+  await activate(page, '材料');
   await materials.getByLabel("材料名称", { exact: true }).fill("诊断自制摘要");
   await materials.locator('input[type="file"]').setInputFiles({ name: "review.txt", mimeType: "text/plain", buffer: Buffer.from("仅在指定模拟条件观察到效果，不能外推到实际装置。") });
   await materials.getByRole("button", { name: "上传材料", exact: true }).click();
@@ -385,10 +426,11 @@ test("原稿诊断固定位置、来源范围、作者判断与修改后复查",
   const bibliography = await (await page.request.get(`/api/v1/projects/${project.id}/files/${versions[0].id}/bibliography/`)).json();
   expect((await mutate(page.request, `projects/${project.id}/files/${versions[0].id}/bibliography/`, "PUT", { version: bibliography.version, snapshot: { ...bibliography.snapshot, source_scope: "abstract" } })).status()).toBe(200);
   const panel = page.getByRole("region", { name: "原稿诊断", exact: true });
+  await activate(page, '原稿诊断');
   await panel.getByRole("button", { name: "刷新审阅区" }).click();
-  await panel.locator("summary").filter({ hasText: "选择原稿" }).click();
+  await panel.locator(".n-collapse-item__header-main").filter({ hasText: "选择原稿" }).click();
   await panel.getByRole("checkbox", { name: /块 2/ }).check();
-  await panel.locator("summary").filter({ hasText: "选择依据" }).click();
+  await panel.locator(".n-collapse-item__header-main").filter({ hasText: "选择依据" }).click();
   await panel.getByRole("checkbox", { name: /诊断自制摘要/ }).check();
   await panel.getByRole("button", { name: "开始诊断", exact: true }).click();
   await expect(panel.getByRole("alert")).toContainText("配置生成模型");
@@ -402,24 +444,26 @@ test("原稿诊断固定位置、来源范围、作者判断与修改后复查",
   const result = panel.getByRole("article", { name: "诊断结果", exact: true });
   const card = result.getByRole("article", { name: /问题：所有条件下均有效/ });
   await expect(card).toBeVisible();
-  await card.locator("summary").filter({ hasText: "查看固定版本原稿" }).click();
+  await card.locator(".n-collapse-item__header-main").filter({ hasText: "查看固定版本原稿" }).click();
   await expect(card.locator("mark")).toHaveText("所有条件下均有效。");
-  await result.locator("summary").filter({ hasText: "资料与全文范围" }).click();
+  await result.locator(".n-collapse-item__header-main").filter({ hasText: "资料与全文范围" }).click();
   await expect(result).toContainText("出版真实性未核验");
   await expect(result).toContainText("未提供全文");
-  await card.locator("summary").filter({ hasText: "材料原文依据" }).click();
+  await card.locator(".n-collapse-item__header-main").filter({ hasText: "材料原文依据" }).click();
   await card.getByRole("button", { name: "回查依据 1", exact: true }).click();
   await expect(card.getByRole("region", { name: "原文上下文" })).toContainText("不能外推到实际装置");
-  await card.getByLabel("作者处理", { exact: true }).selectOption("ignored");
+  await select(page, card.getByLabel("作者处理", { exact: true }), "ignored");
   await card.getByLabel("处理原因", { exact: true }).fill("作者认为已有其他限定，记录忽略原因。");
   await card.getByRole("button", { name: "保存作者判断", exact: true }).click();
   await expect(card.getByRole("heading", { name: "结论越界 · 已忽略" })).toBeVisible();
-  await result.getByLabel("处理状态", { exact: true }).selectOption("ignored");
+  await select(page, result.getByLabel("处理状态", { exact: true }), "ignored");
   await result.getByRole("button", { name: "筛选问题" }).click();
   await expect(card).toBeVisible();
+  await activate(page, '作者原稿');
   await manuscript.getByLabel("正文块 2", { exact: true }).fill("仅在指定模拟条件下观察到效果，不外推到实际装置。");
   await manuscript.getByRole("button", { name: "保存原稿新版本", exact: true }).click();
   await expect(manuscript.getByRole("heading", { name: "作者原稿 · v2", exact: true })).toBeVisible();
+  await activate(page, '原稿诊断');
   await result.getByRole("button", { name: "重新加载诊断" }).click();
   await expect(result).toContainText("原稿或依据已变化");
   await result.getByRole("button", { name: "按当前原稿复查" }).click();
@@ -440,7 +484,9 @@ test("作者原稿保存、历史对照、冲突保护与 DOCX 导入", async ({
   await page.getByLabel("项目名称", { exact: true }).fill("原稿版本验收");
   await page.getByRole("button", { name: "创建", exact: true }).click();
   const panel = page.getByRole("region", { name: "作者原稿", exact: true });
+  await activate(page, '作者原稿');
   await expect(panel.getByRole("heading", { name: "作者原稿 · v0", exact: true })).toBeVisible();
+  await panel.locator(".n-collapse-item__header-main").filter({ hasText: /^研究说明$/ }).click();
   await panel.getByLabel("研究问题", { exact: true }).fill("作者提出的自制问题");
   await panel.getByLabel("研究方法", { exact: true }).fill("作者描述的方法");
   await panel.getByRole("button", { name: "添加章节", exact: true }).click();
@@ -449,11 +495,11 @@ test("作者原稿保存、历史对照、冲突保护与 DOCX 导入", async ({
   await panel.getByLabel("正文块 2", { exact: true }).fill("作者自己写的第一版正文。");
   await panel.getByRole("button", { name: "保存原稿新版本", exact: true }).click();
   await expect(panel.getByRole("heading", { name: "作者原稿 · v1", exact: true })).toBeVisible();
-  await expect(panel.getByRole("navigation", { name: "章节树" })).toContainText("第一章 研究背景");
+  await expect(panel.locator(".chapter-tree")).toContainText("第一章 研究背景");
   await panel.getByLabel("正文块 2", { exact: true }).fill("作者自己修订的第二版正文。");
   await panel.getByRole("button", { name: "保存原稿新版本", exact: true }).click();
   await expect(panel.getByRole("heading", { name: "作者原稿 · v2", exact: true })).toBeVisible();
-  await panel.locator("summary").filter({ hasText: "历史版本与对照" }).click();
+  await panel.locator(".n-collapse-item__header-main").filter({ hasText: "历史版本与对照" }).click();
   await panel.getByRole("button", { name: "查看原稿 v1 · 作者编辑", exact: true }).click();
   await panel.getByRole("button", { name: "查看原稿差异", exact: true }).click();
   const diff = panel.getByLabel("原稿差异", { exact: true });
@@ -470,17 +516,25 @@ test("作者原稿保存、历史对照、冲突保护与 DOCX 导入", async ({
   });
   expect(saved.status()).toBe(200);
   await panel.getByLabel("正文块 2", { exact: true }).fill("当前窗口未保存草稿。");
+  await activate(page, "材料");
+  await page.getByRole('tab', { name: '文件材料', exact: true }).focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByRole('tab', { name: '检索与证据卡', exact: true })).toBeFocused();
+  await expect(page.getByRole('region', { name: '阅读与证据', exact: true })).toBeVisible();
+  await activate(page, "作者原稿");
+  await expect(panel.getByLabel("正文块 2", { exact: true })).toHaveValue("当前窗口未保存草稿。");
   await panel.getByRole("button", { name: "保存原稿新版本", exact: true }).click();
   await expect(panel.getByRole("alert")).toContainText("原稿已更新");
   await expect(panel.getByLabel("正文块 2", { exact: true })).toHaveValue("当前窗口未保存草稿。");
-  page.once("dialog", dialog => dialog.dismiss());
-  await page.getByRole("button", { name: "返回列表", exact: true }).click();
+  await returnToList(page);
+  await page.getByRole("button", { name: "继续编辑", exact: true }).click();
   await expect(panel.getByLabel("正文块 2", { exact: true })).toHaveValue("当前窗口未保存草稿。");
-  page.once("dialog", dialog => dialog.accept());
   await panel.getByRole("button", { name: "加载最新原稿", exact: true }).click();
+  await page.getByRole("button", { name: "放弃修改", exact: true }).click();
   await expect(panel.getByLabel("正文块 2", { exact: true })).toHaveValue("另一个窗口保存的第四版。");
   const docx = execFileSync("uv", ["run", "python", "-c", "import sys; from core.tests.parse_samples import docx_sample; sys.stdout.buffer.write(docx_sample())"], { cwd: root, env: { ...process.env, PYTHONPATH: "services/backend" } });
   const materials = page.getByRole("region", { name: "材料", exact: true });
+  await activate(page, '材料');
   await materials.getByLabel("材料名称", { exact: true }).fill("作者 DOCX");
   await materials.locator('input[type="file"]').setInputFiles({ name: "author.docx", mimeType: "application/octet-stream", buffer: docx });
   await materials.getByRole("button", { name: "上传材料", exact: true }).click();
@@ -488,11 +542,12 @@ test("作者原稿保存、历史对照、冲突保护与 DOCX 导入", async ({
   const reader = materials.getByRole("region", { name: "原文定位", exact: true });
   await reader.getByRole("button", { name: "解析材料", exact: true }).click();
   await expect(reader.getByRole("button", { name: "解析 #1 · 解析成功", exact: true })).toBeVisible();
-  await panel.locator("summary").filter({ hasText: "导入 DOCX 正文" }).click();
+  await activate(page, '作者原稿');
+  await panel.locator(".n-collapse-item__header-main").filter({ hasText: "导入 DOCX 正文" }).click();
   await panel.getByRole("button", { name: "选择已解析 DOCX", exact: true }).click();
   await panel.getByRole("button", { name: "预览 author.docx · v1 · 解析 1", exact: true }).click();
   await expect(panel.getByLabel("DOCX 导入预览")).toContainText("表格、图片、公式");
-  await panel.getByLabel("导入方式", { exact: true }).selectOption("replace");
+  await select(page, panel.getByLabel("导入方式", { exact: true }), "replace");
   await panel.getByRole("button", { name: "确认导入并保存新版本", exact: true }).click();
   await expect(panel.getByRole("heading", { name: "作者原稿 · v5", exact: true })).toBeVisible();
   await expect(panel.getByLabel("标题 1", { exact: true })).toHaveValue("自制标题");
@@ -512,12 +567,14 @@ test("阅读比较保留原文、作者修订、核对状态及过期冲突", as
   await page.getByLabel("规则来源", { exact: true }).fill("自制规则");
   await page.getByLabel("来源版本", { exact: true }).fill("v1");
   await page.getByLabel("已核对学校或课程规则").check();
+  await expect(page.getByLabel("规则来源", { exact: true })).toHaveAttribute("required", "");
   await page.getByLabel("文献阅读", { exact: true }).check();
   await page.getByLabel("文献比较", { exact: true }).check();
   await page.getByRole("button", { name: "保存规则新版本" }).click();
   await expect(page.getByRole("heading", { name: "AI 辅助规则 · v2" })).toBeVisible();
   const materials = page.getByRole("region", { name: "材料", exact: true });
   for (const title of ["自制资料甲", "自制资料乙"]) {
+  await activate(page, '材料');
     await materials.getByLabel("材料名称", { exact: true }).fill(title);
     await materials.locator('input[type="file"]').setInputFiles({ name: title + ".txt", mimeType: "text/plain", buffer: Buffer.from(`${title}：软件验收模拟记录，条件为 25 摄氏度。\n局限：不能外推。`) });
     await materials.getByRole("button", { name: "上传材料", exact: true }).click();
@@ -528,8 +585,9 @@ test("阅读比较保留原文、作者修订、核对状态及过期冲突", as
     if (title === "自制资料甲") await materials.getByRole("button", { name: "新增材料", exact: true }).click();
   }
   const reading = page.getByRole("region", { name: "阅读摘记与比较", exact: true });
+  await activate(page, '阅读摘记与比较');
   await reading.getByRole("button", { name: "刷新阅读区" }).click();
-  await reading.locator("summary").filter({ hasText: "选择已解析资料" }).click();
+  await reading.locator(".n-collapse-item__header-main").filter({ hasText: "选择已解析资料" }).click();
   await reading.getByRole("checkbox", { name: /自制资料甲/ }).check();
   await reading.getByRole("checkbox", { name: /自制资料乙/ }).check();
   await reading.getByLabel("阅读问题", { exact: true }).fill("比较实验条件与局限");
@@ -542,10 +600,10 @@ test("阅读比较保留原文、作者修订、核对状态及过期冲突", as
   await expect(result.getByText("可比性不确定", { exact: true })).toBeVisible();
   const row = result.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "结果", exact: true }) });
   const cell = row.getByRole("cell").first();
-  await cell.locator("summary").filter({ hasText: "原文依据" }).click();
+  await cell.locator(".n-collapse-item__header-main").filter({ hasText: "原文依据" }).click();
   await cell.getByRole("button", { name: "回查原文 1", exact: true }).click();
   await expect(result.getByRole("region", { name: "原文上下文" })).toContainText("软件验收模拟记录");
-  await cell.locator("summary").filter({ hasText: "修订此项" }).click();
+  await cell.locator(".n-collapse-item__header-main").filter({ hasText: "修订此项" }).click();
   await cell.getByRole("textbox").fill("作者修订后的比较理解");
   await result.getByLabel("作者理解", { exact: true }).fill("这是作者的理解，不是文献原文。");
   await result.getByLabel("已逐项核对原文", { exact: true }).check();
@@ -579,7 +637,7 @@ test("真实登录、项目编辑、规则版本、审阅者限制与撤权", as
   await page.getByLabel("项目名称", { exact: true }).fill("自制论文验收");
   await page.getByLabel("论文类型").fill("课程论文");
   await page.getByLabel("写作要求").fill("只使用自制公开测试材料。");
-  await page.getByRole("combobox", { name: "模板", exact: true }).selectOption("department-default");
+  await select(page, page.getByRole("combobox", { name: "模板", exact: true }), "department-default");
   await page.getByRole("button", { name: "创建", exact: true }).click();
   await expect(page.getByText("项目已保存。")).toBeVisible();
   await expect(page.getByLabel("文献阅读", { exact: true })).toBeDisabled();
@@ -594,6 +652,7 @@ test("真实登录、项目编辑、规则版本、审阅者限制与撤权", as
   await expect(page.getByRole("alert")).toContainText("版本已更新");
   await expect(page.getByLabel("项目名称", { exact: true })).toHaveValue("旧页面标题");
   await page.getByRole("button", { name: "重新加载", exact: true }).click();
+  await activate(page, "项目设置");
   await expect(page.getByLabel("项目名称", { exact: true })).toHaveValue("另一窗口的标题");
   await page.getByLabel("项目名称", { exact: true }).fill("自制论文验收");
   await page.getByRole("button", { name: "保存项目", exact: true }).click();
@@ -602,26 +661,29 @@ test("真实登录、项目编辑、规则版本、审阅者限制与撤权", as
   await page.getByLabel("规则来源", { exact: true }).fill("自制课程规则");
   await page.getByLabel("来源版本", { exact: true }).fill("2026-v1");
   await page.getByLabel("已核对学校或课程规则").check();
+  await expect(page.getByLabel("规则来源", { exact: true })).toHaveAttribute("required", "");
   await page.getByLabel("文献阅读", { exact: true }).check();
   await page.getByRole("button", { name: "保存规则新版本" }).click();
   await expect(page.getByRole("heading", { name: "AI 辅助规则 · v2" })).toBeVisible();
   expect((await mutate(page.request, `${projectPath}ai-permissions/`, "POST", { action: "reading", policy_version: 2 })).ok()).toBeTruthy();
   expect((await mutate(page.request, `${projectPath}ai-permissions/`, "POST", { action: "expression", policy_version: 2 })).status()).toBe(403);
-  await expect(page.locator("details.history-item")).toHaveCount(2);
+  await expect(page.locator(".history-item")).toHaveCount(2);
   await page.getByLabel("成员用户名").fill(accounts.reviewer);
   await page.getByRole("button", { name: "添加或更新成员" }).click();
   await expect(page.getByText("成员权限已保存。")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
   await page.screenshot({ path: testInfo.outputPath("project-settings.png"), fullPage: true });
   await page.reload();
-  await page.getByRole("button", { name: "自制论文验收 作者" }).click();
+  await page.getByRole("button", { name: /自制论文验收.*作者/ }).click();
+  await activate(page, "项目设置");
   await expect(page.getByLabel("写作要求")).toHaveValue("只使用自制公开测试材料。");
 
   await page.getByRole("button", { name: "退出", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "登录", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "登录论文工作台", exact: true })).toBeVisible();
   expect((await page.request.get("/api/v1/projects/")).status()).toBe(403);
   await login(page, accounts.reviewer, accounts.password);
-  await page.getByRole("button", { name: "自制论文验收 审阅者" }).click();
+  await page.getByRole("button", { name: /自制论文验收.*审阅者/ }).click();
+  await activate(page, "项目设置");
   await expect(page.getByLabel("项目名称", { exact: true })).toBeDisabled();
   await expect(page.getByRole("button", { name: "保存项目", exact: true })).toHaveCount(0);
   expect((await mutate(page.request, projectPath, "PATCH", { version: 4, name: "越权" })).status()).toBe(403);
@@ -647,7 +709,7 @@ test("登录连接失败可重试", async ({ page }) => {
   await expect(page.getByRole("button", { name: "重新连接" })).toBeEnabled();
   await page.unroute("**/api/v1/auth/session/");
   await page.getByRole("button", { name: "重新连接" }).click();
-  await expect(page.getByRole("heading", { name: "登录", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "登录论文工作台", exact: true })).toBeVisible();
 });
 
 test("会话失效后重新登录不显示上一账号的创建草稿", async ({ page, accounts }) => {
@@ -657,7 +719,7 @@ test("会话失效后重新登录不显示上一账号的创建草稿", async ({
   await page.getByLabel("项目名称", { exact: true }).fill("上一账号的自制草稿");
   expect((await mutate(page.request, "auth/logout/", "POST", {})).ok()).toBeTruthy();
   await page.getByRole("button", { name: "创建", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "登录", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "登录论文工作台", exact: true })).toBeVisible();
   await login(page, accounts.reviewer, accounts.password);
   await expect(page.getByText("还没有论文项目。")).toBeVisible();
   await expect(page.getByLabel("项目名称", { exact: true })).toHaveCount(0);
@@ -670,14 +732,16 @@ test("后台任务离开页面后可查回真实 Worker 结果", async ({ page, 
   await page.getByLabel("项目名称", { exact: true }).fill("任务测试项目");
   await page.getByRole("button", { name: "创建", exact: true }).click();
   const panel = page.getByRole("region", { name: "后台任务" });
+  await activate(page, '后台任务');
   await expect(panel.getByText("暂无任务。")).toBeVisible();
   await panel.getByLabel("字数统计样例").fill("自制测试");
   await panel.getByRole("button", { name: "开始统计" }).click();
-  await expect(panel.locator("summary")).toHaveCount(1);
+  await expect(panel.locator(".n-collapse-item__header-main")).toHaveCount(1);
   await page.reload();
-  await page.getByRole("button", { name: "任务测试项目 作者" }).click();
-  await expect(panel.locator("summary")).toContainText("成功");
-  await panel.locator("summary").click();
+  await page.getByRole("button", { name: /任务测试项目.*作者/ }).click();
+  await activate(page, "后台任务");
+  await expect(panel.locator(".n-collapse-item__header-main")).toContainText("成功");
+  await panel.locator(".n-collapse-item__header-main").click();
   await expect(panel.getByText("4 字 · 输入版本 1")).toBeVisible();
   await expect(panel.getByText("第 1 次 · 成功")).toBeVisible();
 });
@@ -687,13 +751,13 @@ test("Web 确认绑定并解除（自制微信身份）", async ({ page, account
   const binding = JSON.parse(fixtureData("binding", accounts.prefix));
   await page.goto("/");
   await login(page, accounts.owner, accounts.password);
-  await page.locator("summary").filter({ hasText: "微信账号" }).click();
+  await page.locator(".n-collapse-item__header-main").filter({ hasText: "微信账号" }).click();
   await page.getByLabel("绑定码", { exact: true }).fill("A".repeat(24));
   await page.getByRole("button", { name: "确认绑定当前账号" }).click();
   await expect(page.getByRole("alert")).toContainText("绑定码无效");
   await page.getByLabel("绑定码", { exact: true }).fill(binding.binding_code);
   await page.getByRole("button", { name: "确认绑定当前账号" }).click();
-  await expect(page.locator("summary").filter({ hasText: "微信账号" })).toContainText("已绑定");
+  await expect(page.locator(".n-collapse-item__header-main").filter({ hasText: "微信账号" })).toContainText("已绑定");
   await page.getByRole("button", { name: "解除微信绑定" }).click();
   await expect(page.getByRole("button", { name: "确认绑定当前账号" })).toBeVisible();
   await page.getByLabel("绑定码", { exact: true }).fill(binding.binding_code);
@@ -709,10 +773,14 @@ test("材料原件上传、新版本及授权下载", async ({ page, accounts })
   await page.getByLabel("项目名称", { exact: true }).fill("自制材料项目");
   await page.getByRole("button", { name: "创建", exact: true }).click();
   const panel = page.getByRole("region", { name: "材料", exact: true });
+  await activate(page, '材料');
   await expect(panel.getByText("暂无材料。")).toBeVisible();
   await panel.getByLabel("材料名称", { exact: true }).fill("自制研究记录");
   const first = Buffer.from("自制材料第一版");
-  await panel.locator('input[type="file"]').setInputFiles({ name: "self-authored.txt", mimeType: "text/plain", buffer: first });
+  const chooser = page.waitForEvent('filechooser');
+  await panel.getByRole('button', { name: '选择文件', exact: true }).focus();
+  await page.keyboard.press('Enter');
+  await (await chooser).setFiles({ name: "self-authored.txt", mimeType: "text/plain", buffer: first });
   await panel.getByRole("button", { name: "上传材料", exact: true }).click();
   await expect(panel.getByText("材料版本已保存。")).toBeVisible();
   await expect(panel.getByRole("link", { name: "下载 v1", exact: true })).toBeVisible();
@@ -747,6 +815,7 @@ test("真实 Worker 解析 PDF、DOCX、CSV 并定位固定文件版本", async 
   const panel = page.getByRole("region", { name: "材料", exact: true });
   const reader = page.getByRole("region", { name: "原文定位", exact: true });
   for (const name of ["sample.pdf", "sample.docx", "sample.csv", "scan.pdf"]) {
+  await activate(page, '材料');
     await panel.getByRole("button", { name: "新增材料", exact: true }).click();
     await panel.getByLabel("材料名称", { exact: true }).fill(name);
     await panel.locator('input[type="file"]').setInputFiles({ name, mimeType: "application/octet-stream", buffer: Buffer.from(samples[name], "base64") });
@@ -818,17 +887,19 @@ test("摘要证据、作者笔记、嵌入 API 检索链路与材料撤回", asy
   await page.getByLabel("规则来源", { exact: true }).fill("自制规则");
   await page.getByLabel("来源版本", { exact: true }).fill("v1");
   await page.getByLabel("已核对学校或课程规则").check();
+  await expect(page.getByLabel("规则来源", { exact: true })).toHaveAttribute("required", "");
   await page.getByLabel("文献阅读", { exact: true }).check();
   await page.getByRole("button", { name: "保存规则新版本" }).click();
   await expect(page.getByRole("heading", { name: "AI 辅助规则 · v2" })).toBeVisible();
   const materials = page.getByRole("region", { name: "材料", exact: true });
+  await activate(page, '材料');
   await materials.getByLabel("材料名称", { exact: true }).fill("自制温度实验摘要");
   await materials.locator('input[type="file"]').setInputFiles({ name: "abstract.txt", mimeType: "text/plain", buffer: Buffer.from("自制实验记录：提高温度后反应速率增加。\n对照记录：光照保持不变。") });
   await materials.getByRole("button", { name: "上传材料", exact: true }).click();
   await materials.getByRole("button", { name: "查看原文 v1", exact: true }).click();
   const reader = materials.getByRole("region", { name: "原文定位", exact: true });
-  await reader.locator("summary").filter({ hasText: "文献卡与作者笔记" }).click();
-  await reader.getByRole("combobox", { name: "资料范围", exact: true }).selectOption("abstract");
+  await reader.locator(".n-collapse-item__header-main").filter({ hasText: "文献卡与作者笔记" }).click();
+  await select(page, reader.getByRole("combobox", { name: "资料范围", exact: true }), "abstract");
   await reader.getByRole("button", { name: "保存题录", exact: true }).click();
   await expect(reader.getByText("题录已保存。")).toBeVisible();
   await reader.getByRole("button", { name: "解析材料", exact: true }).click();
@@ -837,8 +908,9 @@ test("摘要证据、作者笔记、嵌入 API 检索链路与材料撤回", asy
   await expect(reader.getByRole("alert")).toContainText("请先由管理员配置生成模型");
   fixtureData("ai", accounts.prefix);
   const jobs = page.getByRole("region", { name: "后台任务", exact: true });
+  await activate(page, '后台任务');
   await jobs.getByRole("button", { name: "刷新任务", exact: true }).click();
-  await jobs.locator("summary").filter({ hasText: "AI 摘记 · 成功" }).click();
+  await jobs.locator(".n-collapse-item__header-main").filter({ hasText: "AI 摘记 · 成功" }).click();
   await expect(jobs.getByText("待核对", { exact: true })).toBeVisible();
   await expect(jobs.getByText("协议样例摘记，等待作者核对。", { exact: true })).toBeVisible();
   await jobs.getByRole("button", { name: "调用记录", exact: true }).click();
@@ -847,6 +919,7 @@ test("摘要证据、作者笔记、嵌入 API 检索链路与材料撤回", asy
   await expect(jobs.getByRole("region", { name: "原文上下文" })).toContainText("提高温度");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
   await jobs.screenshot({ path: testInfo.outputPath("ai-pending-result.png") });
+  await activate(page, '材料');
   await reader.locator(".source-chunks button").first().click();
   const context = reader.getByRole("region", { name: "原文上下文" });
   await context.getByLabel("作者笔记", { exact: true }).fill("我的理解，仍需复核。");
@@ -854,6 +927,7 @@ test("摘要证据、作者笔记、嵌入 API 检索链路与材料撤回", asy
   await context.getByRole("button", { name: "保存当前片段为证据卡" }).click();
   await expect(context.getByText("证据卡已保存。")).toBeVisible();
   const library = page.getByRole("region", { name: "阅读与证据", exact: true });
+  await activate(page, '阅读与证据');
   await library.getByRole("button", { name: "刷新证据卡", exact: true }).click();
   await library.getByRole("button", { name: /自制温度实验摘要 · v1/ }).click();
   const detail = library.getByRole("article", { name: "证据详情" });
@@ -864,22 +938,24 @@ test("摘要证据、作者笔记、嵌入 API 检索链路与材料撤回", asy
   await expect(library.getByText("笔记已保存。")).toBeVisible();
   await detail.getByRole("button", { name: "回查原文" }).click();
   await expect(library.getByRole("region", { name: "原文上下文" }).getByRole("heading")).toContainText("abstract.txt · v1");
-  await library.locator("summary").filter({ hasText: "检索索引" }).click();
+  await library.locator(".n-collapse-item__header-main").filter({ hasText: "检索索引" }).click();
   await library.getByRole("button", { name: "重建检索索引", exact: true }).click();
   await expect(library.getByText(/\d+ 维 · 成功/)).toBeVisible({ timeout: 30000 });
   await library.getByLabel("项目内检索", { exact: true }).fill("升温与反应速率");
-  await library.getByRole("combobox", { name: "检索方式", exact: true }).selectOption("semantic");
+  await select(page, library.getByRole("combobox", { name: "检索方式", exact: true }), "semantic");
   await library.getByRole("button", { name: "检索材料", exact: true }).click();
   const results = library.getByLabel("检索结果", { exact: true });
   await expect(results).toContainText("提高温度");
   await expect(results).toContainText("仅摘要");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
   await library.screenshot({ path: testInfo.outputPath("evidence-search.png") });
+  await activate(page, '材料');
   await materials.getByRole("button", { name: "从检索和新任务撤回材料" }).click();
   await expect(materials.getByRole("button", { name: "恢复材料使用" })).toBeVisible();
+  await activate(page, '阅读与证据');
   await library.getByRole("button", { name: "检索材料", exact: true }).click();
   await expect(library.getByRole("alert")).toContainText("请先重建检索索引");
-  await library.getByRole("combobox", { name: "检索方式", exact: true }).selectOption("keyword");
+  await select(page, library.getByRole("combobox", { name: "检索方式", exact: true }), "keyword");
   await library.getByLabel("项目内检索", { exact: true }).fill("温度");
   await library.getByRole("button", { name: "检索材料", exact: true }).click();
   await expect(results).toContainText("没有匹配的有效资料");
@@ -902,6 +978,7 @@ test("材料更正三处影响、处理冲突、模型候选与复查", async ({
   const saved = await mutate(page.request, base + "manuscript/", "PUT", draft); expect(saved.status()).toBe(200);
   const manuscript = await saved.json();
   const materials = page.getByRole("region", { name: "材料", exact: true });
+  await activate(page, '材料');
   await materials.getByLabel("材料名称", { exact: true }).fill("温度组自制记录");
   await materials.locator('input[type="file"]').setInputFiles({ name: "temperature-v1.txt", mimeType: "text/plain", buffer: Buffer.from("提高温度后反应速率增加。") });
   await materials.getByRole("button", { name: "上传材料", exact: true }).click();
@@ -921,12 +998,17 @@ test("材料更正三处影响、处理冲突、模型候选与复查", async ({
   const versions = (await (await page.request.get(`/api/v1/${base}materials/${material.id}/versions/`)).json()).results;
   expect(versions.every((v: { usage_state: string }) => v.usage_state === "active")).toBeTruthy();
   const panel = page.getByRole("region", { name: "材料变更与影响", exact: true });
+  await activate(page, '材料变更与影响');
   await panel.getByRole("button", { name: "刷新变更区" }).click();
-  await panel.locator("summary").filter({ hasText: "登记材料变更" }).click();
-  await panel.getByLabel("变更材料", { exact: true }).selectOption(material.id);
-  await panel.getByLabel("变更类型", { exact: true }).selectOption("correction");
-  await panel.getByLabel("旧文件版本", { exact: true }).selectOption(material.latest_version.id);
-  await panel.getByLabel("新文件版本", { exact: true }).selectOption(versions[0].id);
+  await panel.locator(".n-collapse-item__header-main").filter({ hasText: "登记材料变更" }).click();
+  await select(page, panel.getByLabel("变更材料", { exact: true }), material.id);
+  await select(page, panel.getByLabel("变更类型", { exact: true }), "correction");
+  await panel.getByLabel("变更说明", { exact: true }).fill("单位更正，需要复核温度组论述。");
+  await panel.getByLabel("我已核对文件版本、变更类型与说明").check();
+  await panel.getByRole("button", { name: "保存材料变更", exact: true }).click();
+  await expect(panel.getByText("请选择一项。", { exact: true })).toHaveCount(2);
+  await select(page, panel.getByLabel("旧文件版本", { exact: true }), material.latest_version.id);
+  await select(page, panel.getByLabel("新文件版本", { exact: true }), versions[0].id);
   await panel.getByLabel("变更说明", { exact: true }).fill("单位更正，需要复核温度组论述。");
   await panel.getByLabel("我已核对文件版本、变更类型与说明").check();
   await panel.getByRole("button", { name: "保存材料变更", exact: true }).click();
@@ -940,7 +1022,7 @@ test("材料更正三处影响、处理冲突、模型候选与复查", async ({
   await panel.getByRole("button", { name: "生成影响清单", exact: true }).click();
   await expect(panel.locator(".impact-item")).toHaveCount(3);
   const card = panel.locator(".impact-item").filter({ hasText: "提高温度后反应速率增加。" });
-  await card.getByLabel("处理结果", { exact: true }).selectOption("retained");
+  await select(page, card.getByLabel("处理结果", { exact: true }), "retained");
   await card.getByLabel("处理说明", { exact: true }).fill("保留我的草稿处理说明");
   await card.getByLabel("我已核对材料、当前位置与处理结果").check();
   const change = (await (await page.request.get(`/api/v1/${base}material-changes/`)).json()).results[0];
@@ -989,12 +1071,13 @@ test("固定快照 Word 导出、改稿隔离与下载记录", async ({ page, ac
   const disclosure = await (await page.request.get(`/api/v1/${base}disclosure/`)).json();
   expect((await mutate(page.request, base + "disclosure/", "POST", { version: 0, request_key: randomUUID(), facts_token: disclosure.facts_token, text: "作者确认本样例未调用生成模型。", external_uses: [], verified: true })).status()).toBe(201);
   const panel = page.getByRole("region", { name: "Word 导出", exact: true });
+  await activate(page, 'Word 导出');
   await panel.getByRole("button", { name: "刷新导出资料" }).click();
   await panel.getByLabel("署名", { exact: true }).fill("自制样例作者");
-  await panel.locator("summary").filter({ hasText: "图表题注" }).click();
-  await panel.locator(".caption-option").filter({ hasText: "自制图题" }).getByRole("combobox").selectOption("figure");
+  await panel.locator(".n-collapse-item__header-main").filter({ hasText: "图表题注" }).click();
+  await select(page, panel.locator(".caption-option").filter({ hasText: "自制图题" }).getByRole("combobox"), "figure");
   await panel.getByRole("button", { name: "预览导出", exact: true }).click();
-  await panel.getByRole("article", { name: "导出内容", exact: true }).locator("summary").filter({ hasText: "正文与引用" }).click();
+  await panel.getByRole("article", { name: "导出内容", exact: true }).locator(".n-collapse-item__header-main").filter({ hasText: "正文与引用" }).click();
   await expect(panel).toContainText("图 1 自制图题");
   await panel.getByLabel("已核对正文、引用、模板和 AI 使用说明").check();
   await panel.getByRole("button", { name: "确认并生成 Word", exact: true }).click();
@@ -1002,13 +1085,13 @@ test("固定快照 Word 导出、改稿隔离与下载记录", async ({ page, ac
   expect((await mutate(page.request, base + "manuscript/", "PUT", { ...draft, version: 1, request_key: randomUUID(), blocks: draft.blocks.map((block, i) => i === 1 ? { ...block, text: "导出之后的新稿，不应进入旧文件。" } : block) })).status()).toBe(200);
   const detail = panel.getByRole("article", { name: "导出记录详情", exact: true });
   await expect(detail.getByRole("button", { name: "下载 Word", exact: true })).toBeVisible();
-  await detail.locator("summary").filter({ hasText: "正文与引用" }).click();
+  await detail.locator(".n-collapse-item__header-main").filter({ hasText: "正文与引用" }).click();
   await expect(detail).toContainText("这是作者确认的导出正文。");
   await expect(detail).not.toContainText("导出之后的新稿");
   const [download] = await Promise.all([page.waitForEvent("download"), detail.getByRole("button", { name: "下载 Word", exact: true }).click()]);
   expect(download.suggestedFilename()).toMatch(/^稿件-v1-.*\.docx$/);
   await download.saveAs(testInfo.outputPath("self-authored-export.docx"));
-  await detail.locator("summary").filter({ hasText: "版本与下载记录" }).click();
+  await detail.locator(".n-collapse-item__header-main").filter({ hasText: "版本与下载记录" }).click();
   await expect(detail).toContainText("用户 ");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
   await detail.screenshot({ path: testInfo.outputPath("word-export.png") });
@@ -1027,15 +1110,17 @@ test("材料永久删除阻断旧访问、保留其他正文并跟踪项目清�
   const draft = { version: 0, request_key: randomUUID(), research: { question: "作者问题", method: "作者方法", result: "作者结果" }, blocks: [{ id: randomUUID(), text: "与删除材料无关的作者正文。", heading_level: 0 }] };
   expect((await mutate(page.request, base + "manuscript/", "PUT", draft)).status()).toBe(200);
   const materials = page.getByRole("region", { name: "材料", exact: true });
+  await activate(page, '材料');
   await materials.getByLabel("材料名称", { exact: true }).fill("待删除的自制记录");
   await materials.locator('input[type="file"]').setInputFiles({ name: "cleanup-sample.txt", mimeType: "text/plain", buffer: Buffer.from("自制待删除材料，不包含实际论文。") });
   await materials.getByRole("button", { name: "上传材料", exact: true }).click();
   await materials.getByRole("button", { name: "查看原文 v1", exact: true }).click();
   const material = (await (await page.request.get(`/api/v1/${base}materials/`)).json()).results[0];
   const panel = page.getByRole("region", { name: "删除与清理", exact: true });
-  await panel.locator("summary").filter({ hasText: /^删除与清理$/ }).click();
+  await activate(page, '删除与清理');
+  await panel.locator(".n-collapse-item__header-main").filter({ hasText: /^删除与清理$/ }).click();
   await panel.getByRole("button", { name: "加载可选材料" }).click();
-  await panel.getByRole("combobox", { name: "待删除材料", exact: true }).selectOption(material.id);
+  await select(page, panel.getByRole("combobox", { name: "待删除材料", exact: true }), material.id);
   await panel.getByRole("button", { name: "预览删除影响" }).click();
   await expect(panel.getByLabel("删除影响预览", { exact: true })).toContainText("原文件版本：1");
   await panel.getByLabel("已核对影响范围，确认永久删除，无法撤销").check();
@@ -1045,15 +1130,17 @@ test("材料永久删除阻断旧访问、保留其他正文并跟踪项目清�
   expect((await page.request.get(`/api/v1/${base}files/${material.latest_version.id}/`)).status()).toBe(404);
   const current = await (await page.request.get(`/api/v1/${base}manuscript/`)).json();
   expect(current.blocks[0].text).toBe(draft.blocks[0].text);
+  await activate(page, '材料');
   await expect(materials).not.toContainText("待删除的自制记录");
-  await panel.getByRole("combobox", { name: "删除范围", exact: true }).selectOption("project");
+  await activate(page, '删除与清理');
+  await select(page, panel.getByRole("combobox", { name: "删除范围", exact: true }), "project");
   await panel.getByRole("button", { name: "预览删除影响" }).click();
   await panel.getByLabel("已核对影响范围，确认永久删除，无法撤销").check();
   await panel.getByRole("button", { name: "确认永久删除" }).click();
   await expect(page.getByRole("button", { name: "创建项目", exact: true })).toBeVisible();
   await expect(detail.getByRole("status")).toContainText("在线清理完成");
   expect((await page.request.get(`/api/v1/${base}`)).status()).toBe(404);
-  await detail.locator("summary").filter({ hasText: "执行记录" }).click();
+  await detail.locator(".n-collapse-item__header-main").filter({ hasText: "执行记录" }).click();
   await expect(detail).toContainText("第 1 次");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
   await panel.screenshot({ path: testInfo.outputPath("cleanup-progress.png") });

@@ -75,21 +75,21 @@ onUnmounted(() => { mounted = false; clearTimeout(timer); });
 </script>
 <template>
   <section aria-label="删除与清理" :aria-busy="busy">
-    <details :open="expanded" @toggle="expanded = ($event.target as HTMLDetailsElement).open">
-      <summary>删除与清理</summary>
-      <p v-if="error" role="alert" class="error">{{ error }}</p><p v-if="message" role="status">{{ message }}</p><p v-if="busy" role="status">处理中…</p>
+    <UiDisclosure :open="expanded" @toggle="expanded = ($event.target as HTMLDetailsElement).open">
+      <template #header>删除与清理</template>
+      <NAlert type="error" :show-icon="false" v-if="error" role="alert">{{ error }}</NAlert><p v-if="message" role="status">{{ message }}</p><p v-if="busy" role="status">处理中…</p>
       <form v-if="project?.role === 'author'" class="editor" @submit.prevent="perform(makePreview)">
         <p>撤回只停止后续使用，保留历史。这里会永久移除所选范围的在线数据；备份、已下载副本和已发送给模型服务的内容无法由本次清理撤回。</p>
         <p v-if="hasDraft">请先保存或放弃当前未保存的修改，再预览删除范围。</p>
         <fieldset :disabled="busy || hasDraft || disabled">
-          <label>删除范围<select v-model="scope"><option value="material">一项材料及派生数据</option><option v-if="project.is_owner" value="project">整个项目</option></select></label>
+          <label>删除范围<UiSelect v-model="scope" :disabled="(busy || hasDraft || disabled)" :options="[({ value: 'material', label: '一项材料及派生数据' }), ({ value: 'project', label: '整个项目' })]" :aria-label="'删除范围'" /></label>
           <template v-if="scope === 'material'">
-            <button type="button" :disabled="busy" @click="perform(() => loadMaterials())">加载可选材料</button>
-            <label>待删除材料<select v-model="materialId"><option value="">请选择</option><option v-for="item in materials?.results" :key="item.id" :value="item.id">{{ item.title || '未命名材料' }}</option></select></label>
+            <NButton attr-type="button" @click="perform(() => loadMaterials())" :disabled="(busy || hasDraft || disabled) || (busy)">加载可选材料</NButton>
+            <label>待删除材料<UiSelect v-model="materialId" :disabled="(busy || hasDraft || disabled)" :options="[({ value: '', label: '请选择' }), ...(materials?.results ?? []).map((item) => ({ value: item.id, label: String(item.title || '未命名材料') }))]" :aria-label="'待删除材料'" /></label>
             <p v-if="materials && !materials.count">没有可删除的材料。</p>
-            <button v-if="materials?.previous" type="button" @click="perform(() => loadMaterials(materialPage - 1))">上一页材料</button><button v-if="materials?.next" type="button" @click="perform(() => loadMaterials(materialPage + 1))">下一页材料</button>
+            <NButton v-if="materials?.previous" attr-type="button" @click="perform(() => loadMaterials(materialPage - 1))" :disabled="(busy || hasDraft || disabled)">上一页材料</NButton><NButton v-if="materials?.next" attr-type="button" @click="perform(() => loadMaterials(materialPage + 1))" :disabled="(busy || hasDraft || disabled)">下一页材料</NButton>
           </template>
-          <button :disabled="!canPreview">预览删除影响</button>
+          <NButton :disabled="(busy || hasDraft || disabled) || (!canPreview)" attr-type="submit">预览删除影响</NButton>
         </fieldset>
       </form>
       <div v-if="preview" aria-label="删除影响预览">
@@ -97,22 +97,22 @@ onUnmounted(() => { mounted = false; clearTimeout(timer); });
         <ul><li v-for="[name, count] in countRows(preview)" :key="name">{{ names[name] }}：{{ count }}</li></ul>
         <p v-if="scope === 'project'">整个项目及全部稿件历史将删除。</p>
         <template v-if="scope === 'material' && preview.removed_blocks.length"><p>以下派生正文将从当前稿及相关历史中移除，包含在这些位置上的后续修订。其余当前正文保留为新稿。</p><blockquote v-for="block in preview.removed_blocks" :key="block.id">{{ block.text }}</blockquote></template>
-        <label class="check-label"><input v-model="confirmed" type="checkbox" :disabled="busy || hasDraft" />已核对影响范围，确认永久删除，无法撤销</label>
-        <button :disabled="busy || hasDraft || disabled || !confirmed" @click="perform(remove)">确认永久删除</button>
+        <UiCheckbox v-model="confirmed" :disabled="(busy || hasDraft)" :aria-label="'已核对影响范围，确认永久删除，无法撤销'" class="check-label">已核对影响范围，确认永久删除，无法撤销</UiCheckbox>
+        <NButton @click="perform(remove)" :disabled="(busy || hasDraft || disabled || !confirmed)">确认永久删除</NButton>
       </div>
-      <h3>我发起的清理</h3><button :disabled="busy" @click="perform(() => loadRecords())">刷新清理记录</button>
+      <h3>我发起的清理</h3><NButton @click="perform(() => loadRecords())" :disabled="(busy)">刷新清理记录</NButton>
       <p v-if="records && !records.count">暂无清理记录。</p>
-      <ul><li v-for="item in records?.results" :key="item.id"><button :disabled="busy" @click="perform(() => detail(item.id))">{{ item.scope === 'project' ? '项目删除' : '材料删除' }} · {{ new Date(item.created_at).toLocaleString() }} · {{ statuses[item.status] }}</button></li></ul>
-      <button v-if="records?.previous" :disabled="busy" @click="perform(() => loadRecords(page - 1))">上一页清理</button><button v-if="records?.next" :disabled="busy" @click="perform(() => loadRecords(page + 1))">下一页清理</button>
+      <ul><li v-for="item in records?.results" :key="item.id"><NButton @click="perform(() => detail(item.id))" :disabled="(busy)">{{ item.scope === 'project' ? '项目删除' : '材料删除' }} · {{ new Date(item.created_at).toLocaleString() }} · {{ statuses[item.status] }}</NButton></li></ul>
+      <NButton v-if="records?.previous" @click="perform(() => loadRecords(page - 1))" :disabled="(busy)">上一页清理</NButton><NButton v-if="records?.next" @click="perform(() => loadRecords(page + 1))" :disabled="(busy)">下一页清理</NButton>
       <article v-if="selected" aria-label="清理记录详情">
         <p role="status">{{ statuses[selected.status] }} · 第 {{ selected.generation }} 次执行</p>
-        <p v-if="selected.error_code" role="alert">{{ selected.error_code }}；已移除的步骤会保留，重试继续处理剩余项。</p>
+        <NAlert type="error" :show-icon="false" v-if="selected.error_code" role="alert">{{ selected.error_code }}；已移除的步骤会保留，重试继续处理剩余项。</NAlert>
         <p>已移除 {{ selected.progress.removed || 0 }} 项 · 共享保留 {{ selected.progress.shared || 0 }} 项 · 未处理 {{ (selected.progress.pending || 0) + (selected.progress.failed || 0) }} 项。下方最多显示前 100 项。</p>
         <ul><li v-for="item in selected.items" :key="item.id">{{ kinds[item.kind] }} {{ item.id }} · {{ statuses[item.status] }}<span v-if="item.error_code"> · {{ item.error_code }}</span></li></ul>
-        <button :disabled="busy" @click="perform(() => detail(selected!.id))">刷新此清理</button><button v-if="selected.status === 'failed'" :disabled="busy" @click="perform(retry)">继续清理失败项</button>
-        <details><summary>执行记录</summary><ul><li v-for="item in selected.attempts" :key="item.generation">第 {{ item.generation }} 次 · {{ statuses[item.status] }} {{ item.error_code }}<p v-for="failure in item.errors" :key="failure.id">{{ kinds[failure.kind] }} {{ failure.id }} · {{ failure.error_code }}</p></li></ul></details>
+        <NButton @click="perform(() => detail(selected!.id))" :disabled="(busy)">刷新此清理</NButton><NButton v-if="selected.status === 'failed'" @click="perform(retry)" :disabled="(busy)">继续清理失败项</NButton>
+        <UiDisclosure><template #header>执行记录</template><ul><li v-for="item in selected.attempts" :key="item.generation">第 {{ item.generation }} 次 · {{ statuses[item.status] }} {{ item.error_code }}<p v-for="failure in item.errors" :key="failure.id">{{ kinds[failure.kind] }} {{ failure.id }} · {{ failure.error_code }}</p></li></ul></UiDisclosure>
       </article>
-    </details>
+    </UiDisclosure>
   </section>
 </template>
 <style scoped>

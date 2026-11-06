@@ -34,11 +34,11 @@ async function save() {
     </template>
     <form v-if="project.role === 'author'" class="editor" @submit.prevent="save">
       <fieldset :disabled="busy">
-        <label>作者笔记<textarea v-model="note" maxlength="10000" rows="3" /></label>
-        <label>标签（逗号分隔）<input v-model="tags" maxlength="360" /></label>
-        <button type="submit">保存当前片段为证据卡</button>
+        <label>作者笔记<UiInput v-model="note" maxlength="10000" rows="3" :disabled="(busy)" type="textarea" :aria-label="'作者笔记'" /></label>
+        <label>标签（逗号分隔）<UiInput v-model="tags" maxlength="360" :disabled="(busy)" :aria-label="'标签（逗号分隔）'" /></label>
+        <NButton attr-type="submit" :disabled="(busy)" type="primary">保存当前片段为证据卡</NButton>
       </fieldset>
-      <p v-if="error" role="alert" class="error">{{ error }}</p>
+      <NAlert type="error" :show-icon="false" v-if="error" role="alert">{{ error }}</NAlert>
       <p v-if="message" role="status">{{ message }}</p>
     </form>
   </section>

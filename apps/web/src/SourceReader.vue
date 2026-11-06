@@ -92,41 +92,41 @@ onUnmounted(() => { mounted = false; clearTimeout(timer); });
   <section class="source-reader" aria-label="原文定位" :aria-busy="busy">
     <h3>{{ version.file_name }} · v{{ version.number }}</h3>
     <BibliographyEditor :key="version.id" :project="project" :version-id="version.id" />
-    <p v-if="error" role="alert" class="error">{{ error }}</p>
+    <NAlert type="error" :show-icon="false" v-if="error" role="alert">{{ error }}</NAlert>
     <p v-if="aiNotice" role="status">{{ aiNotice }}</p>
     <p v-if="busy" role="status">加载中…</p>
     <div class="actions">
-      <button :disabled="busy" @click="perform(() => load())">刷新解析</button>
-      <button v-if="project.role === 'author'" :disabled="busy" @click="perform(create)">{{ runs?.count ? '重新解析' : '解析材料' }}</button>
-      <button v-if="project.role === 'author' && project.policy.allowed_actions.includes('reading')" :disabled="busy || !runs?.results.some(run => run.published_at) || (!!version.usage_state && version.usage_state !== 'active')" @click="perform(createAI)">AI 阅读</button>
+      <NButton @click="perform(() => load())" :disabled="(busy)">刷新解析</NButton>
+      <NButton v-if="project.role === 'author'" @click="perform(create)" :disabled="(busy)">{{ runs?.count ? '重新解析' : '解析材料' }}</NButton>
+      <NButton v-if="project.role === 'author' && project.policy.allowed_actions.includes('reading')" @click="perform(createAI)" :disabled="(busy || !runs?.results.some(run => run.published_at) || (!!version.usage_state && version.usage_state !== 'active'))">AI 阅读</NButton>
       <a :href="`/api/v1/${base()}files/${version.id}/`">下载原件 v{{ version.number }}</a>
     </div>
     <p v-if="runs?.count === 0">尚无解析记录。</p>
     <ul class="project-list"><li v-for="run in runs?.results" :key="run.id">
-      <button :disabled="busy" :aria-pressed="selected?.id === run.id" @click="perform(() => select(run))">解析 #{{ run.number }} · {{ states[run.job.status] }}</button>
+      <NButton :aria-pressed="selected?.id === run.id" @click="perform(() => select(run))" :disabled="(busy)">解析 #{{ run.number }} · {{ states[run.job.status] }}</NButton>
     </li></ul>
     <div v-if="runs && (runs.next || runs.previous)" class="actions">
-      <button :disabled="busy || !runs.previous" @click="perform(() => load(runPage - 1))">较新解析</button>
-      <button :disabled="busy || !runs.next" @click="perform(() => load(runPage + 1))">较旧解析</button>
+      <NButton @click="perform(() => load(runPage - 1))" :disabled="(busy || !runs.previous)">较新解析</NButton>
+      <NButton @click="perform(() => load(runPage + 1))" :disabled="(busy || !runs.next)">较旧解析</NButton>
     </div>
     <template v-if="selected">
       <p role="status">{{ states[selected.job.status] }} · {{ selected.job.progress }}%<span v-if="selected.coverage === 'partial'"> · 部分文字</span></p>
-      <p v-if="selected.job.error_message" role="alert">{{ selected.job.error_message }}</p>
+      <NAlert type="error" :show-icon="false" v-if="selected.job.error_message" role="alert">{{ selected.job.error_message }}</NAlert>
       <div v-if="project.role === 'author'" class="actions">
-        <button v-if="['queued', 'running'].includes(selected.job.status)" :disabled="busy" @click="perform(() => control('cancel'))">取消解析</button>
-        <button v-if="selected.job.status === 'failed' && selected.job.retryable && selected.job.generation < 3" :disabled="busy" @click="perform(() => control('retry'))">重试解析</button>
+        <NButton v-if="['queued', 'running'].includes(selected.job.status)" @click="perform(() => control('cancel'))" :disabled="(busy)">取消解析</NButton>
+        <NButton v-if="selected.job.status === 'failed' && selected.job.retryable && selected.job.generation < 3" @click="perform(() => control('retry'))" :disabled="(busy)">重试解析</NButton>
       </div>
       <p v-for="warning in selected.warnings" :key="warning">{{ warning }}</p>
-      <details><summary>解析版本</summary>{{ selected.parser_version }}</details>
+      <UiDisclosure><template #header>解析版本</template>{{ selected.parser_version }}</UiDisclosure>
       <ol class="source-chunks"><li v-for="chunk in chunks?.results" :key="chunk.id">
-        <button :disabled="busy" :aria-pressed="location?.chunk.id === chunk.id" @click="perform(() => locate(chunk))">
+        <NButton :aria-pressed="location?.chunk.id === chunk.id" @click="perform(() => locate(chunk))" :disabled="(busy)">
           {{ anchorLabel(chunk.anchor) }}<span v-if="chunk.heading_level"> · {{ chunk.heading_level }} 级标题</span>
           <span class="chunk-excerpt">{{ chunk.text.slice(0, 160) }}</span>
-        </button>
+        </NButton>
       </li></ol>
       <div v-if="chunks && (chunks.previous || chunks.next)" class="actions">
-        <button :disabled="busy || !chunks.previous" @click="perform(() => loadChunks(selected!, chunkPage - 1))">上一页片段</button>
-        <button :disabled="busy || !chunks.next" @click="perform(() => loadChunks(selected!, chunkPage + 1))">下一页片段</button>
+        <NButton @click="perform(() => loadChunks(selected!, chunkPage - 1))" :disabled="(busy || !chunks.previous)">上一页片段</NButton>
+        <NButton @click="perform(() => loadChunks(selected!, chunkPage + 1))" :disabled="(busy || !chunks.next)">下一页片段</NButton>
       </div>
     </template>
     <SourceContext v-if="location" :key="location.chunk.id" :project="project" :location="location" />

@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { useConfirm } from "./ui/confirm";
+const confirmDiscard = useConfirm();
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { ArrowUp, ArrowDown, Plus, Trash2, List, Save } from "@lucide/vue";
 import { ApiError, request, type Page, type Project } from "./projects-api";
 import { editableBlocks, researchLabels, type Block, type Research, type Manuscript, type Revision, type ImportSource, type ImportPreview, type ManuscriptDiff } from "./manuscript";
 
@@ -48,7 +51,7 @@ async function loadHistory(page = historyPage.value) {
   if (mounted) { history.value = data; historyPage.value = page; }
 }
 async function reload() {
-  if (dirty.value && !window.confirm("放弃当前未保存的草稿并加载最新原稿？")) return;
+  if (dirty.value && !(await confirmDiscard("放弃当前未保存的草稿并加载最新原稿？"))) return;
   hydrate(await request<Manuscript>(base()));
   await loadHistory(1);
 }
@@ -101,60 +104,59 @@ onUnmounted(() => { mounted = false; emit("dirtyChange", false); window.removeEv
 </script>
 
 <template>
-  <section aria-label="作者原稿" :aria-busy="busy">
-    <h2>作者原稿 · v{{ version }}</h2>
-    <p v-if="error" role="alert" class="error">{{ error }}</p>
+  <section class="manuscript-workspace" aria-label="作者原稿" :aria-busy="busy">
+    <div class="document-toolbar"><div class="actions"><h2 :aria-label="`作者原稿 · v${version}`">作者原稿</h2><NTag size="small" :bordered="false">v{{ version }}</NTag><span class="save-state">{{ dirty ? '未保存' : '已保存' }}</span></div><div class="actions"><NButton @click="perform(reload)" :disabled="(busy)">加载最新原稿</NButton><NButton v-if="canEdit" attr-type="button" @click="perform(save)" :disabled="(busy || !dirty)" type="primary"><Save :size="16" />保存原稿新版本</NButton></div></div>
+    <NAlert type="error" :show-icon="false" v-if="error" role="alert">{{ error }}</NAlert>
     <p v-if="message" role="status">{{ message }}</p>
     <p v-if="busy" role="status">处理中…</p>
     <p v-if="dirty" role="status">有未保存的修改。</p>
     <p v-if="currentVersion > version" role="status">已有更新版本 v{{ currentVersion }}。</p>
-    <button :disabled="busy" @click="perform(reload)">加载最新原稿</button>
     <form v-if="initialized" class="editor" @submit.prevent="perform(save)">
-      <fieldset :disabled="busy || !canEdit">
-        <legend>研究说明</legend>
-        <label v-for="(label, field) in researchLabels" :key="field">{{ label }}<textarea v-model="research[field]" :readonly="!canEdit" maxlength="10000" rows="3" /></label>
-      </fieldset>
-      <nav v-if="headings.length" aria-label="章节树"><ol class="chapter-tree"><li v-for="heading in headings" :key="heading.id" :style="{ marginLeft: `${Math.min(heading.heading_level - 1, 4)}rem` }"><a :href="`#block-${heading.id}`">{{ heading.text || '未填写标题' }}</a></li></ol></nav>
-      <p v-if="!blocks.length">暂无正文。</p>
+      <div class="document-layout">
+      <aside class="document-outline"><h3><List :size="16" />目录</h3><nav v-if="headings.length" aria-label="章节树"><ol class="chapter-tree"><li v-for="heading in headings" :key="heading.id" :style="{ paddingLeft: `${Math.min(heading.heading_level - 1, 4) * 12}px` }"><a :href="`#block-${heading.id}`">{{ heading.text || '未填写标题' }}</a></li></ol></nav><p v-else class="notice">添加章节后显示目录</p></aside>
+      <div class="document-paper">
+      <NEmpty v-if="!blocks.length" description="从一个章节或一段正文开始" class="document-empty" />
       <div v-for="(block, index) in blocks" :id="`block-${block.id}`" :key="block.id" class="manuscript-block">
         <template v-if="canEdit">
-          <label>块 {{ index + 1 }} 类型<select v-model.number="block.heading_level" :aria-label="`块 ${index + 1} 类型`" :disabled="busy"><option :value="0">正文</option><option v-for="level in 9" :key="level" :value="level">{{ level }} 级标题</option></select></label>
-          <label>{{ block.heading_level ? '标题' : '正文块' }} {{ index + 1 }}<textarea v-model="block.text" :disabled="busy" :rows="block.heading_level ? 2 : 5" maxlength="20000" /></label>
+          <div class="block-tools"><label class="block-kind"><span class="sr-only">块 {{ index + 1 }} 类型</span><UiSelect v-model="block.heading_level" :aria-label="`块 ${index + 1} 类型`" :disabled="(busy)" :options="[({ value: 0, label: '正文' }), ...Array.from({ length: 9 }, (_, i) => i + 1).map((level) => ({ value: level, label: String(level) + ' 级标题' }))]" /></label>
           <div class="actions">
-            <button type="button" :disabled="busy || index === 0" @click="move(index, -1)">上移块 {{ index + 1 }}</button>
-            <button type="button" :disabled="busy || index === blocks.length - 1" @click="move(index, 1)">下移块 {{ index + 1 }}</button>
-            <button type="button" :disabled="busy || blocks.length >= 500" @click="add(0, index + 1)">在块 {{ index + 1 }} 后插入</button>
-            <button type="button" :disabled="busy" @click="blocks.splice(index, 1)">删除块 {{ index + 1 }}</button>
-          </div>
+            <NButton attr-type="button" @click="move(index, -1)" :aria-label="`上移块 ${index + 1}`" :title="`上移块 ${index + 1}`" :disabled="(busy || index === 0)"><ArrowUp :size="15" /></NButton>
+            <NButton attr-type="button" @click="move(index, 1)" :aria-label="`下移块 ${index + 1}`" :title="`下移块 ${index + 1}`" :disabled="(busy || index === blocks.length - 1)"><ArrowDown :size="15" /></NButton>
+            <NButton attr-type="button" @click="add(0, index + 1)" :disabled="(busy || blocks.length >= 500)" :aria-label="`在块 ${index + 1} 后插入`" :title="`在块 ${index + 1} 后插入`"><Plus :size="15" /></NButton>
+            <NButton attr-type="button" @click="blocks.splice(index, 1)" :aria-label="`删除块 ${index + 1}`" :title="`删除块 ${index + 1}`" :disabled="(busy)"><Trash2 :size="15" /></NButton>
+          </div></div>
+          <label :class="['document-text', { 'document-heading': block.heading_level > 0 }]"><span class="sr-only">{{ block.heading_level ? '标题' : '正文块' }} {{ index + 1 }}</span><UiInput v-model="block.text" :aria-label="`${block.heading_level ? '标题' : '正文块'} ${index + 1}`" rows="1" maxlength="20000" :placeholder="block.heading_level ? '章节标题' : '在此撰写正文…'" :disabled="(busy)" type="textarea" /></label>
         </template>
         <component :is="block.heading_level ? 'h3' : 'p'" v-else class="plain-text">{{ block.text }}</component>
       </div>
       <div v-if="canEdit" class="actions">
-        <button type="button" :disabled="busy || blocks.length >= 500" @click="add(1)">添加章节</button>
-        <button type="button" :disabled="busy || blocks.length >= 500" @click="add(0)">添加正文块</button>
-        <button type="submit" :disabled="busy || !dirty">保存原稿新版本</button>
+        <NButton attr-type="button" @click="add(1)" :disabled="(busy || blocks.length >= 500)">添加章节</NButton>
+        <NButton attr-type="button" @click="add(0)" :disabled="(busy || blocks.length >= 500)">添加正文块</NButton>
+
       </div>
+      </div></div>
+      <UiDisclosure class="research-details"><template #header>研究说明</template><fieldset :disabled="busy || !canEdit"><label v-for="(label, field) in researchLabels" :key="field">{{ label }}<UiInput v-model="research[field]" :readonly="!canEdit" maxlength="10000" rows="3" :disabled="(busy || !canEdit)" type="textarea" :aria-label="String(label)" /></label></fieldset></UiDisclosure>
     </form>
-    <details v-if="canEdit && initialized"><summary>导入 DOCX 正文</summary>
-      <button :disabled="busy" @click="perform(() => loadImports(1))">选择已解析 DOCX</button>
+    <UiDisclosure v-if="canEdit && initialized"><template #header>导入 DOCX 正文</template>
+      <NButton @click="perform(() => loadImports(1))" :disabled="(busy)">选择已解析 DOCX</NButton>
       <p v-if="imports?.count === 0">暂无可导入的 DOCX，请先在材料区上传并解析。</p>
-      <ul class="project-list"><li v-for="source in imports?.results" :key="source.id"><button :disabled="busy" @click="perform(() => previewImport(source.id))">预览 {{ source.file_name }} · v{{ source.source_number }} · 解析 {{ source.number }}</button></li></ul>
-      <div v-if="imports && (imports.next || imports.previous)" class="actions"><button :disabled="busy || !imports.previous" @click="perform(() => loadImports(importPage - 1))">上一页 DOCX</button><button :disabled="busy || !imports.next" @click="perform(() => loadImports(importPage + 1))">下一页 DOCX</button></div>
+      <ul class="project-list"><li v-for="source in imports?.results" :key="source.id"><NButton @click="perform(() => previewImport(source.id))" :disabled="(busy)">预览 {{ source.file_name }} · v{{ source.source_number }} · 解析 {{ source.number }}</NButton></li></ul>
+      <div v-if="imports && (imports.next || imports.previous)" class="actions"><NButton @click="perform(() => loadImports(importPage - 1))" :disabled="(busy || !imports.previous)">上一页 DOCX</NButton><NButton @click="perform(() => loadImports(importPage + 1))" :disabled="(busy || !imports.next)">下一页 DOCX</NButton></div>
       <div v-if="preview" aria-label="DOCX 导入预览">
         <h3>{{ preview.source.file_name }}</h3>
         <p>仅导入顶层文字段落与标题，不保留 Word 排版、表格、图片或公式。</p>
         <p v-for="warning in preview.source.warnings" :key="warning" role="status">{{ warning }}</p>
         <div class="import-preview"><component :is="block.heading_level ? 'h4' : 'p'" v-for="block in preview.blocks" :key="block.id" class="plain-text">{{ block.text }}</component></div>
-        <label>导入方式<select v-model="importMode" aria-label="导入方式" :disabled="busy"><option value="append">追加到正文末尾</option><option value="replace">替换正文并保留历史</option></select></label>
+        <label>导入方式<UiSelect v-model="importMode" aria-label="导入方式" :disabled="(busy)" :options="[({ value: 'append', label: '追加到正文末尾' }), ({ value: 'replace', label: '替换正文并保留历史' })]" /></label>
         <p v-if="dirty">请先保存原稿修改，再导入。</p>
-        <button :disabled="busy || dirty" @click="perform(importDocx)">确认导入并保存新版本</button>
+        <NButton @click="perform(importDocx)" :disabled="(busy || dirty)">确认导入并保存新版本</NButton>
       </div>
-    </details>
-    <details><summary>历史版本与对照</summary>
-      <button :disabled="busy" @click="perform(() => loadHistory(1))">刷新原稿历史</button>
+    </UiDisclosure>
+    <UiDisclosure><template #header>历史版本与对照</template>
+      <NButton @click="perform(() => loadHistory(1))" :disabled="(busy)">刷新原稿历史</NButton>
       <p v-if="history?.count === 0">暂无已保存版本。</p>
-      <ul class="project-list"><li v-for="revision in history?.results" :key="revision.version"><button :disabled="busy" @click="perform(() => inspect(revision.version))">查看原稿 v{{ revision.version }} · {{ origins[revision.origin] }}</button></li></ul>
-      <div v-if="history && (history.next || history.previous)" class="actions"><button :disabled="busy || !history.previous" @click="perform(() => loadHistory(historyPage - 1))">上一页原稿版本</button><button :disabled="busy || !history.next" @click="perform(() => loadHistory(historyPage + 1))">下一页原稿版本</button></div>
+      <ul class="project-list"><li v-for="revision in history?.results" :key="revision.version"><NButton @click="perform(() => inspect(revision.version))" :disabled="(busy)">查看原稿 v{{ revision.version }} · {{ origins[revision.origin] }}</NButton></li></ul>
+      <div v-if="history && (history.next || history.previous)" class="actions"><NButton @click="perform(() => loadHistory(historyPage - 1))" :disabled="(busy || !history.previous)">上一页原稿版本</NButton><NButton @click="perform(() => loadHistory(historyPage + 1))" :disabled="(busy || !history.next)">下一页原稿版本</NButton></div>
       <article v-if="past" aria-label="历史原稿">
         <h3>历史原稿 v{{ past.version }}</h3>
         <p>{{ origins[past.origin] }} · {{ past.created_at ? new Date(past.created_at).toLocaleString() : '' }}</p>
@@ -162,12 +164,12 @@ onUnmounted(() => { mounted = false; emit("dirtyChange", false); window.removeEv
         <div v-for="(label, field) in researchLabels" :key="field"><h4>{{ label }}</h4><p class="plain-text">{{ past.research[field] }}</p></div>
         <component :is="block.heading_level ? 'h4' : 'p'" v-for="block in past.blocks" :key="block.id" class="plain-text">{{ block.text }}</component>
         <p v-if="dirty && canEdit">请先保存当前修改，再恢复旧稿。</p>
-        <button v-if="canEdit" :disabled="busy || dirty" @click="perform(restore)">恢复此稿为新版本</button>
+        <NButton v-if="canEdit" @click="perform(restore)" :disabled="(busy || dirty)">恢复此稿为新版本</NButton>
       </article>
       <form class="editor" @submit.prevent="perform(compare)"><fieldset :disabled="busy"><legend>版本对照</legend>
-        <label>原版本<input v-model.number="before" type="number" min="0" :max="currentVersion" required /></label>
-        <label>对照版本<input v-model.number="after" type="number" min="0" :max="currentVersion" required /></label>
-        <button type="submit">查看原稿差异</button>
+        <label>原版本<UiInput v-model="before" type="number" min="0" :max="currentVersion" required :disabled="(busy)" :aria-label="'原版本'" /></label>
+        <label>对照版本<UiInput v-model="after" type="number" min="0" :max="currentVersion" required :disabled="(busy)" :aria-label="'对照版本'" /></label>
+        <NButton attr-type="submit" :disabled="(busy)" type="primary">查看原稿差异</NButton>
       </fieldset></form>
       <div v-if="diff" aria-label="原稿差异">
         <h3>v{{ diff.before }} → v{{ diff.after }}</h3>
@@ -177,7 +179,7 @@ onUnmounted(() => { mounted = false; emit("dirtyChange", false); window.removeEv
           <div class="comparison"><div><strong>原版本{{ change.before?.heading_level ? ` · ${change.before.heading_level} 级标题` : '' }}</strong><p class="plain-text">{{ change.before?.text ?? '（无）' }}</p></div><div><strong>对照版本{{ change.after?.heading_level ? ` · ${change.after.heading_level} 级标题` : '' }}</strong><p class="plain-text">{{ change.after?.text ?? '（无）' }}</p></div></div>
         </div>
       </div>
-    </details>
+    </UiDisclosure>
   </section>
 </template>
 
@@ -186,7 +188,7 @@ onUnmounted(() => { mounted = false; emit("dirtyChange", false); window.removeEv
 .chapter-tree { list-style: none; padding: 0; }
 .chapter-tree a { overflow-wrap: anywhere; }
 .plain-text { white-space: pre-wrap; overflow-wrap: anywhere; }
-.comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; padding: .75rem; border: 1px solid #d9e2d2; }
-.import-preview { max-height: 24rem; overflow-y: auto; padding: .75rem; border: 1px solid #d9e2d2; }
+.comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; padding: .75rem; border: 1px solid var(--border); }
+.import-preview { max-height: 24rem; overflow-y: auto; padding: .75rem; border: 1px solid var(--border); }
 @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
 </style>

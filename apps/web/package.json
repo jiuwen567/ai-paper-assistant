@@ -11,6 +11,8 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@lucide/vue": "^1.69.0",
+    "naive-ui": "^2.45.3",
     "pdfjs-dist": "^6.5.438",
     "vue": "3.5.44"
   },

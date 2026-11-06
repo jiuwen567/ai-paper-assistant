@@ -40,7 +40,7 @@ onUnmounted(() => { mounted = false; void task?.destroy(); });
 <template>
   <div class="source-preview" :aria-busy="busy">
     <p v-if="busy" role="status">加载 PDF 页…</p>
-    <p v-if="error" role="alert">{{ error }} <button @click="render">重试预览</button></p>
+    <NAlert type="error" :show-icon="false" v-if="error" role="alert">{{ error }} <NButton @click="render">重试预览</NButton></NAlert>
     <canvas ref="canvas" v-show="rendered" role="img" :aria-label="`PDF 文件第 ${page} 页`" :data-rendered="rendered" />
   </div>
 </template>

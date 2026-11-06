@@ -85,57 +85,57 @@ onUnmounted(() => { mounted = false; clearTimeout(timer); });
 <template>
   <section aria-label="阅读与证据" :aria-busy="busy">
     <h2>阅读与证据</h2>
-    <p v-if="error" role="alert" class="error">{{ error }}</p>
+    <NAlert type="error" :show-icon="false" v-if="error" role="alert">{{ error }}</NAlert>
     <p v-if="message" role="status">{{ message }}</p>
     <p v-if="busy" role="status">处理中…</p>
     <form class="editor" @submit.prevent="perform(search)"><fieldset :disabled="busy">
-      <label>项目内检索<input v-model="query" maxlength="200" required /></label>
-      <label>检索方式<select v-model="mode"><option value="keyword">关键词</option><option value="semantic">语义检索</option></select></label>
-      <button type="submit">检索材料</button>
+      <label>项目内检索<UiInput v-model="query" maxlength="200" required :disabled="(busy)" :aria-label="'项目内检索'" /></label>
+      <label>检索方式<UiSelect v-model="mode" :disabled="(busy)" :options="[({ value: 'keyword', label: '关键词' }), ({ value: 'semantic', label: '语义检索' })]" :aria-label="'检索方式'" /></label>
+      <NButton attr-type="submit" :disabled="(busy)" type="primary">检索材料</NButton>
     </fieldset></form>
     <p v-if="mode === 'semantic'">语义检索会将检索词发送至配置的嵌入服务。</p>
-    <details><summary>检索索引</summary>
+    <UiDisclosure><template #header>检索索引</template>
       <p>重建时将有效资料片段发送至配置的嵌入服务。</p>
-      <button v-if="project.role === 'author'" :disabled="busy" @click="perform(createIndex)">重建检索索引</button>
-      <button :disabled="busy" @click="perform(loadIndexes)">刷新索引</button>
+      <NButton v-if="project.role === 'author'" @click="perform(createIndex)" :disabled="(busy)">重建检索索引</NButton>
+      <NButton @click="perform(loadIndexes)" :disabled="(busy)">刷新索引</NButton>
       <p v-if="indexes?.count === 0">尚无索引。</p>
       <ul><li v-for="index in indexes?.results" :key="index.id">
         {{ index.model_name }} · {{ index.dimension }} 维 · {{ states[index.job.status] }} · {{ index.job.progress }}%
         <p v-if="index.job.error_message">{{ index.job.error_message }}</p>
-        <button v-if="project.role === 'author' && index.job.status === 'failed' && index.job.retryable && index.job.generation < 3" :disabled="busy" @click="perform(() => retry(index))">重试索引</button>
+        <NButton v-if="project.role === 'author' && index.job.status === 'failed' && index.job.retryable && index.job.generation < 3" @click="perform(() => retry(index))" :disabled="(busy)">重试索引</NButton>
       </li></ul>
-    </details>
+    </UiDisclosure>
     <div v-if="results" aria-label="检索结果">
       <p v-if="results.results.length === 0">没有匹配的有效资料。</p>
       <p v-if="results.has_more">显示前 20 项，可缩小检索范围。</p>
       <ul class="project-list"><li v-for="(result, i) in results.results" :key="`${result.chunk_id}-${i}`">
-        <button :disabled="busy" @click="perform(() => locate(result.chunk_id))">{{ result.file_name }} · v{{ result.source_number }} · {{ anchorLabel(result.anchor) }}</button>
+        <NButton @click="perform(() => locate(result.chunk_id))" :disabled="(busy)">{{ result.file_name }} · v{{ result.source_number }} · {{ anchorLabel(result.anchor) }}</NButton>
         <p>{{ scopeLabels[result.source_scope] }}<span v-if="result.coverage === 'partial'"> · 部分文字</span></p>
         <pre class="source-text">{{ result.text }}</pre>
       </li></ul>
     </div>
     <h3>证据卡</h3>
-    <div class="actions"><label>筛选标签<input v-model="tag" maxlength="30" /></label><button :disabled="busy" @click="perform(() => loadCards())">刷新证据卡</button></div>
+    <div class="actions"><label>筛选标签<UiInput v-model="tag" maxlength="30" :aria-label="'筛选标签'" /></label><NButton @click="perform(() => loadCards())" :disabled="(busy)">刷新证据卡</NButton></div>
     <p v-if="cards?.count === 0">暂无匹配的证据卡。</p>
     <ul class="project-list"><li v-for="card in cards?.results" :key="card.id">
-      <button :disabled="busy" @click="perform(() => open(card))">{{ card.bibliography.title }} · v{{ card.source.number }} · {{ anchorLabel(card.anchor) }}</button>
+      <NButton @click="perform(() => open(card))" :disabled="(busy)">{{ card.bibliography.title }} · v{{ card.source.number }} · {{ anchorLabel(card.anchor) }}</NButton>
       <p>{{ scopeLabels[card.bibliography.source_scope] }}<span v-if="card.source.access_state === 'withdrawn'"> · 材料已撤回</span></p>
       <p>{{ card.note.tags.join('、') }}</p>
     </li></ul>
     <div v-if="cards && (cards.next || cards.previous)" class="actions">
-      <button :disabled="busy || !cards.previous" @click="perform(() => loadCards(page - 1))">上一页证据</button>
-      <button :disabled="busy || !cards.next" @click="perform(() => loadCards(page + 1))">下一页证据</button>
+      <NButton @click="perform(() => loadCards(page - 1))" :disabled="(busy || !cards.previous)">上一页证据</NButton>
+      <NButton @click="perform(() => loadCards(page + 1))" :disabled="(busy || !cards.next)">下一页证据</NButton>
     </div>
     <article v-if="selected" aria-label="证据详情">
       <h4>{{ selected.bibliography.title }} · {{ scopeLabels[selected.bibliography.source_scope] }}</h4>
       <h5>原文摘录</h5><pre class="source-text">{{ selected.quote }}</pre>
-      <button :disabled="busy" @click="perform(() => locate(selected!.chunk))">回查原文</button>
+      <NButton @click="perform(() => locate(selected!.chunk))" :disabled="(busy)">回查原文</NButton>
       <form class="editor" @submit.prevent="perform(save)"><fieldset :disabled="busy || project.role !== 'author' || selected.source.access_state !== 'active'">
-        <label>证据笔记<textarea v-model="note" maxlength="10000" rows="3" /></label>
-        <label>证据标签（逗号分隔）<input v-model="tags" maxlength="360" /></label>
-        <button v-if="project.role === 'author' && selected.source.access_state === 'active'" type="submit">保存证据笔记</button>
+        <label>证据笔记<UiInput v-model="note" maxlength="10000" rows="3" :disabled="(busy || project.role !== 'author' || selected.source.access_state !== 'active')" type="textarea" :aria-label="'证据笔记'" /></label>
+        <label>证据标签（逗号分隔）<UiInput v-model="tags" maxlength="360" :disabled="(busy || project.role !== 'author' || selected.source.access_state !== 'active')" :aria-label="'证据标签（逗号分隔）'" /></label>
+        <NButton v-if="project.role === 'author' && selected.source.access_state === 'active'" attr-type="submit" :disabled="(busy || project.role !== 'author' || selected.source.access_state !== 'active')" type="primary">保存证据笔记</NButton>
       </fieldset></form>
-      <button :disabled="busy" @click="perform(() => open(selected!))">重新加载证据</button>
+      <NButton @click="perform(() => open(selected!))" :disabled="(busy)">重新加载证据</NButton>
     </article>
     <SourceContext v-if="location" :key="location.chunk.id" :project="project" :location="location" />
   </section>

@@ -50,3 +50,20 @@ Pi 只接入项目需要的业务工具：检索材料、读取证据、保存�
 ## 部署
 
 开发与演示环境隔离，存储使用独立数据卷。配置从环境变量读取，示例不包含凭据。初期单机部署，先验证恢复和关键流程，再根据实际负载考虑拆分。
+
+## 代码分层
+
+后端保留一个 Django app `core`，按业务拆 Python 包，模型集中注册于 `core/models/__init__.py`。模型标识、`core_*` 表名、迁移历史和 URL 不随文件移动改变。各业务 `urls.py` 由 `config/urls.py` 聚合。
+
+- `common/` 只保存通用请求校验、分页、摘要和诊断异常；`storage/` 封装存储客户端。两者不导入业务模块。
+- 各业务的 `views.py` 处理 HTTP 协议，`serializers.py` 处理接口数据结构，业务操作放 `service.py`、`operations.py` 或有明确用途的文件。业务模块不从视图反向获取查询或工具函数。
+- `jobs/` 保存业务任务生命周期，`worker/` 只负责 Celery 调度。`ai/` 分开配置、输入快照、执行状态、模型事件、工具编排和 Pi 传输；具体业务校验和作者决定留在对应业务模块。
+- 原稿位置查询归 `manuscripts/locations.py`，图投影归 `graph/`。业务共享能力放在其真实归属处，避免通过反馈或阅读模块间接获取。
+
+Web 的 `app/` 管入口、路由和布局；`features/<业务>/` 管组件与业务类型；`api/` 管通用 HTTP 与分页类型；`composables/` 管共享交互；`ui/` 保留 Naive UI 适配。项目页组合登录、列表、工作区和设置组件，规则、成员和项目表单各自维护请求状态。
+
+项目路由为 `/projects/:projectId/:workspace`，工作区标签使用 `?tab=`。同项目内切换保留已挂载组件和草稿；离开项目、退出或覆盖草稿须由作者确认。URL 只表示位置，权限仍以服务端为准，撤权后清理已显示的项目数据。
+
+运行时代码目标不超过 300 行，上限 400 行，按职责拆分。`make check` 同时检查长度和分层；历史迁移、自动生成文件和固定测试样例不机械拆分。测试按场景组织，结构调整仍需运行业务回归，不能仅凭静态检查证明行为一致。
+
+组织方式参考 [Paperless-ngx](https://github.com/paperless-ngx/paperless-ngx/tree/dev/src)、[Saleor](https://github.com/saleor/saleor/tree/main/saleor/order) 和 [Vben 的 Naive UI 应用](https://github.com/vbenjs/vue-vben-admin/tree/main/apps/web-naive/src)，保留本项目的规模与业务约束。

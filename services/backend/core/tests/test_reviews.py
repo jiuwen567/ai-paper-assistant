@@ -6,9 +6,10 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
 
-from core.ai_jobs import AIRun
-from core.jobs import claim
-from core.library import current_bibliography
+from core.ai.runtime import AIRun
+from core.common.errors import ParseFailure
+from core.jobs.service import claim
+from core.library.service import current_bibliography
 from core.models import (
     BlockVersion,
     Job,
@@ -21,8 +22,7 @@ from core.models import (
     ReviewFinding,
     ReviewRecord,
 )
-from core.parsing import ParseFailure
-from core.reviews import validate_review
+from core.reviews.service import validate_review
 from core.tests.test_ai_jobs import provider
 from core.tests.test_library import context as library_context
 from core.tests.test_library import source as library_source
@@ -57,7 +57,7 @@ def create_review(context, manuscript, sources=(), **changes):
         "version_ids": [str(source[0].pk) for source in sources],
         **changes,
     }
-    with patch("core.review_views.dispatch"):
+    with patch("core.reviews.views.dispatch"):
         response = client.post(path(project, "reviews/tasks/"), body, format="json")
     assert response.status_code in [200, 201], response.data
     return Job.objects.get(pk=response.data["id"])

@@ -18,9 +18,9 @@ from django.db import transaction  # noqa: E402
 from django.test import override_settings  # noqa: E402
 from rest_framework.test import APIClient  # noqa: E402
 
-from core.ai_jobs import AIRun  # noqa: E402
-from core.expressions import EXPRESSION_PROMPT  # noqa: E402
-from core.library import default_bibliography  # noqa: E402
+from core.ai.runtime import AIRun  # noqa: E402
+from core.expressions.service import EXPRESSION_PROMPT  # noqa: E402
+from core.library.service import default_bibliography  # noqa: E402
 from core.models import (  # noqa: E402
     ExpressionSuggestion,
     Job,
@@ -28,7 +28,7 @@ from core.models import (  # noqa: E402
     ProjectPolicy,
     ReviewRecord,
 )
-from core.reviews import REVIEW_PROMPT  # noqa: E402
+from core.reviews.service import REVIEW_PROMPT  # noqa: E402
 from core.tests.evaluation_cases import EXPRESSION_CASES, EXPRESSION_EXTRA_CASES  # noqa: E402
 from core.tests.evaluation_cases import REVIEW_CASES as CASES  # noqa: E402
 from core.tests.evaluation_cleanup import remove_project  # noqa: E402
@@ -75,8 +75,8 @@ def main():
     try:
         with (
             override_settings(AI_MODEL=args.model, AI_BASE_URL=args.base_url),
-            patch("core.parse_views.dispatch"),
-            patch("core.review_views.dispatch"),
+            patch("core.materials.parse_views.dispatch"),
+            patch("core.reviews.views.dispatch"),
         ):
             versions = []
             for title, scope, text in SAMPLES:

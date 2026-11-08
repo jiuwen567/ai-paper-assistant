@@ -4,7 +4,9 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
 
-from core.jobs import claim, fail
+from core.jobs.service import claim, fail
+from core.materials.parse_jobs import publish_parse
+from core.materials.parsing import parse_document
 from core.models import (
     Job,
     Material,
@@ -14,8 +16,6 @@ from core.models import (
     ProjectMember,
     SourceChunk,
 )
-from core.parse_jobs import publish_parse
-from core.parsing import parse_document
 from core.tests.parse_samples import CSV_SAMPLE, docx_sample, pdf_sample
 from core.tests.test_materials import context as material_context
 from core.tests.test_materials import intent, path, upload
@@ -29,7 +29,10 @@ pytestmark = [pytest.mark.integration, pytest.mark.django_db(transaction=True)]
 @pytest.fixture(autouse=True)
 def no_queue():
     # 此文件直接执行 Worker 入口；独立测试库任务不能送入开发 Worker。
-    with patch("core.parse_views.dispatch"), patch("core.job_views.dispatch"):
+    with (
+        patch("core.materials.parse_views.dispatch"),
+        patch("core.jobs.views.dispatch"),
+    ):
         yield
 
 
@@ -90,7 +93,9 @@ def test_failed_parse_and_retry_publish_no_partial_or_duplicate_chunks(context):
     version = intent(context)
     upload(context, version)
     run = create(context, version)
-    with patch("core.parse_jobs.s3_client", side_effect=OSError("private address")):
+    with patch(
+        "core.materials.parse_jobs.s3_client", side_effect=OSError("private address")
+    ):
         execute_job(str(run.job_id))
     run.refresh_from_db()
     assert run.job.status == "failed" and run.job.retryable
@@ -114,7 +119,9 @@ def test_publication_rollback_and_stale_generation(context):
     run = create(context, version)
     job = claim(run.job_id)
     result = parse_document(b"self-authored text", "sample.txt")
-    with patch("core.parse_jobs.finish", side_effect=RuntimeError("database failed")):
+    with patch(
+        "core.materials.parse_jobs.finish", side_effect=RuntimeError("database failed")
+    ):
         with pytest.raises(RuntimeError):
             publish_parse(run.pk, job.generation, result)
     run.refresh_from_db()

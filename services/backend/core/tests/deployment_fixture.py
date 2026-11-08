@@ -30,9 +30,9 @@ def main():
     from django.db import transaction
     from rest_framework.test import APIClient
 
-    from core.ai_jobs import sources_snapshot
-    from core.cleanup import execute as execute_cleanup
-    from core.export_templates import (
+    from core.ai.sources import sources_snapshot
+    from core.cleanup.service import execute as execute_cleanup
+    from core.exports.templates import (
         DEFAULT_CODE,
         DEFAULT_LAYOUT,
         DEFAULT_NAME,
@@ -40,8 +40,8 @@ def main():
         DEFAULT_SOURCE,
         register_template,
     )
-    from core.graph import mark_dirty, sync_project
-    from core.library import default_bibliography
+    from core.graph.service import mark_dirty, sync_project
+    from core.library.service import default_bibliography
     from core.models import (
         CleanupRequest,
         ExportSnapshot,
@@ -194,14 +194,14 @@ def main():
         # 故意只重放专用样例第一份材料的删除；不是通用生产删除账本导入工具。
         version = MaterialVersion.objects.filter(pk=state["files"][0]["id"]).first()
         if version:
-            with patch("core.cleanup.dispatch"):
+            with patch("core.cleanup.service.dispatch"):
                 record, _ = request_cleanup(context, version.material, key="recovery-delete")
         else:
             record = CleanupRequest.objects.get(
                 project_id=project.pk, created_by=project.owner, request_key="recovery-delete"
             )
         if record.status == "failed":
-            with patch("core.cleanup_views.dispatch"):
+            with patch("core.cleanup.views.dispatch"):
                 response = client.post(
                     f"/api/v1/cleanups/{record.pk}/",
                     {"generation": record.generation},

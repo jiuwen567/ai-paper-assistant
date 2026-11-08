@@ -10,8 +10,8 @@ import pytest
 from django.db import IntegrityError, transaction
 from docx import Document
 
-from core.export_jobs import execute_export, publish_export
-from core.export_templates import (
+from core.exports.jobs import execute_export, publish_export
+from core.exports.templates import (
     DEFAULT_CODE,
     DEFAULT_LAYOUT,
     DEFAULT_NAME,
@@ -19,15 +19,15 @@ from core.export_templates import (
     DEFAULT_SOURCE,
     register_template,
 )
-from core.health import s3_client
-from core.jobs import claim
+from core.exports.word import render_word
+from core.jobs.service import claim
 from core.models import ExportDownload, ExportSnapshot, ExportTemplateVersion
+from core.storage.s3 import s3_client
 from core.tests.test_disclosures import body as disclosure_body
 from core.tests.test_disclosures import save as save_disclosure
 from core.tests.test_manuscripts import payload, save
 from core.tests.test_materials import context as material_context
 from core.tests.test_materials import path
-from core.word_export import render_word
 from worker.tasks import execute_job
 
 context = material_context
@@ -79,7 +79,7 @@ def create(context, selection):
         "confirmed": True,
         "request_key": str(uuid4()),
     }
-    with patch("core.export_views.dispatch"):
+    with patch("core.exports.views.dispatch"):
         saved = context[0].post(path(context[1], "exports/"), data, format="json")
     assert saved.status_code == 201, saved.data
     return ExportSnapshot.objects.get(pk=saved.data["id"]), data
@@ -101,7 +101,7 @@ def test_snapshot_keeps_old_body_disclosure_template_and_idempotency(context, dr
         ).status_code
         == 201
     )
-    with patch("core.export_views.dispatch"):
+    with patch("core.exports.views.dispatch"):
         repeat = context[0].post(path(context[1], "exports/"), data, format="json")
     assert repeat.status_code == 200 and repeat.data["id"] == str(snapshot.pk)
     execute_job(str(snapshot.job_id))
@@ -130,12 +130,12 @@ def test_snapshot_keeps_old_body_disclosure_template_and_idempotency(context, dr
 
 def test_failed_storage_retry_and_late_generation_cannot_publish(context, draft):
     snapshot, _ = create(context, draft[1])
-    with patch("core.export_jobs.s3_client", side_effect=OSError):
+    with patch("core.exports.jobs.s3_client", side_effect=OSError):
         execute_job(str(snapshot.job_id))
     snapshot.job.refresh_from_db()
     assert snapshot.job.retryable and snapshot.job.error_code == "export_storage"
     first = snapshot.files.get(generation=1)
-    with patch("core.job_views.dispatch"):
+    with patch("core.jobs.views.dispatch"):
         retry = context[0].post(
             path(context[1], f"jobs/{snapshot.job_id}/retry/"), {"generation": 1}, format="json"
         )
@@ -192,14 +192,14 @@ def test_download_corruption_not_audited_and_revocation(context, draft):
 
 @pytest.fixture
 def cited(context, draft):
-    from core.ai_jobs import sources_snapshot
-    from core.library import default_bibliography
+    from core.ai.sources import sources_snapshot
+    from core.library.service import default_bibliography
     from core.models import ManuscriptCitation
     from core.tests.test_materials import intent, upload
     from core.tests.test_parse_jobs import create as parse
 
     version = intent(context)
-    with patch("core.parse_views.dispatch"):
+    with patch("core.materials.parse_views.dispatch"):
         assert upload(context, version).status_code == 200
         run = parse(context, version)
         execute_job(str(run.job_id))

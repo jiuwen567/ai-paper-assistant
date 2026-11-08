@@ -8,13 +8,15 @@
     "build": "node scripts/prepare-pdf-assets.mjs && vue-tsc --noEmit && vite build",
     "check": "vue-tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:frontend": "playwright test --config playwright.frontend.config.ts"
   },
   "dependencies": {
     "@lucide/vue": "^1.69.0",
     "naive-ui": "^2.45.3",
     "pdfjs-dist": "^6.5.438",
-    "vue": "3.5.44"
+    "vue": "3.5.44",
+    "vue-router": "^4.6.4"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",

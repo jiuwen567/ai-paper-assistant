@@ -4,12 +4,12 @@ from uuid import uuid4
 
 import pytest
 
-from core.ai_jobs import AIRun
-from core.jobs import claim
-from core.library import current_bibliography
+from core.ai.runtime import AIRun
+from core.common.errors import ParseFailure
+from core.jobs.service import claim
+from core.library.service import current_bibliography
 from core.models import EvidenceNote, Job, Material, ProjectMember, ProjectPolicy, ReadingRecord
-from core.parsing import ParseFailure
-from core.reading import FIELDS, validate_reading
+from core.reading.service import FIELDS, validate_reading
 from core.tests.test_ai_jobs import provider
 from core.tests.test_library import context as library_context
 from core.tests.test_library import source as library_source
@@ -37,7 +37,7 @@ def create_reading(context, sources, **changes):
         "version_ids": [str(item[0].pk) for item in sources],
         **changes,
     }
-    with patch("core.reading_views.dispatch"):
+    with patch("core.reading.views.dispatch"):
         response = client.post(path(project, "reading/tasks/"), body, format="json")
     assert response.status_code in [200, 201], response.data
     return Job.objects.get(pk=response.data["id"])
@@ -208,7 +208,7 @@ def test_missing_fields_need_all_chunks_and_abstract_scope_is_preserved(context,
 @pytest.fixture
 def pair(context, source):
     data = "自制记录：条件为 40 摄氏度，速率为 2 毫摩尔每分钟。".encode()
-    with patch("core.parse_views.dispatch"):
+    with patch("core.materials.parse_views.dispatch"):
         version = intent(context, data=data, request_key="upload-2", title="第二份自制记录")
         assert upload(context, version, data).status_code == 200
         run = create(context, version, key="parse-2")

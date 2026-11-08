@@ -12,7 +12,7 @@ from django.db import close_old_connections
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from core.jobs import claim, dispatch, fail, heartbeat, publish, recover_jobs
+from core.jobs.service import claim, dispatch, fail, heartbeat, publish, recover_jobs
 from core.models import Job, Project, ProjectMember, ProjectPolicy
 from worker.tasks import execute_job
 
@@ -180,11 +180,14 @@ def test_concurrent_create_claim_and_committed_dispatch(context):
         finally:
             close_old_connections()
 
-    with patch("core.job_views.dispatch") as send, ThreadPoolExecutor(max_workers=2) as pool:
+    with (
+        patch("core.jobs.views.dispatch") as send,
+        ThreadPoolExecutor(max_workers=2) as pool,
+    ):
         assert sorted(pool.map(submit, range(2))) == [200, 201]
         assert send.call_count == 1
     job = Job.objects.get()
-    with patch("core.jobs.dispatch") as send:
+    with patch("core.jobs.service.dispatch") as send:
         recover_jobs()
         send.assert_called_once_with(job.pk)
 
@@ -281,7 +284,7 @@ def test_real_worker_restart_and_retry(context, tmp_path):
         process = start_worker()
         app.send_task("system.ping", queue=queue).get(timeout=20)
         with patch(
-            "core.job_views.dispatch",
+            "core.jobs.views.dispatch",
             lambda jid: execute_job.apply_async(args=[str(jid)], queue=queue),
         ):
             response = client.post(url(project, f"{job.pk}/retry/"), {"generation": 1})

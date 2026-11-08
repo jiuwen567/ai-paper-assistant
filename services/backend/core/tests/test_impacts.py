@@ -11,9 +11,11 @@ from django.db import IntegrityError, close_old_connections, transaction
 from django.test import override_settings
 from rest_framework.test import APIClient
 
-from core.ai_jobs import AIRun, valid_locked
-from core.jobs import claim, lock_job
-from core.library import active_chunks, searchable_chunks
+from core.ai.runtime import AIRun
+from core.ai.state import valid_locked
+from core.common.errors import ParseFailure
+from core.jobs.service import claim, lock_job
+from core.library.service import active_chunks, searchable_chunks
 from core.models import (
     GraphState,
     ImpactDecision,
@@ -26,7 +28,6 @@ from core.models import (
     ProjectMember,
     ProjectPolicy,
 )
-from core.parsing import ParseFailure
 from core.tests.test_ai_jobs import provider
 from core.tests.test_expressions import create as expression_job
 from core.tests.test_expressions import decide
@@ -70,7 +71,7 @@ def new_source(context, source=None):
         if source
         else {}
     )
-    with patch("core.parse_views.dispatch"):
+    with patch("core.materials.parse_views.dispatch"):
         version = intent(context, data=data, request_key=str(uuid4()), **changes)
         assert upload(context, version, data).status_code == 200
         run = parse_create(context, version, key=str(uuid4()))
@@ -292,7 +293,7 @@ def create_model(context, run, manuscript):
     ProjectPolicy.objects.filter(project=context[1]).update(
         verified=True, source="自制规则", source_version="v1", allowed_actions=["review"]
     )
-    with patch("core.jobs.dispatch"):
+    with patch("core.jobs.service.dispatch"):
         response = context[0].post(
             path(context[1], f"impact-runs/{run['id']}/model/"),
             {
@@ -351,7 +352,7 @@ def test_real_pi_candidate_scope_and_no_automatic_confirmation(context, source, 
 
 
 def test_model_rejects_unread_fabricated_and_registered_quotes(context, source, manuscript):
-    from core.impact_ai import validate_output
+    from core.impacts.ai import validate_output
 
     link_block(context, manuscript, source, 0)
     corrected, _ = change(context, source, new_source(context, source))
@@ -374,7 +375,7 @@ def test_model_rejects_unread_fabricated_and_registered_quotes(context, source, 
 def test_evidence_side_and_identifier_must_match_without_automatic_conversion(
     context, source, manuscript
 ):
-    from core.impact_ai import read_impact, validate_output
+    from core.impacts.ai import read_impact, validate_output
 
     corrected, _ = change(context, source, new_source(context, source))
     run, _ = scan(context, corrected)
@@ -413,7 +414,7 @@ def test_evidence_side_and_identifier_must_match_without_automatic_conversion(
 def test_sdk_new_basis_null_is_rejected_then_repaired_in_original_budget(
     context, source, manuscript
 ):
-    from core.impact_ai import read_impact
+    from core.impacts.ai import read_impact
 
     corrected, _ = change(context, source, new_source(context, source))
     run, _ = scan(context, corrected)
@@ -460,7 +461,7 @@ def test_old_impact_prompt_is_cancelled_without_model_request(context, source, m
 
 
 def test_withdrawn_source_not_sent_and_running_model_cancelled(context, source, manuscript):
-    from core.impact_ai import read_impact
+    from core.impacts.ai import read_impact
 
     withdrawn, _ = change(context, source)
     run, _ = scan(context, withdrawn)
@@ -525,7 +526,7 @@ def test_database_immutable_and_scope_permissions(context, source, manuscript):
 
 
 def test_correction_projection_and_withdrawn_path_removal(context, source, manuscript):
-    from core.graph import graph_paths, purge_projection, sync_project
+    from core.graph.service import graph_paths, purge_projection, sync_project
 
     pid = context[1].pk
     try:
@@ -618,7 +619,7 @@ def test_model_empty_result_with_all_selected_blocks_registered(context, source,
             [("read_impact", {})] if number == 1 else [("submit_impact", {"candidates": []})]
         )
     ):
-        from core.impact_ai import read_impact
+        from core.impacts.ai import read_impact
 
         job = create_model(context, run, manuscript)
         assert read_impact(job)["blocks"] == []

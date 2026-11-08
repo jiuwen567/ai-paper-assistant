@@ -16,7 +16,7 @@ COPY --from=pi /usr/local/bin/node /usr/local/bin/node
 COPY --from=pi /app/node_modules /app/node_modules
 COPY --from=pi /app/services/pi-runner /app/services/pi-runner
 COPY services/backend /app/services/backend
-RUN useradd --create-home app
+RUN useradd --create-home app && chown -R app:app /app/services
 ENV PATH="/app/.venv/bin:$PATH"
 WORKDIR /app/services/backend
 USER app

@@ -15,10 +15,10 @@ from django.utils import timezone
 from pypdf import PdfWriter
 from rest_framework.test import APIClient
 
-from core.health import s3_client
-from core.material_files import validate_file
-from core.materials import claim_upload, reconcile_upload
+from core.materials.files import validate_file
+from core.materials.service import claim_upload, reconcile_upload
 from core.models import MaterialVersion, Project, ProjectMember, ProjectPolicy
+from core.storage.s3 import s3_client
 
 pytestmark = [pytest.mark.integration, pytest.mark.django_db(transaction=True)]
 
@@ -144,7 +144,7 @@ def test_upload_conflicts_and_corrupt_files_are_not_available(context):
 
 def test_storage_failure_has_diagnostic_state_and_can_retry(context):
     version = intent(context)
-    with patch("core.materials.s3_client", side_effect=OSError("private connection")):
+    with patch("core.materials.service.s3_client", side_effect=OSError("private connection")):
         response = upload(context, version)
     assert response.status_code == 503
     version.refresh_from_db()
@@ -155,7 +155,8 @@ def test_storage_failure_has_diagnostic_state_and_can_retry(context):
 def test_object_success_database_failure_reconciles_without_new_version(context):
     version = intent(context)
     with patch(
-        "core.materials.publish_upload", side_effect=RuntimeError("simulated database error")
+        "core.materials.service.publish_upload",
+        side_effect=RuntimeError("simulated database error"),
     ):
         with pytest.raises(RuntimeError):
             upload(context, version)
@@ -176,13 +177,13 @@ def test_revocation_before_publish_and_unauthorized_download(context):
     member = ProjectMember.objects.create(project=project, user=author, role="author")
     client.force_authenticate(author)
     version = intent(context)
-    from core.materials import read_and_verify
+    from core.materials.service import read_and_verify
 
     def revoke(storage, item):
         read_and_verify(storage, item)
         member.delete()
 
-    with patch("core.materials.read_and_verify", side_effect=revoke):
+    with patch("core.materials.service.read_and_verify", side_effect=revoke):
         assert upload(context, version).status_code == 409
     version.refresh_from_db()
     assert version.status == "failed" and version.error_code == "authorization_changed"
@@ -310,8 +311,8 @@ def test_docx_validation_rejects_xml_entities_and_corruption():
 
 
 def test_mini_token_upload_is_visible_to_web_account(context):
+    from core.accounts.wechat import digest
     from core.models import WechatIdentity, WechatSession
-    from core.wechat import digest
 
     web, project, user = context
     with override_settings(WECHAT_APP_ID="self-authored-mini"):

@@ -20,7 +20,7 @@ from django.test import override_settings  # noqa: E402
 from django.utils import timezone  # noqa: E402
 from rest_framework.test import APIClient  # noqa: E402
 
-from core.ai_jobs import AIRun  # noqa: E402
+from core.ai.runtime import AIRun  # noqa: E402
 from core.models import (  # noqa: E402
     ImpactDecision,
     ImpactItem,
@@ -109,7 +109,7 @@ def main():
             transaction.atomic(),
             override_settings(AI_MODEL=args.model, AI_BASE_URL=args.base_url, AI_API_KEY=""),
         ):
-            with patch("core.jobs.dispatch"):
+            with patch("core.jobs.service.dispatch"):
                 job = create_model(context, run, manuscript)
             events = []
             tools = []

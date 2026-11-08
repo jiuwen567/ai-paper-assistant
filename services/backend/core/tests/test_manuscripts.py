@@ -226,7 +226,7 @@ def parsed_docx(context):
     data = output.getvalue()
     version = intent(context, data=data, name="original.docx")
     assert upload(context, version, data).status_code == 200
-    with patch("core.parse_views.dispatch"):
+    with patch("core.materials.parse_views.dispatch"):
         run = create(context, version)
     execute_job(str(run.job_id))
     return version, run
@@ -313,7 +313,7 @@ def test_import_rejects_old_parse_cross_project_and_modified_preview(context, pa
     assert client.post(base + "imports/", body, format="json").status_code == 409
     other = Project.objects.create(owner=user, name="另一份原稿")
     assert client.get(path(other, f"manuscript/imports/{run.pk}/")).status_code == 404
-    with patch("core.parse_views.dispatch"):
+    with patch("core.materials.parse_views.dispatch"):
         replacement = create(context, source, key="reparse")
     execute_job(str(replacement.job_id))
     assert client.get(base + f"imports/{run.pk}/").status_code == 409

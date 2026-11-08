@@ -8,16 +8,15 @@ Web 用于阅读、写作和审阅；微信小程序用于收集资料、查看�
 
 ## 本地启动
 
-需要 Python 3.12、GNU Make、Docker Engine / Docker Desktop（Linux 容器）和 Docker Compose v2。WSL 使用 Docker Desktop 时，先开启当前发行版的 WSL Integration，确认 `docker info` 能连接服务端。
+需要 Python 3.12、GNU Make、Docker Engine / Docker Desktop（Linux 容器）和 Docker Compose 2.32 或更高版本。WSL 使用 Docker Desktop 时，先开启当前发行版的 WSL Integration，确认 `docker info` 能连接服务端。
 
 ```bash
 git clone https://github.com/jiuwen567/ai-paper-assistant.git
 cd ai-paper-assistant
-python3 scripts/init_dev.py
-make up
+make dev
 ```
 
-初始化脚本生成随机本地凭据，不覆盖已有 `.env`。`make up` 构建并启动应用、执行数据库迁移，再检查依赖和 Worker 任务往返。首次拉取镜像需要网络及数 GB 可用磁盘空间。
+`make dev` 自动初始化本地配置：缺少 `.env` 时生成随机本地凭据，已有配置保留，并同步 SeaweedFS 配置。随后构建并启动开发容器、执行数据库迁移、检查依赖和 Worker 任务往返，最后监听源码修改：Web 热更新，API、Worker 和调度器同步后重启。首次拉取镜像需要网络及数 GB 可用磁盘空间。
 
 - Web：[http://localhost:5173](http://localhost:5173)
 - 环境概览：[http://localhost:5173/environment](http://localhost:5173/environment)
@@ -26,12 +25,13 @@ make up
 - 公众号 H5 说明入口：[http://localhost:5173/wechat](http://localhost:5173/wechat)
 - 微信开发者工具导入 `apps/miniapp`，配置自己的测试 AppID。操作见[开发说明](docs/development.md#微信小程序与公众号)。
 
-`make down` 停止容器并保留数据卷。需要源码热更新时，使用[开发说明](docs/development.md)中的本机开发方式。该文档也记录检查命令和实际验证范围。
+保持 `make dev` 终端打开以监听修改；Ctrl+C 只退出监听，`make down` 停止容器并保留数据卷。只需后台启动时用 `DEV_WATCH=0 make dev`。修改数据库迁移或 `.env` 后重新运行 `make dev`。本机开发方式和检查命令见[开发说明](docs/development.md)。
 
 首次使用先按[账号与项目说明](docs/development.md#账号与项目)创建本地账号。新项目的 AI 辅助默认关闭；作者核对规则来源及版本后，才能选择允许的功能。
 
 ## 主要功能
 
+- **项目工作台**：查看已保存进度并快速跳转；材料表格支持筛选、排序与清单导出，阅读摘记可整理为可追溯矩阵。原稿提供查找替换、章节标题骨架、专注写作与 Markdown 草稿下载；修改看板显示已保存的作者进度。
 - **材料与阅读**：管理文献和研究材料，整理有出处的摘记，比较多篇文献。
 - **原稿审阅**：检查引用是否支持论述，定位材料与正文不一致、推理缺漏等问题。
 - **修改与反馈**：对照表达建议，跟踪导师意见，保留作者决定和稿件版本。

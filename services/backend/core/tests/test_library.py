@@ -2,9 +2,9 @@ from unittest.mock import patch
 
 import pytest
 
-from core.embeddings import configuration
-from core.library import default_bibliography
+from core.library.service import default_bibliography
 from core.models import Bibliography, EmbeddingIndex, EvidenceCard, ProjectPolicy
+from core.search.embeddings import configuration
 from core.tests.embedding_provider import provider
 from core.tests.test_materials import context as material_context
 from core.tests.test_materials import intent, path, upload
@@ -18,7 +18,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.django_db(transaction=True)]
 @pytest.fixture
 def source(context):
     data = "实验记录：提高温度后反应速率增加。\n对照记录：光照保持不变。".encode()
-    with patch("core.parse_views.dispatch"):
+    with patch("core.materials.parse_views.dispatch"):
         version = intent(context, data=data)
         assert upload(context, version, data).status_code == 200
         run = create(context, version)
@@ -82,7 +82,7 @@ def test_embedding_api_pgvector_search_and_withdrawal(context, source):
     ProjectPolicy.objects.filter(project=project).update(
         verified=True, source="自制规则", source_version="v1", allowed_actions=["reading"]
     )
-    with patch("core.index_jobs.dispatch"):
+    with patch("core.search.jobs.dispatch"):
         response = client.post(
             path(project, "indexes/"),
             {"idempotency_key": "index-1", "policy_version": 1},
@@ -130,7 +130,7 @@ def index_job(context, key="index-test"):
     ProjectPolicy.objects.filter(project=project).update(
         verified=True, source="自制规则", source_version="v1", allowed_actions=["reading"]
     )
-    with patch("core.index_jobs.dispatch"):
+    with patch("core.search.jobs.dispatch"):
         response = client.post(
             path(project, "indexes/"), {"idempotency_key": key, "policy_version": 1}, format="json"
         )
@@ -162,12 +162,12 @@ def test_incompatible_model_rebuild_never_mixes_spaces(context, source):
 def test_index_transaction_failure_retry_and_stale_generation(context, source):
     client, project, _ = context
     index = index_job(context)
-    with patch("core.index_jobs.finish", side_effect=RuntimeError("commit failure")):
+    with patch("core.search.jobs.finish", side_effect=RuntimeError("commit failure")):
         execute_job(str(index.job_id))
     index.refresh_from_db()
     assert index.job.status == "failed" and index.job.retryable and index.published_at is None
     assert not index.segments.exists()
-    with patch("core.job_views.dispatch"):
+    with patch("core.jobs.views.dispatch"):
         assert (
             client.post(path(project, f"jobs/{index.job_id}/retry/"), {"generation": 1}).status_code
             == 200
@@ -186,8 +186,8 @@ def test_index_transaction_failure_retry_and_stale_generation(context, source):
 def test_index_change_during_encoding_prevents_publication(context, source, change):
     from django.contrib.auth import get_user_model
 
-    from core.embeddings import encode
     from core.models import Material, ProjectMember
+    from core.search.embeddings import encode
 
     client, project, _ = context
     user = get_user_model().objects.create_user(username="index-coauthor")
@@ -207,7 +207,7 @@ def test_index_change_during_encoding_prevents_publication(context, source, chan
             client.post(path(project, f"jobs/{index.job_id}/cancel/"), {"generation": 1})
         return vectors
 
-    with patch("core.index_jobs.encode", side_effect=changed):
+    with patch("core.search.jobs.encode", side_effect=changed):
         execute_job(str(index.job_id))
     index.refresh_from_db()
     assert index.job.status == "cancelled" and not index.segments.exists()
@@ -216,8 +216,8 @@ def test_index_change_during_encoding_prevents_publication(context, source, chan
 def test_search_rechecks_revocation_and_isolates_project(context, source):
     from django.contrib.auth import get_user_model
 
-    from core.embeddings import encode
     from core.models import Project, ProjectMember
+    from core.search.embeddings import encode
 
     client, project, owner = context
     index = index_job(context)
@@ -240,7 +240,7 @@ def test_search_rechecks_revocation_and_isolates_project(context, source):
         member.delete()
         return vector
 
-    with patch("core.search_views.encode", side_effect=revoke):
+    with patch("core.search.views.encode", side_effect=revoke):
         assert client.get(path(project, "search/?mode=semantic&q=温度")).status_code == 404
 
 
@@ -310,7 +310,7 @@ def test_database_enforces_evidence_source_vector_dimension_and_project(context,
 def test_withdraw_then_restore_does_not_revive_old_parse(context, source):
     client, project, _ = context
     version, _ = source
-    with patch("core.parse_views.dispatch"):
+    with patch("core.materials.parse_views.dispatch"):
         run = create(context, version, "pending-before-withdrawal")
     state = path(project, f"materials/{version.material_id}/state/")
     assert client.patch(state, {"version": 1, "access_state": "withdrawn"}).status_code == 200
@@ -327,8 +327,8 @@ def test_mini_token_notes_are_visible_to_web(context, source):
     from django.utils import timezone
     from rest_framework.test import APIClient
 
+    from core.accounts.wechat import digest
     from core.models import WechatIdentity, WechatSession
-    from core.wechat import digest
 
     web, project, user = context
     chunk = source[1].chunks.first()
@@ -381,7 +381,7 @@ def test_api_partial_batch_failure_retry_does_not_publish_partial_index(context,
         assert index.job.status == "failed" and index.job.retryable
         assert index.job.error_code == "embedding_http_429"
         assert not index.segments.exists() and index.published_at is None
-        with patch("core.job_views.dispatch"):
+        with patch("core.jobs.views.dispatch"):
             response = context[0].post(
                 path(context[1], f"jobs/{index.job_id}/retry/"), {"generation": 1}
             )

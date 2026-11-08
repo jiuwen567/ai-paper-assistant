@@ -7,7 +7,8 @@ from django.core.management import call_command
 from django.db import connection
 from django.test import override_settings
 
-from core.health import readiness, s3_client
+from core.storage.s3 import s3_client
+from core.system.health import readiness
 
 pytestmark = [pytest.mark.integration, pytest.mark.django_db(transaction=True)]
 

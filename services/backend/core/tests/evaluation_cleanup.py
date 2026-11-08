@@ -6,9 +6,9 @@ from uuid import uuid4
 from django.conf import settings
 from django.db import transaction
 
-from core.cleanup import create_cleanup, execute
-from core.cleanup_plan import Plan
-from core.graph import purge_projection
+from core.cleanup.plan import Plan
+from core.cleanup.service import create_cleanup, execute
+from core.graph.service import purge_projection
 from core.models import CleanupRequest, GraphTombstone, Project
 
 
@@ -28,7 +28,7 @@ def remove_project(project, user):
     ):
         raise ValueError("仅可清理评测创建的专用项目。")
     project_id = project.pk
-    with patch("core.cleanup.dispatch"), transaction.atomic():
+    with patch("core.cleanup.service.dispatch"), transaction.atomic():
         locked = Project.objects.select_for_update().get(pk=project_id)
         record = create_cleanup(Plan(locked), user, str(uuid4()), "0" * 64)
     execute(record.pk)

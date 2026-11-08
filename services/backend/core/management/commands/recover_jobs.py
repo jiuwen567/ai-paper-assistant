@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from core.jobs import recover_jobs
+from core.jobs.service import recover_jobs
 
 
 class Command(BaseCommand):

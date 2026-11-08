@@ -11,8 +11,8 @@ from django.http import Http404
 from rest_framework.exceptions import NotAuthenticated, NotFound, PermissionDenied
 from rest_framework.test import APIClient
 
-from core.access import require_ai_action, require_project_resource
 from core.models import Project, ProjectMember, ProjectPolicy
+from core.projects.access import require_ai_action, require_project_resource
 
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 

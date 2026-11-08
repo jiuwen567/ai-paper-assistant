@@ -5,7 +5,7 @@ from uuid import uuid4
 import pytest
 from django.db import transaction
 
-from core.cleanup_plan import Plan
+from core.cleanup.plan import Plan
 from core.models import ExportSnapshot, Job, Manuscript, Material, MaterialVersion, SourceChunk
 from core.tests.test_exports import cited as export_cited
 from core.tests.test_exports import create
@@ -86,7 +86,7 @@ def request_cleanup(context, material=None, key=None):
     data.update(
         preview_token=preview.data["token"], confirmed=True, request_key=key or str(uuid4())
     )
-    with patch("core.cleanup.dispatch"):
+    with patch("core.cleanup.service.dispatch"):
         response = client.post(path(project, "cleanup/"), data, format="json")
     assert response.status_code == 201, response.data
     return CleanupRequest.objects.get(pk=response.data["id"]), data
@@ -95,7 +95,7 @@ def request_cleanup(context, material=None, key=None):
 def test_cleanup_database_immediate_external_failure_retry_and_audit(context, source):
     from unittest.mock import patch
 
-    from core.cleanup import execute
+    from core.cleanup.service import execute
     from core.tests.test_materials import path
 
     version = source[0]
@@ -103,7 +103,7 @@ def test_cleanup_database_immediate_external_failure_retry_and_audit(context, so
     assert context[0].get(path(context[1], f"files/{version.pk}/")).status_code == 404
     assert record.status == "queued" and record.items.get(kind="database").status == "removed"
     assert not Job.objects.exists()
-    with patch("core.cleanup.s3_client", side_effect=OSError("secret endpoint")):
+    with patch("core.cleanup.service.s3_client", side_effect=OSError("secret endpoint")):
         execute(record.pk)
     record.refresh_from_db()
     assert record.status == "failed" and record.items.get(kind="object").status == "failed"
@@ -113,10 +113,12 @@ def test_cleanup_database_immediate_external_failure_retry_and_audit(context, so
     assert "bucket" not in str(response.data) and "object_key" not in str(response.data)
     repeated = context[0].post(path(context[1], "cleanup/"), data, format="json")
     assert repeated.status_code == 200 and repeated.data["id"] == str(record.pk)
-    with patch("core.cleanup_views.dispatch"):
+    with patch("core.cleanup.views.dispatch"):
         retry = context[0].post(f"/api/v1/cleanups/{record.pk}/", {"generation": 1}, format="json")
     assert retry.status_code == 200
-    with patch("core.cleanup.remove_graph", side_effect=AssertionError("成功步骤不重复执行")):
+    with patch(
+        "core.cleanup.service.remove_graph", side_effect=AssertionError("成功步骤不重复执行")
+    ):
         execute(record.pk)
     record.refresh_from_db()
     assert record.status == "succeeded" and record.generation == 2
@@ -133,7 +135,7 @@ def test_cleanup_database_immediate_external_failure_retry_and_audit(context, so
 def test_project_cleanup_remains_queryable_after_project_removed_and_no_stale_worker(
     context, source
 ):
-    from core.cleanup import execute
+    from core.cleanup.service import execute
     from core.models import CleanupRequest, Project
     from core.tests.test_materials import path
     from worker.tasks import execute_job
@@ -156,7 +158,7 @@ def test_expired_cleanup_lease_records_failure_and_old_generation_stops(context,
 
     from django.utils import timezone
 
-    from core.cleanup import claim, execute_item, recover_one
+    from core.cleanup.service import claim, execute_item, recover_one
     from core.models import CleanupRequest
 
     record, _ = request_cleanup(context, source[0].material)
@@ -174,9 +176,9 @@ def test_expired_cleanup_lease_records_failure_and_old_generation_stops(context,
 def test_shared_object_is_retained_until_last_registered_reference_removed(context, source, draft):
     from contextlib import closing
 
-    from core.cleanup import execute
-    from core.health import s3_client
+    from core.cleanup.service import execute
     from core.models import ExportFile
+    from core.storage.s3 import s3_client
 
     version = source[0]
     snapshot, _ = create(context, draft[1])
@@ -211,7 +213,7 @@ def test_imported_and_edited_copies_removed_without_deleting_author_original(con
     assert save(context, original).status_code == 200
     data = docx_sample()
     version = intent(context, data=data, name="self-authored.docx")
-    with patch("core.parse_views.dispatch"):
+    with patch("core.materials.parse_views.dispatch"):
         assert upload(context, version, data).status_code == 200
         run = parse(context, version)
         execute_job(str(run.job_id))
@@ -311,20 +313,20 @@ def test_late_upload_and_export_write_do_not_recreate_deleted_objects(context, s
 
     from rest_framework.exceptions import NotFound
 
-    from core.export_jobs import prepare_file, store_export
-    from core.jobs import claim
-    from core.materials import store_file
+    from core.exports.jobs import prepare_file, store_export
+    from core.jobs.service import claim
+    from core.materials.service import store_file
 
     snapshot, _ = create(context, draft[1])
     job = claim(snapshot.job_id)
     artifact = prepare_file(snapshot, job.generation)
     version = source[0]
     request_cleanup(context)
-    with patch("core.materials.s3_client") as upload_storage:
+    with patch("core.materials.service.s3_client") as upload_storage:
         with pytest.raises(NotFound):
             store_file(version, b"stale")
         upload_storage.assert_not_called()
-    with patch("core.export_jobs.s3_client") as export_storage:
+    with patch("core.exports.jobs.s3_client") as export_storage:
         with pytest.raises(Job.DoesNotExist):
             store_export(snapshot, job.generation, artifact, b"stale")
         export_storage.assert_not_called()
@@ -333,10 +335,10 @@ def test_late_upload_and_export_write_do_not_recreate_deleted_objects(context, s
 def test_project_cleanup_includes_objects_from_previous_failed_material_cleanup(context, source):
     from unittest.mock import patch
 
-    from core.cleanup import execute
+    from core.cleanup.service import execute
 
     previous, _ = request_cleanup(context, source[0].material)
-    with patch("core.cleanup.s3_client", side_effect=OSError):
+    with patch("core.cleanup.service.s3_client", side_effect=OSError):
         execute(previous.pk)
     remaining, _ = request_cleanup(context)
     assert remaining.items.filter(kind="object").count() == 1
@@ -346,8 +348,9 @@ def test_project_cleanup_includes_objects_from_previous_failed_material_cleanup(
 
 
 def test_old_graph_snapshot_cannot_recreate_deleted_material_path(context, draft, cited):
-    from core.cleanup import execute
-    from core.graph import apply_snapshot, project_snapshot, sync_project
+    from core.cleanup.service import execute
+    from core.graph.service import apply_snapshot, sync_project
+    from core.graph.snapshot import project_snapshot
     from core.models import GraphState
 
     project = context[1]
@@ -397,7 +400,7 @@ def test_concurrent_identical_project_delete_returns_one_manifest(context, sourc
         finally:
             close_old_connections()
 
-    with patch("core.cleanup.dispatch"), ThreadPoolExecutor(max_workers=2) as pool:
+    with patch("core.cleanup.service.dispatch"), ThreadPoolExecutor(max_workers=2) as pool:
         results = list(pool.map(lambda _: remove(), range(2)))
     assert sorted(status for status, _ in results) == [200, 201], results
     assert CleanupRequest.objects.count() == 1
@@ -413,11 +416,11 @@ def test_upload_in_progress_finishes_before_cleanup_manifest_and_objects_removed
 
     from django.db import close_old_connections
 
-    from core.access import require_project
-    from core.cleanup import create_cleanup, execute
-    from core.health import s3_client
-    from core.materials import claim_upload, read_and_verify, store_file
+    from core.cleanup.service import create_cleanup, execute
+    from core.materials.service import claim_upload, read_and_verify, store_file
     from core.models import CleanupRequest
+    from core.projects.access import require_project
+    from core.storage.s3 import s3_client
 
     data = b"self-authored concurrent upload"
     version = intent(context, data=data)
@@ -450,8 +453,8 @@ def test_upload_in_progress_finishes_before_cleanup_manifest_and_objects_removed
             close_old_connections()
 
     with (
-        patch("core.materials.read_and_verify", side_effect=wait_after_write),
-        patch("core.cleanup.dispatch"),
+        patch("core.materials.service.read_and_verify", side_effect=wait_after_write),
+        patch("core.cleanup.service.dispatch"),
         ThreadPoolExecutor(max_workers=2) as pool,
     ):
         upload_future = pool.submit(upload)
@@ -493,7 +496,7 @@ def test_coauthor_cannot_delete_project_and_database_failure_rolls_back(context,
     preview = other.post(path(project, "cleanup-preview/"), selection, format="json")
     assert preview.status_code == 200
     with patch(
-        "core.cleanup_plan.Plan.delete_database",
+        "core.cleanup.plan.Plan.delete_database",
         side_effect=RuntimeError("simulated database failure"),
     ):
         with pytest.raises(RuntimeError):
@@ -515,7 +518,7 @@ def test_coauthor_cannot_delete_project_and_database_failure_rolls_back(context,
 def test_deleted_source_stops_pending_ai_search_parse_and_new_export(
     context, draft, cited, running
 ):
-    from core.jobs import claim
+    from core.jobs.service import claim
     from core.models import AIEvent
     from core.tests.test_ai_jobs import provider
     from core.tests.test_materials import path
@@ -572,7 +575,7 @@ def test_project_deleted_between_worker_lookup_and_lock_stops_cleanly(context, s
     from django.db import close_old_connections
     from rest_framework.exceptions import NotFound
 
-    from core.materials import store_file
+    from core.materials.service import store_file
     from core.models import Project
     from worker.tasks import execute_job
 
@@ -648,7 +651,7 @@ def test_mixed_import_history_keeps_other_source_and_its_future_cleanup(context,
         document.save(output)
         content = output.getvalue()
         version = intent(context, data=content, name=f"sample-{number}.docx", request_key=label)
-        with patch("core.parse_views.dispatch"):
+        with patch("core.materials.parse_views.dispatch"):
             assert upload(context, version, content).status_code == 200
             run = parse(context, version, key=label)
             execute_job(str(run.job_id))

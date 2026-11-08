@@ -1,0 +1,46 @@
+# 仅由 make dev 加载；镜像内依赖不与宿主机 node_modules / .venv 混用。
+x-backend-watch: &backend-watch
+  watch:
+    - action: sync+restart
+      path: ./services/backend
+      target: /app/services/backend
+      ignore: ["**/__pycache__/", "**/*.pyc", "core/tests/"]
+    - action: sync+restart
+      path: ./services/pi-runner/src
+      target: /app/services/pi-runner/src
+    - { action: rebuild, path: ./pyproject.toml }
+    - { action: rebuild, path: ./uv.lock }
+    - { action: rebuild, path: ./pnpm-lock.yaml }
+    - { action: rebuild, path: ./services/pi-runner/package.json }
+    - { action: rebuild, path: ./services/backend/Dockerfile }
+
+services:
+  api:
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8000", "--noreload"]
+    develop: *backend-watch
+  worker:
+    develop: *backend-watch
+  scheduler:
+    develop: *backend-watch
+  web:
+    develop:
+      watch:
+        - action: sync
+          path: ./apps/web/src
+          target: /app/apps/web/src
+        - action: sync
+          path: ./apps/web/index.html
+          target: /app/apps/web/index.html
+        - action: sync
+          path: ./apps/web/public
+          target: /app/apps/web/public
+          ignore: [pdfjs/]
+        - action: sync+restart
+          path: ./apps/web/vite.config.ts
+          target: /app/apps/web/vite.config.ts
+        - action: sync+restart
+          path: ./apps/web/tsconfig.json
+          target: /app/apps/web/tsconfig.json
+        - { action: rebuild, path: ./apps/web/package.json }
+        - { action: rebuild, path: ./pnpm-lock.yaml }
+        - { action: rebuild, path: ./apps/web/Dockerfile }

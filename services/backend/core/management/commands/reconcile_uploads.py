@@ -3,7 +3,7 @@ from django.db.models import Q
 from django.utils import timezone
 from rest_framework.exceptions import APIException
 
-from core.materials import fail_upload, reconcile_upload
+from core.materials.service import fail_upload, reconcile_upload
 from core.models import MaterialVersion
 
 

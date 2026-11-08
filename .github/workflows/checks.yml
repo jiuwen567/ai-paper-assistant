@@ -35,7 +35,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         run: |
           docker compose --profile app config --quiet
-          make up
+          DEV_WATCH=0 make dev
           uv run python services/backend/manage.py makemigrations --check --dry-run
       - run: make integration
         if: github.event_name == 'workflow_dispatch'

@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 from rest_framework.exceptions import ValidationError
 
-from core.export_templates import register_template
+from core.exports.templates import register_template
 
 
 class Command(BaseCommand):

@@ -11,16 +11,16 @@ from django.db import IntegrityError, close_old_connections, transaction
 from django.test import override_settings
 from rest_framework.test import APIClient
 
-from core.graph import (
-    GraphUnavailable,
+from core.graph.errors import GraphUnavailable
+from core.graph.service import (
     apply_snapshot,
     driver,
     graph_paths,
-    project_snapshot,
     purge_projection,
     recover_events,
     sync_project,
 )
+from core.graph.snapshot import project_snapshot
 from core.models import (
     EvidenceLink,
     EvidenceLinkRevision,
@@ -296,14 +296,16 @@ def test_model_diagnosis_and_manuscript_citation_not_author_support(context, man
 def test_unavailable_retry_and_rebuild_after_projection_loss(context, manuscript, source):
     client, project, _ = context
     create(context, manuscript, source)
-    with patch("core.graph.apply_snapshot", side_effect=ConnectionError("不要记录私密端点")):
+    with patch(
+        "core.graph.service.apply_snapshot", side_effect=ConnectionError("不要记录私密端点")
+    ):
         assert sync_project(project.pk) is False
     state = GraphState.objects.get(project=project)
     assert state.last_error == "ConnectionError"
     assert GraphEvent.objects.filter(
         project=project, error_code="ConnectionError", attempts=1
     ).exists()
-    with patch("core.graph_views.graph_paths", side_effect=ConnectionError):
+    with patch("core.graph.views.graph_paths", side_effect=ConnectionError):
         unavailable = query(context)
     assert unavailable["status"] == "unavailable" and unavailable["count"] is None
     assert sync_project(project.pk)
@@ -311,7 +313,7 @@ def test_unavailable_retry_and_rebuild_after_projection_loss(context, manuscript
     assert query(context)["status"] == "missing"
     state.refresh_from_db()
     data = {"request_key": str(uuid4()), "revision": state.revision}
-    with patch("core.graph_views.dispatch"):
+    with patch("core.graph.views.dispatch"):
         for status in [202, 200]:
             assert (
                 client.post(path(project, "graph/rebuild/"), data, format="json").status_code
@@ -348,7 +350,7 @@ def test_database_scope_immutable_quotes_and_revoked_access(context, manuscript,
         == 403
     )
     ProjectMember.objects.filter(project=project, user=reviewer).delete()
-    with patch("core.graph_views.graph_paths") as graph:
+    with patch("core.graph.views.graph_paths") as graph:
         assert client.get(path(project, "graph/paths/")).status_code == 404
         graph.assert_not_called()
 
@@ -426,7 +428,7 @@ def test_new_parse_does_not_reconfirm_old_evidence(context, manuscript, source):
     client, project, _ = context
     link = create(context, manuscript, source)
     assert sync_project(project.pk)
-    with patch("core.parse_views.dispatch"):
+    with patch("core.materials.parse_views.dispatch"):
         run = parse(context, source[0], key=str(uuid4()))
     execute_job(str(run.job_id))
     assert sync_project(project.pk)
@@ -443,13 +445,15 @@ def test_graph_cannot_supply_foreign_or_fabricated_business_records(context, man
     link = create(context, manuscript, source)
     assert sync_project(context[1].pk)
     revision = GraphState.objects.get(project=context[1]).revision
-    with patch("core.graph_views.graph_paths", return_value=(revision, [f"author:{uuid4()}"], 1)):
+    with patch(
+        "core.graph.views.graph_paths", return_value=(revision, [f"author:{uuid4()}"], 1)
+    ):
         result = query(context)
     assert (
         result["status"] == "inconsistent" and result["count"] is None and result["results"] == []
     )
     with patch(
-        "core.graph_views.graph_paths", return_value=(revision, [f"author:{link['id']}"], 1)
+        "core.graph.views.graph_paths", return_value=(revision, [f"author:{link['id']}"], 1)
     ):
         result = query(context, block_id=manuscript["blocks"][0]["id"])
     assert result["status"] == "inconsistent" and result["results"] == []
@@ -481,7 +485,7 @@ def test_project_delete_outbox_rollback_and_late_projection(context, manuscript,
     project.delete()
     assert GraphTombstone.objects.filter(project_id=project_id, processed_at=None).exists()
     assert client.get(f"/api/v1/projects/{project_id}/graph/paths/").status_code == 404
-    with patch("core.graph.delete_projection", side_effect=ConnectionError("模拟连接失败")):
+    with patch("core.graph.service.delete_projection", side_effect=ConnectionError("模拟连接失败")):
         recover_events()
     assert GraphTombstone.objects.get(project_id=project_id).error_code == "ConnectionError"
     recover_events()
@@ -498,7 +502,7 @@ def test_rebuild_can_replace_projection_ahead_of_restored_postgres(context, manu
     future = project_snapshot(project.pk, current + 10)
     apply_snapshot(future)
     assert query(context)["status"] == "inconsistent"
-    with patch("core.graph_views.dispatch"):
+    with patch("core.graph.views.dispatch"):
         response = client.post(
             path(project, "graph/rebuild/"),
             {"request_key": str(uuid4()), "revision": current},

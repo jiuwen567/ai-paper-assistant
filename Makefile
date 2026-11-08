@@ -1,4 +1,8 @@
-.PHONY: init install infra up down api worker web migrate check test integration health build
+.PHONY: init install infra dev down api worker web migrate check test integration health build
+
+DEV_WATCH ?= 1
+DEV_COMPOSE_FILES ?= $(if $(COMPOSE_FILE),$(COMPOSE_FILE),compose.yaml):compose.dev.yaml
+DEV_COMPOSE = COMPOSE_FILE="$(DEV_COMPOSE_FILES)" docker compose --profile app
 
 init:
 	python3 scripts/init_dev.py
@@ -10,10 +14,11 @@ install:
 infra:
 	docker compose up -d --wait
 
-up:
-	docker compose --profile app up -d --build --wait
-	docker compose exec api python manage.py check_services
-	docker compose exec api python manage.py check_worker
+dev: init
+	$(DEV_COMPOSE) up -d --build --wait
+	$(DEV_COMPOSE) exec api python manage.py check_services
+	$(DEV_COMPOSE) exec api python manage.py check_worker
+	@if [ "$(DEV_WATCH)" = "1" ]; then $(DEV_COMPOSE) watch --no-up; fi
 
 down:
 	docker compose --profile app down
@@ -31,6 +36,7 @@ migrate:
 	uv run python services/backend/manage.py migrate --noinput
 
 check:
+	python3 scripts/check_architecture.py
 	uv run python services/backend/manage.py check
 	uv run python -m compileall -q services/backend
 	pnpm check

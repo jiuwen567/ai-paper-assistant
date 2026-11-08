@@ -12,8 +12,14 @@ from django.test import override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
 
+from core.accounts.wechat import (
+    WechatUnavailable,
+    bind_account,
+    digest,
+    exchange_code,
+    login_wechat,
+)
 from core.models import Project, ProjectPolicy, WechatBinding, WechatIdentity, WechatSession
-from core.wechat import WechatUnavailable, bind_account, digest, exchange_code, login_wechat
 
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 BASE = "/api/v1/auth/wechat/"
@@ -45,7 +51,7 @@ def account():
 
 
 def mini_login(open_id="self-authored-openid"):
-    with patch("core.wechat_views.exchange_code", return_value=open_id):
+    with patch("core.accounts.wechat_views.exchange_code", return_value=open_id):
         return APIClient().post(BASE + "login/", {"code": "self-authored-code"})
 
 
@@ -153,7 +159,7 @@ def test_code_exchange_uses_server_secret_and_discards_session_key():
     response.__enter__.return_value.read.return_value = (
         b'{"openid":"test-openid","session_key":"private","unionid":"not-used"}'
     )
-    with patch("core.wechat.urlopen", return_value=response) as send:
+    with patch("core.accounts.wechat.urlopen", return_value=response) as send:
         assert exchange_code("test-code") == "test-openid"
         url = send.call_args.args[0]
         assert url.startswith("https://api.weixin.qq.com/sns/jscode2session?")
@@ -164,7 +170,10 @@ def test_code_exchange_uses_server_secret_and_discards_session_key():
 def test_bad_wechat_response_has_safe_error(reply):
     response = MagicMock()
     response.__enter__.return_value.read.return_value = reply
-    with patch("core.wechat.urlopen", return_value=response), pytest.raises(WechatUnavailable):
+    with (
+        patch("core.accounts.wechat.urlopen", return_value=response),
+        pytest.raises(WechatUnavailable),
+    ):
         exchange_code("test-code")
 
 
@@ -172,7 +181,7 @@ def test_missing_configuration_and_transport_errors_do_not_leak():
     with override_settings(WECHAT_APP_SECRET=""):
         response = APIClient().post(BASE + "login/", {"code": "test-code"})
         assert response.status_code == 503
-    with patch("core.wechat.urlopen", side_effect=OSError("secret-url")):
+    with patch("core.accounts.wechat.urlopen", side_effect=OSError("secret-url")):
         response = APIClient().post(BASE + "login/", {"code": "test-code"})
         assert response.status_code == 503 and "secret-url" not in str(response.data)
 

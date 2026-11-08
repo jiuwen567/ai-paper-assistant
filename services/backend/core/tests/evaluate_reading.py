@@ -21,8 +21,8 @@ from django.db import transaction  # noqa: E402
 from django.test import override_settings  # noqa: E402
 from rest_framework.test import APIClient  # noqa: E402
 
-from core.ai_jobs import AIRun  # noqa: E402
-from core.library import default_bibliography  # noqa: E402
+from core.ai.runtime import AIRun  # noqa: E402
+from core.library.service import default_bibliography  # noqa: E402
 from core.models import Job, MaterialVersion, Project, ProjectPolicy, ReadingRecord  # noqa: E402
 from core.tests.evaluation_cleanup import remove_project  # noqa: E402
 from core.tests.reading_regression_samples import SAMPLES as EXTRA_SAMPLES  # noqa: E402
@@ -65,8 +65,8 @@ def main():
     try:
         with (
             override_settings(AI_MODEL=args.model, AI_BASE_URL=args.base_url),
-            patch("core.parse_views.dispatch"),
-            patch("core.reading_views.dispatch"),
+            patch("core.materials.parse_views.dispatch"),
+            patch("core.reading.views.dispatch"),
         ):
             versions = []
             samples = [*SAMPLES, *(EXTRA_SAMPLES if args.expanded else [])]

@@ -47,7 +47,7 @@ def main():
             )
         elif data["action"] == "binding":
             # 自制身份绕过微信服务，仅验证 Web 绑定交互，不冒充真实微信登录。
-            from core.wechat import login_wechat
+            from core.accounts.wechat import login_wechat
 
             print(json.dumps(login_wechat(prefix), default=str))
         elif data["action"] in ["ai", "reading", "review", "expression", "feedback", "impact"]:
@@ -99,7 +99,7 @@ def main():
                 endpoint = f"feedback/{data['feedback_id']}/split/"
                 body = data["payload"]
             elif data["action"] == "expression":
-                from core.manuscripts import revision_data
+                from core.manuscripts.service import revision_data
                 from core.models import Manuscript
                 from core.tests.test_expressions import output_for, respond_with
 
@@ -113,7 +113,7 @@ def main():
                 endpoint = "expressions/tasks/"
                 body = data["payload"]
             elif data["action"] == "review":
-                from core.manuscripts import revision_data
+                from core.manuscripts.service import revision_data
                 from core.tests.test_reviews import finding_output, respond_with
 
                 manuscript = revision_data(project.manuscript.current_revision)
@@ -166,12 +166,12 @@ def main():
 
             with provider(respond):
                 with (
-                    patch("core.ai_views.dispatch"),
-                    patch("core.reading_views.dispatch"),
-                    patch("core.review_views.dispatch"),
-                    patch("core.expression_views.dispatch"),
-                    patch("core.feedback_views.dispatch"),
-                    patch("core.jobs.dispatch"),
+                    patch("core.ai.views.dispatch"),
+                    patch("core.reading.views.dispatch"),
+                    patch("core.reviews.views.dispatch"),
+                    patch("core.expressions.views.dispatch"),
+                    patch("core.feedback.views.dispatch"),
+                    patch("core.jobs.service.dispatch"),
                 ):
                     response = client.post(
                         f"/api/v1/projects/{project.pk}/{endpoint}", body, format="json"
@@ -189,7 +189,7 @@ def main():
             WechatIdentity.objects.filter(open_id=prefix).delete()
             from contextlib import closing
 
-            from core.health import s3_client
+            from core.storage.s3 import s3_client
 
             with closing(s3_client()) as storage:
                 for version in MaterialVersion.objects.filter(
@@ -200,7 +200,7 @@ def main():
                     snapshot__project__owner__username__in=usernames
                 ):
                     storage.delete_object(Bucket=artifact.bucket, Key=artifact.object_key)
-            from core.graph import purge_projection
+            from core.graph.service import purge_projection
             from core.models import CleanupRequest, GraphTombstone
 
             project_ids = list(

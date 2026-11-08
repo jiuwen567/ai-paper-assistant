@@ -11,9 +11,9 @@ def ping():
 def execute_job(job_id):
     import time
 
-    from core.jobs import claim, fail, heartbeat, publish
+    from core.common.errors import ParseFailure
+    from core.jobs.service import claim, fail, heartbeat, publish
     from core.models import Job
-    from core.parsing import ParseFailure
 
     try:
         job = claim(job_id)
@@ -23,22 +23,22 @@ def execute_job(job_id):
         return
     try:
         if job.kind == "ai":
-            from core.ai_jobs import execute_ai
+            from core.ai.execution import execute_ai
 
             execute_ai(job)
             return
         if job.kind == "index":
-            from core.index_jobs import execute_index
+            from core.search.jobs import execute_index
 
             execute_index(job)
             return
         if job.kind == "export":
-            from core.export_jobs import execute_export
+            from core.exports.jobs import execute_export
 
             execute_export(job)
             return
         if job.kind == "parse":
-            from core.parse_jobs import execute_parse
+            from core.materials.parse_jobs import execute_parse
 
             execute_parse(job)
             return
@@ -81,27 +81,27 @@ def execute_job(job_id):
 
 @app.task(name="jobs.recover")
 def recover_jobs():
-    from core.jobs import recover_jobs as recover
+    from core.jobs.service import recover_jobs as recover
 
     return recover()
 
 
 @app.task(name="graph.sync", acks_late=True, reject_on_worker_lost=True, time_limit=180)
 def sync_graph_events():
-    from core.graph import recover_events
+    from core.graph.service import recover_events
 
     return recover_events()
 
 
 @app.task(name="cleanup.execute", acks_late=True, reject_on_worker_lost=True, time_limit=300)
 def execute_cleanup(request_id):
-    from core.cleanup import execute
+    from core.cleanup.service import execute
 
     execute(request_id)
 
 
 @app.task(name="cleanup.recover")
 def recover_cleanup():
-    from core.cleanup import recover
+    from core.cleanup.service import recover
 
     recover()

@@ -2,7 +2,7 @@ import json
 
 from django.core.management.base import BaseCommand, CommandError
 
-from core.health import readiness
+from core.system.health import readiness
 
 
 class Command(BaseCommand):

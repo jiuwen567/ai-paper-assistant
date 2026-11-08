@@ -9,8 +9,8 @@ from django.contrib.auth import get_user_model
 from docx import Document
 from rest_framework.test import APIClient
 
-from core.cleanup import execute as execute_cleanup
-from core.export_templates import (
+from core.cleanup.service import execute as execute_cleanup
+from core.exports.templates import (
     DEFAULT_CODE,
     DEFAULT_LAYOUT,
     DEFAULT_NAME,
@@ -18,8 +18,9 @@ from core.export_templates import (
     DEFAULT_SOURCE,
     register_template,
 )
-from core.graph import apply_snapshot, project_snapshot, purge_projection, sync_project
-from core.library import default_bibliography
+from core.graph.service import apply_snapshot, purge_projection, sync_project
+from core.graph.snapshot import project_snapshot
+from core.library.service import default_bibliography
 from core.models import ExportSnapshot, GraphState, Job, ProjectMember
 from core.tests.evaluation_cases import IMPACT_SOURCES
 from core.tests.test_cleanup import request_cleanup
@@ -51,7 +52,7 @@ def parsed(context, text, key, previous=None):
     )
     data = text.encode()
     source = intent(context, data=data, name=key + ".txt", request_key=key, **changes)
-    with patch("core.parse_views.dispatch"):
+    with patch("core.materials.parse_views.dispatch"):
         assert upload(context, source, data).status_code == 200
         run = parse_create(context, source, key=key)
         execute_job(str(run.job_id))
@@ -159,7 +160,7 @@ def test_source_author_decision_export_correction_and_cleanup(context):
             "captions": [],
         }
         snapshot, _ = export_create(context, selection)
-        with patch("core.export_jobs.s3_client", side_effect=OSError("fixture failure")):
+        with patch("core.exports.jobs.s3_client", side_effect=OSError("fixture failure")):
             execute_job(str(snapshot.job_id))
         snapshot.job.refresh_from_db()
         assert snapshot.job.status == "failed" and snapshot.job.retryable
@@ -176,7 +177,7 @@ def test_source_author_decision_export_correction_and_cleanup(context):
             ],
         )
         assert save(context, edited).status_code == 200
-        with patch("core.job_views.dispatch"):
+        with patch("core.jobs.views.dispatch"):
             retried = client.post(
                 path(project, f"jobs/{snapshot.job_id}/retry/"), {"generation": 1}, format="json"
             )

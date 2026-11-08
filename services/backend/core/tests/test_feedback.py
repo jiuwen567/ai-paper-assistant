@@ -9,8 +9,10 @@ from django.db import IntegrityError, close_old_connections, transaction
 from django.test import override_settings
 from rest_framework.test import APIClient
 
-from core.ai_jobs import AIRun
-from core.jobs import claim
+from core.accounts.wechat import login_wechat
+from core.ai.runtime import AIRun
+from core.common.errors import ParseFailure
+from core.jobs.service import claim
 from core.models import (
     Feedback,
     FeedbackCandidate,
@@ -26,14 +28,12 @@ from core.models import (
     ProjectPolicy,
     WechatIdentity,
 )
-from core.parsing import ParseFailure
 from core.tests.test_ai_jobs import provider
 from core.tests.test_expressions import manuscript as expression_manuscript
 from core.tests.test_library import context as library_context
 from core.tests.test_library import source as library_source
 from core.tests.test_manuscripts import payload, save
 from core.tests.test_materials import path
-from core.wechat import login_wechat
 from worker.tasks import execute_job
 
 context = library_context
@@ -68,7 +68,7 @@ def create_split(context, feedback, manuscript=None):
         verified=True, allowed_actions=["feedback"], source="自制规则", source_version="v1"
     )
     data = {"idempotency_key": str(uuid4()), "policy_version": 1, **location(manuscript)}
-    with patch("core.feedback_views.dispatch"):
+    with patch("core.feedback.views.dispatch"):
         response = context[0].post(
             path(context[1], f"feedback/{feedback['id']}/split/"), data, format="json"
         )
@@ -338,9 +338,7 @@ def test_empty_feedback_split_is_valid_and_no_tasks_created(context):
         context,
         feedback,
         respond=lambda number, _: (
-            [("read_feedback", {})]
-            if number == 1
-            else [("submit_feedback", {"candidates": []})]
+            [("read_feedback", {})] if number == 1 else [("submit_feedback", {"candidates": []})]
         ),
     )
     assert job.output["candidate_ids"] == [] and not FeedbackTask.objects.exists()

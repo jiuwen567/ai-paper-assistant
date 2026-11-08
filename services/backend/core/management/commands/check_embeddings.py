@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand, CommandError
 
-from core.embeddings import configuration, encode
-from core.parsing import ParseFailure
+from core.common.errors import ParseFailure
+from core.search.embeddings import configuration, encode
 
 
 class Command(BaseCommand):

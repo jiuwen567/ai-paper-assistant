@@ -9,9 +9,10 @@ from django.db import IntegrityError, close_old_connections, transaction
 from django.test import override_settings
 from rest_framework.test import APIClient
 
-from core.ai_jobs import AIRun
-from core.expressions import content_guards
-from core.jobs import claim
+from core.accounts.wechat import login_wechat
+from core.ai.runtime import AIRun
+from core.expressions.service import content_guards
+from core.jobs.service import claim
 from core.models import (
     ExpressionDecision,
     ExpressionSuggestion,
@@ -24,13 +25,12 @@ from core.models import (
     ProjectPolicy,
     WechatIdentity,
 )
-from core.reviews import read_manuscript
+from core.reviews.service import read_manuscript
 from core.tests.test_ai_jobs import provider
 from core.tests.test_library import context as library_context
 from core.tests.test_library import source as library_source
 from core.tests.test_manuscripts import payload, save
 from core.tests.test_materials import path
-from core.wechat import login_wechat
 from worker.tasks import execute_job
 
 context = library_context
@@ -96,7 +96,7 @@ def create(context, manuscript, source=None, **changes):
         "version_ids": [str(source[0].pk)] if source else [],
         **changes,
     }
-    with patch("core.expression_views.dispatch"):
+    with patch("core.expressions.views.dispatch"):
         response = client.post(path(project, "expressions/tasks/"), body, format="json")
     assert response.status_code in [200, 201], response.data
     return Job.objects.get(pk=response.data["id"])
@@ -210,7 +210,7 @@ def test_transaction_rolls_back_body_citations_and_decision(context, manuscript,
     suggestion = run(context, manuscript, source)
     before = Manuscript.objects.get(project=context[1]).current_revision_id
     with patch(
-        "core.expression_views.ExpressionDecision.objects.create",
+        "core.expressions.views.ExpressionDecision.objects.create",
         side_effect=RuntimeError("测试事务失败"),
     ):
         with pytest.raises(RuntimeError):

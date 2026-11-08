@@ -5,8 +5,8 @@ from urllib.error import URLError
 import pytest
 from django.test import override_settings
 
-from core.embeddings import MAX_RESPONSE_BYTES, configuration, encode
-from core.parsing import ParseFailure
+from core.common.errors import ParseFailure
+from core.search.embeddings import MAX_RESPONSE_BYTES, configuration, encode
 from core.tests.embedding_provider import provider, response_for
 
 
@@ -123,7 +123,7 @@ def test_duplicate_response_indices_are_rejected():
 
 
 def test_transport_failure_is_retryable_without_echoing_exception():
-    with provider(), patch("core.embeddings.build_opener") as opener:
+    with provider(), patch("core.search.embeddings.build_opener") as opener:
         opener.return_value.open.side_effect = URLError("private endpoint and key")
         with pytest.raises(ParseFailure) as caught:
             encode(["自制文本"], configuration())

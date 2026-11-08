@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from rest_framework.test import APIClient
 
-from core import health
+from core.system import health as health
 from worker.tasks import ping
 
 CHECKS = ["postgres", "neo4j", "s3", "redis", "worker"]
@@ -59,14 +59,14 @@ def test_ping_payload_without_broker():
 
 def test_s3_client_is_closed_without_context_manager_protocol():
     client = MagicMock(spec=["list_buckets", "close"])
-    with patch("core.health.s3_client", return_value=client):
+    with patch("core.system.health.s3_client", return_value=client):
         health.check_s3()
     client.list_buckets.assert_called_once()
     client.close.assert_called_once()
 
 
 def test_pgvector_missing_is_not_ready():
-    with patch("core.health.connection") as connection:
+    with patch("core.system.health.connection") as connection:
         connection.cursor.return_value.__enter__.return_value.fetchone.return_value = None
         with pytest.raises(RuntimeError, match="pgvector"):
             health.check_postgres()
@@ -74,8 +74,8 @@ def test_pgvector_missing_is_not_ready():
 
 def test_pending_migration_is_not_ready():
     with (
-        patch("core.health.connection") as connection,
-        patch("core.health.MigrationExecutor") as cls,
+        patch("core.system.health.connection") as connection,
+        patch("core.system.health.MigrationExecutor") as cls,
     ):
         connection.cursor.return_value.__enter__.return_value.fetchone.return_value = ("0.8.7",)
         cls.return_value.migration_plan.return_value = [object()]

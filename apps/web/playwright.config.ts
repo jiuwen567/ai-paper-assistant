@@ -2,6 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests",
+  testIgnore: "**/*.frontend.spec.ts",
   timeout: 60000,
   expect: { timeout: 35000 },
   workers: 1,

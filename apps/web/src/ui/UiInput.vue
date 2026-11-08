@@ -16,5 +16,5 @@ function update(value: string) {
 }
 </script>
 <template>
-  <NInput :value="String(modelValue ?? '')" :type="type === 'textarea' ? 'textarea' : type === 'password' ? 'password' : 'text'" :disabled="disabled" :readonly="readonly" :maxlength="maxlength === undefined ? undefined : Number(maxlength)" :input-props="inputProps()" :autosize="type === 'textarea' ? { minRows: Number(rows || 3) } : undefined" :show-password-on="type === 'password' ? 'click' : undefined" @update:value="update" />
+  <NInput :value="String(modelValue ?? '')" :type="type === 'textarea' ? 'textarea' : type === 'password' ? 'password' : 'text'" :disabled="disabled" :readonly="readonly" :maxlength="maxlength === undefined ? undefined : Number(maxlength)" :input-props="inputProps()" :placeholder="typeof attrs.placeholder === 'string' ? attrs.placeholder : undefined" :autosize="type === 'textarea' ? { minRows: Number(rows || 3) } : undefined" :show-password-on="type === 'password' ? 'click' : undefined" @update:value="update" />
 </template>

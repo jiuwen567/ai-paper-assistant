@@ -18,7 +18,7 @@ from django.db import transaction  # noqa: E402
 from django.test import override_settings  # noqa: E402
 from rest_framework.test import APIClient  # noqa: E402
 
-from core.ai_jobs import AIRun  # noqa: E402
+from core.ai.runtime import AIRun  # noqa: E402
 from core.models import FeedbackCandidate, FeedbackTask, Job, Project, ProjectPolicy  # noqa: E402
 from core.tests.evaluation_cases import FEEDBACK_CASES as CASES  # noqa: E402
 from core.tests.evaluation_cases import FEEDBACK_EXTRA_CASES  # noqa: E402
@@ -52,7 +52,7 @@ def main():
                 feedback, _ = create_feedback(context, text=text)
                 start = time.monotonic()
                 with transaction.atomic():
-                    with patch("core.feedback_views.dispatch"):
+                    with patch("core.feedback.views.dispatch"):
                         job, _ = create_split(context, feedback)
                     tools = []
                     handle = AIRun.handle

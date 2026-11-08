@@ -12,10 +12,12 @@ import pytest
 from django.db import close_old_connections
 from django.test import override_settings
 
-from core.ai_jobs import AIRun, checkpoint, model_configuration
-from core.jobs import claim, recover_jobs
+from core.ai.configuration import model_configuration
+from core.ai.runtime import AIRun
+from core.ai.state import checkpoint
+from core.common.errors import ParseFailure
+from core.jobs.service import claim, recover_jobs
 from core.models import EvidenceNote, Job, Material, Project, ProjectMember, ProjectPolicy
-from core.parsing import ParseFailure
 from core.tests.test_library import context as library_context
 from core.tests.test_library import source as library_source
 from core.tests.test_materials import path
@@ -104,7 +106,7 @@ def create_ai(context, source, **changes):
         "version_ids": [str(version.pk)],
         **changes,
     }
-    with patch("core.ai_views.dispatch"):
+    with patch("core.ai.views.dispatch"):
         response = client.post(path(project, "ai-tasks/"), payload, format="json")
     assert response.status_code in [200, 201], response.data
     return Job.objects.get(pk=response.data["id"])
@@ -268,14 +270,14 @@ def test_changes_during_request_stop_without_publication(context, source, change
         elif change == "cancel":
             from django.db import transaction
 
-            from core.jobs import finish, lock_job
+            from core.jobs.service import finish, lock_job
 
             with transaction.atomic():
                 finish(lock_job(job.pk), "cancelled", "user_cancelled")
         elif change == "withdraw":
             Material.objects.filter(pk=version.material_id).update(state_version=3)
         elif change == "metadata":
-            from core.library import current_bibliography
+            from core.library.service import current_bibliography
 
             current_bibliography(version, user)
         else:
@@ -299,14 +301,14 @@ def test_timeout_is_diagnostic_and_retry_has_new_generation(context, source):
         time.sleep(2)
         return []
 
-    with provider(slow), patch("core.pi_transport.RUN_SECONDS", 0.7):
+    with provider(slow), patch("core.ai.transport.RUN_SECONDS", 0.7):
         job = create_ai(context, source)
         execute_job(str(job.pk))
         job.refresh_from_db()
         assert job.error_code == "model_timeout" and job.retryable and job.output is None
         assert job.model_calls.get().error_code == "model_timeout"
         client, project, _ = context
-        with patch("core.job_views.dispatch"):
+        with patch("core.jobs.views.dispatch"):
             assert (
                 client.post(path(project, f"jobs/{job.pk}/retry/"), {"generation": 1}).status_code
                 == 200
@@ -367,7 +369,7 @@ def test_api_permission_scope_configuration_and_request_fields(context, source):
             client.post(url, {**payload, "version_ids": [str(uuid4())]}, format="json").status_code
             == 400
         )
-        with patch("core.ai_views.dispatch"):
+        with patch("core.ai.views.dispatch"):
             created = client.post(url, payload, format="json")
         assert created.status_code == 201
         assert (

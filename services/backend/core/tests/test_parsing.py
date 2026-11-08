@@ -1,6 +1,7 @@
 import pytest
 
-from core.parsing import CHUNK_SIZE, ParseFailure, ParsingStopped, parse_document
+from core.common.errors import ParseFailure
+from core.materials.parsing import CHUNK_SIZE, ParsingStopped, parse_document
 from core.tests.parse_samples import CSV_SAMPLE, docx_sample, pdf_sample
 
 

@@ -106,7 +106,7 @@ async function poll() {
     task.value = result;
     if (result.status === "succeeded" && result.output?.reading_id) { await loadRecords(1); await open(result.output.reading_id); }
   });
-  
+
 }
 onMounted(async () => { window.addEventListener("beforeunload", beforeUnload); await perform(async () => { await loadSources(); await loadRecords(); }); startPolling(); });
 onUnmounted(() => { window.removeEventListener("beforeunload", beforeUnload); emit("dirtyChange", false); mounted = false;  });

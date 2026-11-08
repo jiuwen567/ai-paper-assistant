@@ -102,7 +102,7 @@ async function poll() {
     task.value = data;
     if (data.status === "succeeded" && data.output?.review_id) { await loadRecords(1); await open(data.output.review_id); }
   });
-  
+
 }
 onMounted(async () => { await perform(refresh); startPolling(); });
 onUnmounted(() => { mounted = false;  });

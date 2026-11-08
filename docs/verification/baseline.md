@@ -78,4 +78,3 @@
 | 解除模拟后重试 | 再次点击按钮，真实请求恢复成功 |
 
 报告和截图位于执行测试的小程序目录下的 `test-results/acceptance.json` 和 `test-results/connected.png`。本次范围为开发者工具模拟器，真机预览和发布尚未执行。
-

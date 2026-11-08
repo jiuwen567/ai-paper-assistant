@@ -71,7 +71,7 @@ async function poll() {
     task.value = result;
     if (result.status === "succeeded") await loadSuggestions(1);
   });
-  
+
 }
 onMounted(async () => { await perform(refresh); startPolling(); });
 onUnmounted(() => { mounted = false;  });
